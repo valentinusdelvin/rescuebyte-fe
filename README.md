@@ -1,10 +1,10 @@
-# React + Tailwind CSS Frontend
+# React + TypeScript + Tailwind CSS Frontend
 
 ## Tech Stack
 - React
-- HTML/JSX
+- TypeScript (`.ts` and `.tsx`)
+- HTML/JSX via TSX
 - Tailwind CSS
-- JavaScript, unless this repository already uses TypeScript
 - Build tool and package manager: follow the existing `package.json` and lockfile.
 
 ## Getting Started
@@ -22,14 +22,21 @@ npm run build
 
 ```text
 src/
-├── components/       # Reusable UI components
-├── pages/            # Page-level views, if used
-├── hooks/            # Reusable custom React hooks
+├── components/       # Reusable UI components (.tsx)
+├── pages/            # Page-level views, if used (.tsx)
+├── hooks/            # Reusable custom React hooks (.ts)
+├── types/            # Shared TypeScript types, if needed
 ├── assets/           # Assets imported by source code
-├── App.jsx           # Root application component
-├── main.jsx          # React entry point
+├── App.tsx           # Root application component
+├── main.tsx          # React entry point
 └── index.css         # Global styles and Tailwind entry
 public/               # Static files served directly
 ```
 
 Read `.agents/docs/architecture.md` for file placement rules. This is a recommended structure, not a reason to restructure an existing app automatically.
+
+## Development Notes
+- Follow `AGENTS.md` and the relevant guides in `.agents/docs/`.
+- Use TypeScript strictly and avoid `any`.
+- Prefer existing components, utilities, and project patterns before adding new ones.
+- Check `package.json` for available development, build, lint, and test scripts.

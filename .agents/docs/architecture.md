@@ -5,37 +5,43 @@
 ```text
 src/
 ├── components/       # Reusable UI components
-│   ├── Header.jsx
-│   ├── Button.jsx
-│   └── FolderCard.jsx
-├── pages/            # Page-level components
-│   ├── Home.jsx
-│   └── About.jsx
+│   ├── Header.tsx
+│   ├── Button.tsx
+│   └── FolderCard.tsx
+├── pages/            # Page-level components, if used
+│   ├── Home.tsx
+│   └── About.tsx
 ├── hooks/            # Reusable custom React hooks
-│   └── useTheme.js
+│   └── useTheme.ts
+├── types/            # Shared TypeScript types, if needed
 ├── assets/           # Images/icons imported by source code
-├── App.jsx           # Root application component
-├── main.jsx          # React entry point
+├── App.tsx           # Root application component
+├── main.tsx          # React entry point
 └── index.css         # Global styles and Tailwind entry
 public/               # Static files served directly
 ```
 
 ## Placement Rules
-- Put reusable UI such as `Button.jsx`, `Header.jsx`, and `FolderCard.jsx` in `src/components/`.
-- Put page-level views such as `Home.jsx` and `About.jsx` in `src/pages/`, if the project uses page components.
+- Put reusable UI such as `Button.tsx`, `Header.tsx`, and `FolderCard.tsx` in `src/components/`.
+- Put page-level views such as `Home.tsx` and `About.tsx` in `src/pages/`, if the project uses page components.
 - Put reusable stateful logic in custom hooks under `src/hooks/`; name them with the `use` prefix.
-- Put assets imported by JavaScript/JSX in `src/assets/`.
+- Put shared types in `src/types/` only when they are used across multiple modules. Keep feature-specific types close to their feature.
+- Put assets imported by TypeScript/TSX in `src/assets/`.
 - Put files that must be served unchanged at a public URL in `public/`.
-- Keep `App.jsx` responsible for composing the application; keep `main.jsx` responsible for mounting React.
+- Keep `App.tsx` responsible for composing the application; keep `main.tsx` responsible for mounting React.
 - Keep global styles and the Tailwind entry/import in `src/index.css`.
 - Do not create folders just for the sake of abstraction. Add folders when the project needs them.
 - Follow the existing project structure if it differs from this example. Do not reorganize an existing project without a clear reason.
 
 ## React Component Example
 
-```jsx
-// src/components/FolderCard.jsx
-export function FolderCard({ title, description }) {
+```tsx
+interface FolderCardProps {
+  title: string;
+  description: string;
+}
+
+export function FolderCard({ title, description }: FolderCardProps) {
   return (
     <article className="rounded-xl border border-slate-200 p-4">
       <h2 className="text-lg font-semibold">{title}</h2>
@@ -45,6 +51,7 @@ export function FolderCard({ title, description }) {
 }
 ```
 
+## React Rules
 - Use function components and React hooks.
 - Use stable `key` values when rendering lists.
 - Do not mutate React state directly.

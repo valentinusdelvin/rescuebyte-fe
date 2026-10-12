@@ -9,7 +9,7 @@
 
 ## Safe Rendering Example
 
-```jsx
+```tsx
 // React renders this value as text.
 <p>{userInput}</p>
 

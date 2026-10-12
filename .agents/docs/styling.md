@@ -11,12 +11,18 @@
 - Respect reduced-motion preferences for non-essential animation.
 - Do not add styling or animation dependencies without a clear need.
 
-## Example: React + Tailwind
+## Example: React + TypeScript + Tailwind
 
-```jsx
-export function Button({ children, onClick }) {
+```tsx
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+}
+
+export function Button({ children, onClick }: ButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="rounded-lg bg-blue-600 px-4 py-2 text-white transition
                  hover:bg-blue-700 focus-visible:outline-2
