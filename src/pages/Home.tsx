@@ -1,48 +1,54 @@
-import React from 'react';
-import Header from '../components/Header';
-import FolderCard from '../components/FolderCard';
+import { Header } from '../components/Header';
+import { FolderCard } from '../components/FolderCard';
 import { useCounter } from '../hooks/useCounter';
 
-const folderStructures = [
+interface FolderStructureItem {
+  name: string;
+  path: string;
+  description: string;
+  examples: string[];
+}
+
+const folderStructures: FolderStructureItem[] = [
   {
     name: 'src/components/',
     path: 'src/components',
     description: 'Menyimpan komponen UI yang dapat digunakan kembali (reusable) di berbagai tempat.',
-    examples: ['Header.jsx', 'FolderCard.jsx', 'Button.jsx']
+    examples: ['Header.tsx', 'FolderCard.tsx', 'Button.tsx'],
   },
   {
     name: 'src/pages/',
     path: 'src/pages',
     description: 'Menyimpan tampilan halaman utama aplikasi (misalnya Home, About, Dashboard).',
-    examples: ['Home.jsx', 'About.jsx']
+    examples: ['Home.tsx', 'About.tsx'],
   },
   {
     name: 'src/hooks/',
     path: 'src/hooks',
     description: 'Menyimpan Custom Hooks untuk logika state yang dapat dipakai ulang.',
-    examples: ['useCounter.js', 'useTheme.js']
+    examples: ['useCounter.ts', 'useTheme.ts'],
   },
   {
     name: 'src/assets/',
     path: 'src/assets',
     description: 'Menyimpan aset statis yang diproses bundler seperti gambar, ikon SVG, dan logo.',
-    examples: ['react.svg', 'vite.svg', 'banner.png']
+    examples: ['react.svg', 'vite.svg', 'banner.png'],
   },
   {
     name: 'public/',
     path: 'public',
     description: 'Menyimpan file statis yang diakses langsung tanpa lewat bundler (misal: favicon, robots.txt).',
-    examples: ['vite.svg', 'favicon.ico']
+    examples: ['vite.svg', 'favicon.ico'],
   },
   {
-    name: 'src/App.jsx & main.jsx',
-    path: 'src/App.jsx',
-    description: 'main.jsx adalah entry point render React ke HTML (DOM), sedangkan App.jsx adalah komponen root induk aplikasi.',
-    examples: ['main.jsx', 'App.jsx', 'index.css']
-  }
+    name: 'src/App.tsx & main.tsx',
+    path: 'src/App.tsx',
+    description: 'main.tsx adalah entry point render React ke HTML (DOM), sedangkan App.tsx adalah komponen root induk aplikasi.',
+    examples: ['main.tsx', 'App.tsx', 'index.css'],
+  },
 ];
 
-export default function Home() {
+export function Home() {
   const { count, increment, decrement, reset } = useCounter(0);
 
   return (
@@ -51,23 +57,22 @@ export default function Home() {
 
       <section className="demo-box">
         <h3>Uji Coba Interaktif State (React Hook):</h3>
-        <p>Logika tombol ini diambil dari <code>src/hooks/useCounter.js</code></p>
+        <p>Logika tombol ini diambil dari <code>src/hooks/useCounter.ts</code></p>
         <div className="counter-controls">
-          <button className="btn btn-secondary" onClick={decrement}>-</button>
+          <button type="button" className="btn btn-secondary" onClick={decrement}>-</button>
           <span className="counter-display">{count}</span>
-          <button className="btn btn-primary" onClick={increment}>+</button>
-          <button className="btn btn-reset" onClick={reset}>Reset</button>
+          <button type="button" className="btn btn-primary" onClick={increment}>+</button>
+          <button type="button" className="btn btn-reset" onClick={reset}>Reset</button>
         </div>
       </section>
 
       <section className="structure-section">
         <h2>Penjelasan Struktur Folder React</h2>
         <div className="cards-grid">
-          {folderStructures.map((folder, index) => (
+          {folderStructures.map((folder) => (
             <FolderCard
-              key={index}
+              key={folder.name}
               name={folder.name}
-              path={folder.path}
               description={folder.description}
               examples={folder.examples}
             />
