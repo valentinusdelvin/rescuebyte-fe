@@ -1,6 +1,4 @@
-import React from 'react';
-
-export default function Header() {
+export function Header() {
   return (
     <header className="app-header">
       <div className="header-badge">React + Vite Starter</div>
