@@ -34,7 +34,20 @@ export interface OSMSuggestion extends Coordinates {
   state: string;
 }
 
-export type ActiveViewId = 'view-beranda' | 'view-profil' | string;
+export type ActiveViewId = 'view-beranda' | 'view-profil' | 'view-riwayat' | string;
+
+export type OrderStatusTab =
+  | 'diproses'
+  | 'konfirmasi'
+  | 'selesai'
+  | 'habis'
+  | 'kendala'
+  | 'batal';
+
+export interface OrderTabItem {
+  id: OrderStatusTab;
+  label: string;
+}
 
 export type DayKey = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu' | 'minggu';
 

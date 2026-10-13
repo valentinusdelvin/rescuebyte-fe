@@ -3,9 +3,10 @@ import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { StoreProfile } from './pages/StoreProfile';
+import { OrderHistory } from './pages/OrderHistory';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { Toast } from './components/common/Toast';
-import { ActiveViewId } from './types';
+import { ActiveViewId, OrderStatusTab } from './types';
 
 /**
  * Root Application Component
@@ -15,12 +16,30 @@ import { ActiveViewId } from './types';
 export function App() {
   const [activeView, setActiveView] = useState<ActiveViewId>(() => {
     const hash = window.location.hash.toLowerCase();
-    if (hash === '#beranda') return 'view-beranda';
-    if (hash === '#profil') return 'view-profil';
+    if (hash.startsWith('#beranda')) return 'view-beranda';
+    if (hash.startsWith('#profil')) return 'view-profil';
+    if (hash.startsWith('#riwayat')) return 'view-riwayat';
     return 'view-beranda';
   });
 
-  const [activeLabel, setActiveLabel] = useState<string>('Beranda');
+  const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
+    const hash = window.location.hash.toLowerCase();
+    if (hash.includes('tab=')) {
+      const match = hash.match(/tab=([a-z]+)/);
+      if (match && ['diproses', 'konfirmasi', 'selesai', 'habis', 'kendala', 'batal'].includes(match[1])) {
+        return match[1] as OrderStatusTab;
+      }
+    }
+    return 'diproses';
+  });
+
+  const [activeLabel, setActiveLabel] = useState<string>(() => {
+    const hash = window.location.hash.toLowerCase();
+    if (hash.startsWith('#profil')) return 'Profil Toko';
+    if (hash.startsWith('#riwayat')) return 'Riwayat Pesanan';
+    return 'Beranda';
+  });
+
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [storeName, setStoreName] = useState<string>(() => {
     try {
@@ -44,14 +63,17 @@ export function App() {
   }, []);
 
   // Sync hash on navigation
-  const handleNavigate = (viewId: string, label: string = '') => {
+  const handleNavigate = (viewId: string, label: string = '', tab?: OrderStatusTab) => {
     setActiveView(viewId);
     if (label) setActiveLabel(label);
+    if (tab) setOrderTab(tab);
 
     if (viewId === 'view-beranda') {
       window.history.replaceState(null, '', '#beranda');
     } else if (viewId === 'view-profil') {
       window.history.replaceState(null, '', '#profil');
+    } else if (viewId === 'view-riwayat') {
+      window.history.replaceState(null, '', tab ? `#riwayat?tab=${tab}` : '#riwayat');
     }
 
     setIsMobileOpen(false);
@@ -61,12 +83,19 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash === '#beranda') {
+      if (hash.startsWith('#beranda')) {
         setActiveView('view-beranda');
         setActiveLabel('Beranda');
-      } else if (hash === '#profil') {
+      } else if (hash.startsWith('#profil')) {
         setActiveView('view-profil');
         setActiveLabel('Profil Toko');
+      } else if (hash.startsWith('#riwayat')) {
+        setActiveView('view-riwayat');
+        setActiveLabel('Riwayat Pesanan');
+        const match = hash.match(/tab=([a-z]+)/);
+        if (match && ['diproses', 'konfirmasi', 'selesai', 'habis', 'kendala', 'batal'].includes(match[1])) {
+          setOrderTab(match[1] as OrderStatusTab);
+        }
       }
     };
 
@@ -93,7 +122,12 @@ export function App() {
         />
 
         <main className="app-main" id="main-content">
-          {activeView === 'view-beranda' && <Dashboard onShowToast={showToast} />}
+          {activeView === 'view-beranda' && (
+            <Dashboard
+              onShowToast={showToast}
+              onNavigateToOrders={(tabId) => handleNavigate('view-riwayat', 'Riwayat Pesanan', tabId)}
+            />
+          )}
           {activeView === 'view-profil' && (
             <StoreProfile
               storeName={storeName}
@@ -101,7 +135,14 @@ export function App() {
               onShowToast={showToast}
             />
           )}
-          {activeView !== 'view-beranda' && activeView !== 'view-profil' && (
+          {activeView === 'view-riwayat' && (
+            <OrderHistory
+              key={orderTab}
+              initialTab={orderTab}
+              onShowToast={showToast}
+            />
+          )}
+          {activeView !== 'view-beranda' && activeView !== 'view-profil' && activeView !== 'view-riwayat' && (
             <PlaceholderPage
               title={activeLabel}
               onBackToBeranda={() => handleNavigate('view-beranda', 'Beranda')}

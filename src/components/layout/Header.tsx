@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import rescueBiteLogo from '../../assets/logo.png';
 
 export interface HeaderProps {
   storeName?: string;
@@ -42,9 +43,9 @@ export function Header({
     if (onNavigate) onNavigate('view-profil');
   };
 
-  const handleGotoBeranda = () => {
+  const handleGotoUbahPin = () => {
     setIsDropdownOpen(false);
-    if (onNavigate) onNavigate('view-beranda');
+    if (onShowToast) onShowToast('Fitur Ubah PIN akan segera hadir.');
   };
 
   const handleLogout = () => {
@@ -71,22 +72,11 @@ export function Header({
 
         {/* RescueBite Logo */}
         <a href="#beranda" className="brand-logo" id="brand-logo-link" onClick={handleLogoClick}>
-          <div className="logo-mark">
-            <svg viewBox="0 0 60 60" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Leaf Elements */}
-              <path d="M30 6C30 6 36 12 36 18C36 21 34 23 30 24C26 23 24 21 24 18C24 12 30 6 30 6Z" fill="#15803d"/>
-              <path d="M35 14C35 14 42 16 43 23C44 26 42 29 39 30C36 29 34 26 34 22C34 18 35 14 35 14Z" fill="#84cc16"/>
-              <path d="M25 14C25 14 18 16 17 23C16 26 18 29 21 30C24 29 26 26 26 22C26 18 25 14 25 14Z" fill="#65a30d"/>
-              <circle cx="37" cy="11" r="3" fill="#eab308"/>
-              {/* Bowl / Smile Silhouette */}
-              <path d="M14 26C14 26 16 46 30 46C44 46 46 26 46 26C42 30 36 32 30 32C24 32 18 30 14 26Z" fill="#22c55e"/>
-              <path d="M19 45C22 51 27 54 30 54C33 54 38 51 41 45C37 47 33 48 30 48C27 48 23 47 19 45Z" fill="#166534"/>
-            </svg>
-          </div>
-          <div className="logo-text-group">
-            <span className="brand-title">Rescue<span className="brand-accent">Bite</span></span>
-            <span className="brand-tagline">SAVE FOOD, SHARE THE LOVE</span>
-          </div>
+          <img
+            src={rescueBiteLogo}
+            alt="RescueBite"
+            className="brand-logo-image"
+          />
         </a>
       </div>
 
@@ -137,11 +127,13 @@ export function Header({
               </svg>
               Profil Toko
             </button>
-            <button type="button" className="dropdown-item" id="dropdown-goto-beranda" onClick={handleGotoBeranda}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <button type="button" className="dropdown-item" id="dropdown-goto-ubah-pin" onClick={handleGotoUbahPin}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="7.5" cy="15.5" r="5.5" />
+                <path d="m21 2-9.6 9.6" />
+                <path d="m15.5 7.5 3 3L22 7l-2-2" />
               </svg>
-              Beranda
+              Ubah PIN
             </button>
             <hr className="dropdown-divider" />
             <button type="button" className="dropdown-item text-danger" id="dropdown-logout-btn" onClick={handleLogout}>

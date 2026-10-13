@@ -105,6 +105,20 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
                 <option value="minggu-ini">Minggu ini</option>
                 <option value="tahun-ini">Tahun ini</option>
               </select>
+              <svg
+                className="chart-filter-arrow"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </div>
           </div>
 
@@ -222,13 +236,6 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
                 <text x="585" y="258">Jun</text>
               </g>
             </svg>
-          </div>
-
-          {/* Legend Indicator */}
-          <div className="chart-legend">
-            <span className="legend-item"><span className="legend-dot green"></span> Kunjungan</span>
-            <span className="legend-item"><span className="legend-dot yellow"></span> Produk Dilihat</span>
-            <span className="legend-item"><span className="legend-dot red"></span> Pesanan Selesai</span>
           </div>
         </div>
 
