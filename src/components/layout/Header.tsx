@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import rescueBiteLogo from '../../assets/logo.png';
+import rescueBiteLogo from '../../assets/logo.svg';
 
 export interface HeaderProps {
   storeName?: string;

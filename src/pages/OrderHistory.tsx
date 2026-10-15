@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { OrderStatusTab, OrderTabItem } from '../types';
-import emptyOrdersIllustration from '../assets/empty-orders.png';
+import emptyOrdersIllustration from '../assets/pesanan-kosong.svg';
 
 export interface OrderHistoryProps {
   initialTab?: OrderStatusTab;
