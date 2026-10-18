@@ -432,7 +432,7 @@ export function getKecamatansForCity(cityName: string): KecamatanItem[] {
     (c) =>
       c.name.toLowerCase() === clean ||
       c.name.toLowerCase().replace(/^(kota|kabupaten)\s+/i, '') ===
-        clean.replace(/^(kota|kabupaten)\s+/i, ''),
+      clean.replace(/^(kota|kabupaten)\s+/i, ''),
   );
 
   return city ? city.kecamatans : [];

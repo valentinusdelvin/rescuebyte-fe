@@ -28,11 +28,8 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
   const [filterType, setFilterType] = useState<string>('semua');
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
 
-  const handleTabChange = (tabId: OrderStatusTab, label: string) => {
+  const handleTabChange = (tabId: OrderStatusTab) => {
     setActiveTab(tabId);
-    if (onShowToast) {
-      onShowToast(`Menampilkan pesanan: ${label}`);
-    }
   };
 
   return (
@@ -54,7 +51,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   className={`order-tab-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => handleTabChange(tab.id, tab.label)}
+                  onClick={() => handleTabChange(tab.id)}
                 >
                   {tab.label}
                 </button>
