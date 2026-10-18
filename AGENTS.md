@@ -30,3 +30,39 @@ Always follow `security.md` for security-sensitive changes.
 - Report which files changed and which checks were run.
 - Ask rather than guess when requirements are ambiguous.
 - Prefer the simplest maintainable solution.
+
+## Project Context
+- This project is the RescueByte frontend application.
+- RescueByte focuses on food rescue, affordable surplus food, and food redistribution.
+- Follow the product requirements in `prd.md` and the visual specifications in `design.md`.
+- Do not invent product features, user flows, or business rules that are not supported by the PRD or explicitly requested.
+
+## Product and Design References
+Before implementing a new feature or making significant UI changes:
+
+- Read `prd.md` to understand the required features, user flows, and acceptance criteria.
+- Read `design.md` to understand the design system, colors, typography, spacing, component styles, and responsive behavior.
+- Read the relevant guides in `.agents/docs/` before making technical changes.
+- Treat `prd.md` as the source of truth for product requirements and `design.md` as the source of truth for visual design.
+- Reuse the established design tokens and existing components instead of introducing arbitrary styles.
+- If the PRD, design specifications, and existing implementation conflict, explain the conflict and ask for clarification when it materially affects the result.
+
+## UI Implementation Rules
+
+- Build interfaces that are consistent with the RescueByte design system.
+- Use reusable React components and TypeScript types consistent with the existing architecture.
+- Include appropriate loading, empty, error, disabled, and success states when relevant.
+- Follow accessibility practices for semantic HTML, keyboard navigation, focus indicators, and readable contrast.
+- Do not replace the established visual direction with a generic template or introduce unrelated UI elements.
+- Before considering a UI task complete, verify that the implementation matches `design.md` and the requested behavior.
+
+<!-- antislop:start -->
+## antislop
+For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (core) and then the skill for the task:
+- UI / visual: `skills/antislop-ui/SKILL.md`
+- Copy & text: `skills/antislop-copywriting/SKILL.md`
+- People: `skills/antislop-human/SKILL.md`
+- Mobile / responsive: `skills/antislop-layoutmobile/SKILL.md`
+- Code comments: `skills/antislop-code/SKILL.md`
+Before starting, ask the user when antislop applies: during the work, or after it is done.
+<!-- antislop:end -->
