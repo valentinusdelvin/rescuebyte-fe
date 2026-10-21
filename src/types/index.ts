@@ -34,7 +34,57 @@ export interface OSMSuggestion extends Coordinates {
   state: string;
 }
 
-export type ActiveViewId = 'view-beranda' | 'view-profil' | 'view-riwayat' | string;
+export type ActiveViewId =
+  | 'view-customer-home'
+  | 'view-beranda'
+  | 'view-profil'
+  | 'view-riwayat'
+  | 'view-buat-dagangan'
+  | 'view-daganganku'
+  | 'view-ulasan'
+  | string;
+
+export interface CustomerMysteryBox {
+  id: string;
+  storeName: string;
+  category: string;
+  distanceText: string;
+  remainingBoxesText: string;
+  discountPercent: number;
+  originalPrice: number;
+  rescuePrice: number;
+  pickupTime: string;
+  description: string;
+  tags: string[];
+  rating?: number;
+  reviewCount?: number;
+  imageSrc: string;
+  isRadiusItem?: boolean;
+}
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  role: 'Pelanggan' | 'Seller';
+  rating: number;
+  avatarSrc: string;
+  quote: string;
+}
+
+export interface ProductItem {
+  id: string;
+  name: string;
+  description: string;
+  normalPrice: number;
+  rescuePrice: number;
+  stock: number;
+  maxStock: number;
+  status: 'aktif' | 'segera_habis' | 'habis';
+  imageUrl?: string;
+  createdAt: string;
+}
+
+export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis';
 
 export type OrderStatusTab =
   | 'diproses'

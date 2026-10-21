@@ -16,6 +16,7 @@ export interface StoreProfileProps {
   storeName: string;
   onStoreNameChange?: (name: string) => void;
   onShowToast?: (message: string) => void;
+  onTriggerLoading?: (title?: string, subtitle?: string, durationMs?: number) => Promise<void>;
 }
 
 /**
@@ -23,7 +24,12 @@ export interface StoreProfileProps {
  * Composes StoreInfoForm on the left, and OperationalCard + StoreLocationMap on the right.
  * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
  */
-export function StoreProfile({ storeName, onStoreNameChange, onShowToast }: StoreProfileProps) {
+export function StoreProfile({
+  storeName,
+  onStoreNameChange,
+  onShowToast,
+  onTriggerLoading,
+}: StoreProfileProps) {
   const [coordinates, setCoordinates] = useState<Coordinates>(() => {
     try {
       const savedCoords = localStorage.getItem('rescuebyte_store_coordinates');
@@ -83,6 +89,7 @@ export function StoreProfile({ storeName, onStoreNameChange, onShowToast }: Stor
           onCoordinatesChange={handleCoordinatesChange}
           onStoreNameChange={onStoreNameChange}
           onShowToast={onShowToast}
+          onTriggerLoading={onTriggerLoading}
         />
 
         {/* Right Column: Operasional & Peta Lokasi Toko */}

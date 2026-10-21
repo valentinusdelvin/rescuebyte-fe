@@ -1,6 +1,7 @@
 /* Global Entry Styles */
 @import "tailwindcss";
 @import './styles/rescuebyte.css';
+@import './styles/customer.css';
 @import 'leaflet/dist/leaflet.css';
 
 @theme {

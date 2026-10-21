@@ -71,7 +71,7 @@ export function Header({
         </button>
 
         {/* RescueBite Logo */}
-        <a href="#beranda" className="brand-logo" id="brand-logo-link" onClick={handleLogoClick}>
+        <a href="#beranda-seller" className="brand-logo" id="brand-logo-link" onClick={handleLogoClick}>
           <img
             src={rescueBiteLogo}
             alt="RescueBite"
@@ -81,6 +81,30 @@ export function Header({
       </div>
 
       <div className="header-right">
+        {/* Switch to Customer Portal button */}
+        <button
+          type="button"
+          className="customer-switch-btn"
+          id="btn-goto-customer-view"
+          title="Buka Web Customer / Pelanggan"
+          onClick={() => onNavigate && onNavigate('view-customer-home')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#3c6a00',
+            backgroundColor: 'rgba(60, 106, 0, 0.08)',
+            border: '1px solid rgba(60, 106, 0, 0.2)',
+            padding: '6px 12px',
+            borderRadius: '9999px',
+            cursor: 'pointer',
+          }}
+        >
+          <span>🌐 Web Customer</span>
+        </button>
+
         {/* Store Profile Pill */}
         <div
           ref={dropdownRef}
@@ -134,6 +158,22 @@ export function Header({
                 <path d="m15.5 7.5 3 3L22 7l-2-2" />
               </svg>
               Ubah PIN
+            </button>
+            <button
+              type="button"
+              className="dropdown-item text-success"
+              id="dropdown-goto-customer-home"
+              onClick={() => {
+                setIsDropdownOpen(false);
+                if (onNavigate) onNavigate('view-customer-home');
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              Buka Web Customer
             </button>
             <hr className="dropdown-divider" />
             <button type="button" className="dropdown-item text-danger" id="dropdown-logout-btn" onClick={handleLogout}>

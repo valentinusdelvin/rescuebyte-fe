@@ -1,3 +1,4 @@
+import { CSSProperties } from 'react';
 import { ActiveViewId } from '../../types';
 
 export interface SidebarProps {
@@ -6,6 +7,30 @@ export interface SidebarProps {
   isMobileOpen: boolean;
   onNavigate?: (viewId: string, label: string) => void;
   onCloseMobile?: () => void;
+}
+
+/**
+ * Accessible Staggered Letter Text Component
+ * Splits text into individual animated characters with CSS variable transition-delay
+ * Screen readers consume aria-label while inner character spans remain aria-hidden
+ */
+export function StaggeredLinkText({ text }: { text: string }) {
+  return (
+    <span className="staggered-text" aria-label={text}>
+      <span className="staggered-inner" aria-hidden="true">
+        {text.split('').map((char, index) => (
+          <span
+            key={`${char}-${index}`}
+            className="staggered-char"
+            style={{ '--char-index': index } as CSSProperties}
+          >
+            <span className="char-primary">{char === ' ' ? '\u00A0' : char}</span>
+            <span className="char-secondary">{char === ' ' ? '\u00A0' : char}</span>
+          </span>
+        ))}
+      </span>
+    </span>
+  );
 }
 
 /**
@@ -91,7 +116,7 @@ export function Sidebar({
                   id="nav-beranda"
                   onClick={() => handleItemClick('view-beranda', 'Beranda')}
                 >
-                  Beranda
+                  <StaggeredLinkText text="Beranda" />
                 </button>
               </li>
               <li>
@@ -101,7 +126,7 @@ export function Sidebar({
                   id="nav-profil"
                   onClick={() => handleItemClick('view-profil', 'Profil Toko')}
                 >
-                  Profil Toko
+                  <StaggeredLinkText text="Profil Toko" />
                 </button>
               </li>
             </ul>
@@ -136,7 +161,7 @@ export function Sidebar({
                   id="nav-riwayat"
                   onClick={() => handleItemClick('view-riwayat', 'Riwayat Pesanan')}
                 >
-                  Riwayat Pesanan
+                  <StaggeredLinkText text="Riwayat Pesanan" />
                 </button>
               </li>
               <li>
@@ -146,7 +171,7 @@ export function Sidebar({
                   id="nav-ulasan"
                   onClick={() => handleItemClick('view-ulasan', 'Ulasan Pembeli')}
                 >
-                  Ulasan Pembeli
+                  <StaggeredLinkText text="Ulasan Pembeli" />
                 </button>
               </li>
             </ul>
@@ -181,7 +206,7 @@ export function Sidebar({
                   id="nav-buat-dagangan"
                   onClick={() => handleItemClick('view-buat-dagangan', 'Buat Dagangan')}
                 >
-                  Buat Dagangan
+                  <StaggeredLinkText text="Buat Dagangan" />
                 </button>
               </li>
               <li>
@@ -191,22 +216,39 @@ export function Sidebar({
                   id="nav-daganganku"
                   onClick={() => handleItemClick('view-daganganku', 'Daganganku')}
                 >
-                  Daganganku
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className={`nav-sublink ${activeView === 'view-pengiriman' ? 'active' : ''}`}
-                  id="nav-pengiriman"
-                  onClick={() => handleItemClick('view-pengiriman', 'Pengiriman')}
-                >
-                  Pengiriman
+                  <StaggeredLinkText text="Daganganku" />
                 </button>
               </li>
             </ul>
           </div>
         </nav>
+
+        {/* Customer Portal Switcher Link */}
+        <div style={{ padding: '16px', marginTop: 'auto', borderTop: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <button
+            type="button"
+            id="sidebar-goto-customer-btn"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '10px 14px',
+              borderRadius: '12px',
+              backgroundColor: '#f1fbe8',
+              color: '#3c6a00',
+              border: '1px solid rgba(60, 106, 0, 0.2)',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => handleItemClick('view-customer-home', 'Beranda Pelanggan')}
+          >
+            <span>🌐 Lihat Web Customer</span>
+          </button>
+        </div>
       </aside>
     </>
   );
