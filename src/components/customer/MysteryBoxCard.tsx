@@ -15,8 +15,7 @@ function formatRupiah(amount: number): string {
 
 /**
  * Reusable Mystery Box Card for Customer Landing Page
- * Matches high-fidelity design specifications for "Mystery Box Populer" and "Sekitarmu (Radius 5 km)".
- * Complies with .agents/docs/architecture.md, styling.md, and typescript.md.
+ * Styled with Tailwind CSS classes.
  */
 export function MysteryBoxCard({
   item,
@@ -26,37 +25,40 @@ export function MysteryBoxCard({
   const isPopular = variant === 'popular';
 
   return (
-    <article className="customer-box-card" id={`box-card-${item.id}`}>
+    <article
+      className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
+      id={`box-card-${item.id}`}
+    >
       {/* Card Visual Header with Badges */}
-      <div className="box-card-media">
+      <div className="relative w-full h-48 overflow-hidden bg-gray-100">
         <img
           src={item.imageSrc}
           alt={`Mystery Box ${item.storeName}`}
-          className="box-card-img"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
 
         {/* Top Badges Overlay */}
-        <div className="box-card-badges-top">
-          <div className="box-card-left-badges">
+        <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
+          <div className="flex items-center gap-1.5">
             {isPopular ? (
               <>
-                <span className="badge-remaining-urgent">
+                <span className="px-2.5 py-1 rounded-full bg-red-600/90 backdrop-blur-xs text-white text-[10px] font-black tracking-wide shadow-xs">
                   {item.remainingBoxesText.toUpperCase()}
                 </span>
-                <span className="badge-distance-pill">
+                <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold">
                   {item.distanceText}
                 </span>
               </>
             ) : (
-              <span className="badge-rating-pill">
+              <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold">
                 ⭐ {item.rating?.toFixed(1) || '4.9'} ({item.reviewCount || 100}+)
               </span>
             )}
           </div>
 
-          <div className="box-card-right-badges">
-            <span className="badge-discount-green">
+          <div>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-xs">
               -{item.discountPercent}%
             </span>
           </div>
@@ -64,25 +66,29 @@ export function MysteryBoxCard({
       </div>
 
       {/* Card Content Body */}
-      <div className="box-card-body">
+      <div className="p-5 flex flex-col flex-1">
         {/* Category & Store Name */}
-        <div className="box-card-category-row">
-          <span className="box-card-category">{item.category}</span>
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <span className="font-semibold text-emerald-800">{item.category}</span>
           {!isPopular && (
-            <span className="box-card-distance-inline">{item.distanceText}</span>
+            <span className="text-gray-400">{item.distanceText}</span>
           )}
         </div>
 
-        <h3 className="box-card-title">{item.storeName}</h3>
+        <h3 className="text-base font-bold text-gray-900 font-display truncate">{item.storeName}</h3>
 
-        <p className="box-card-desc">{item.description}</p>
+        <p className="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed">{item.description}</p>
 
         {/* Tags */}
-        <div className="box-card-tags">
+        <div className="flex items-center gap-1.5 flex-wrap my-3">
           {item.tags.map((tag, idx) => (
             <span
               key={`${tag}-${idx}`}
-              className={`box-tag-pill ${idx === 0 ? 'box-tag-green' : 'box-tag-gray'}`}
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                idx === 0
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
             >
               {tag}
             </span>
@@ -90,7 +96,7 @@ export function MysteryBoxCard({
         </div>
 
         {/* Pickup Time */}
-        <div className="box-card-pickup-time">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
           <svg
             width="14"
             height="14"
@@ -110,19 +116,19 @@ export function MysteryBoxCard({
       </div>
 
       {/* Card Footer with Price and Action */}
-      <div className="box-card-footer">
-        <div className="box-card-price-group">
-          <span className="box-card-original-price">
+      <div className="p-5 pt-0 flex items-center justify-between gap-3 border-t border-gray-50 mt-2">
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-400 line-through">
             Rp {formatRupiah(item.originalPrice)}
           </span>
-          <span className="box-card-rescue-price">
+          <span className="text-base font-black text-emerald-700 font-display">
             Rp {formatRupiah(item.rescuePrice)}
           </span>
         </div>
 
         <button
           type="button"
-          className="box-card-cta-btn"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
           id={`btn-order-${item.id}`}
           onClick={() => onOrderClick(item)}
           aria-label={`Ambil Mystery Box dari ${item.storeName}`}

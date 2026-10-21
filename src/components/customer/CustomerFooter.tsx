@@ -7,39 +7,39 @@ export interface CustomerFooterProps {
 
 /**
  * Customer Landing Page Footer
- * Complies with .agents/docs/architecture.md, styling.md, and prd/design specifications.
+ * Styled with Tailwind CSS classes.
  */
 export function CustomerFooter({
   onNavigateSeller,
   onContactSupport,
 }: CustomerFooterProps) {
   return (
-    <footer className="customer-footer-root" id="kontak-section">
-      <div className="customer-footer-container">
+    <footer className="bg-[#1b1c1c] text-white pt-16 pb-12 px-4 md:px-8" id="kontak-section">
+      <div className="max-w-6xl mx-auto flex flex-col gap-12">
         {/* Top Brand Section & Link Columns */}
-        <div className="customer-footer-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Info Column */}
-          <div className="customer-footer-brand-col">
-            <div className="customer-footer-brand-header">
+          <div className="lg:col-span-2 flex flex-col items-start">
+            <div className="flex items-center gap-3 mb-2">
               <img
                 src={rescueBiteLogo}
                 alt="RescueBite"
-                className="customer-footer-logo-img"
+                className="h-8 w-auto brightness-0 invert"
               />
-              <span className="customer-footer-brand-name">RescueBite</span>
+              <span className="text-xl font-bold font-display text-white">RescueBite</span>
             </div>
 
-            <p className="customer-footer-tagline">
+            <p className="text-xs font-bold text-emerald-400 tracking-wider uppercase mb-2">
               Good Food, Greener Tomorrow.
             </p>
 
-            <p className="customer-footer-desc">
+            <p className="text-xs text-gray-400 leading-relaxed max-w-sm mb-5">
               Platform penyelamat makanan berlebih nomor satu di Indonesia. Hidup lebih hemat, nikmati makanan lezat dari resto favorit, dan kurangi food waste sekarang juga.
             </p>
 
             <button
               type="button"
-              className="customer-footer-cs-btn"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors cursor-pointer"
               onClick={onContactSupport}
               id="btn-customer-service-footer"
             >
@@ -51,26 +51,26 @@ export function CustomerFooter({
           </div>
 
           {/* Links Column 1: Konsumen */}
-          <div className="customer-footer-links-col">
-            <h4 className="customer-footer-col-title">Konsumen</h4>
-            <ul className="customer-footer-col-list">
+          <div className="flex flex-col">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Konsumen</h4>
+            <ul className="flex flex-col gap-2.5">
               <li>
-                <a href="#marketplace" className="customer-footer-col-link">
+                <a href="#marketplace" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Jelajahi Mystery Box
                 </a>
               </li>
               <li>
-                <a href="#marketplace" className="customer-footer-col-link">
+                <a href="#marketplace" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Jadwal Ambil Makanan
                 </a>
               </li>
               <li>
-                <a href="#about-us-section" className="customer-footer-col-link">
+                <a href="#about-us-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Cara Belanja di Aplikasi
                 </a>
               </li>
               <li>
-                <a href="#marketplace" className="customer-footer-col-link">
+                <a href="#marketplace" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Voucher & Langganan
                 </a>
               </li>
@@ -78,11 +78,11 @@ export function CustomerFooter({
           </div>
 
           {/* Links Column 2: Mitra & Ekosistem */}
-          <div className="customer-footer-links-col">
-            <h4 className="customer-footer-col-title">Mitra & Ekosistem</h4>
-            <ul className="customer-footer-col-list">
+          <div className="flex flex-col">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Mitra & Ekosistem</h4>
+            <ul className="flex flex-col gap-2.5">
               <li>
-                <a href="#beranda-seller" className="customer-footer-col-link" onClick={(e) => {
+                <a href="#beranda-seller" className="text-xs text-gray-400 hover:text-white transition-colors" onClick={(e) => {
                   if (onNavigateSeller) {
                     e.preventDefault();
                     onNavigateSeller();
@@ -94,7 +94,7 @@ export function CustomerFooter({
               <li>
                 <a
                   href="#beranda-seller"
-                  className="customer-footer-col-link font-semibold text-[#3c6a00]"
+                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
                   onClick={(e) => {
                     if (onNavigateSeller) {
                       e.preventDefault();
@@ -106,12 +106,12 @@ export function CustomerFooter({
                 </a>
               </li>
               <li>
-                <a href="#kontak-section" className="customer-footer-col-link">
+                <a href="#kontak-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Kemitraan Resto / Kafe
                 </a>
               </li>
               <li>
-                <a href="#about-us-section" className="customer-footer-col-link">
+                <a href="#about-us-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Program Food Bank
                 </a>
               </li>
@@ -119,26 +119,26 @@ export function CustomerFooter({
           </div>
 
           {/* Links Column 3: Jaminan & Bantuan */}
-          <div className="customer-footer-links-col">
-            <h4 className="customer-footer-col-title">Jaminan & Bantuan</h4>
-            <ul className="customer-footer-col-list">
+          <div className="flex flex-col">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Jaminan & Bantuan</h4>
+            <ul className="flex flex-col gap-2.5">
               <li>
-                <a href="#kontak-section" className="customer-footer-col-link">
+                <a href="#kontak-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Kebijakan Pengembalian
                 </a>
               </li>
               <li>
-                <a href="#about-us-section" className="customer-footer-col-link">
+                <a href="#about-us-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Standar Kebersihan Makanan
                 </a>
               </li>
               <li>
-                <a href="#kontak-section" className="customer-footer-col-link">
+                <a href="#kontak-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Pusat Bantuan & Kontak
                 </a>
               </li>
               <li>
-                <a href="#kontak-section" className="customer-footer-col-link">
+                <a href="#kontak-section" className="text-xs text-gray-400 hover:text-white transition-colors">
                   Syarat & Ketentuan Layanan
                 </a>
               </li>
@@ -147,21 +147,21 @@ export function CustomerFooter({
         </div>
 
         {/* Bottom Copyright & Security Bar */}
-        <div className="customer-footer-bottom-bar">
-          <p className="customer-footer-copyright">
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+          <p>
             © 2026 RescueBite Indonesia. Part of Food Rescue Movement. All Rights Reserved.
           </p>
 
-          <div className="customer-footer-certifications">
-            <span className="customer-footer-cert-badge">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-emerald-400 font-semibold">
               🛡️ Terverifikasi 100% Keamanan Pangan
             </span>
-            <span className="customer-footer-separator">•</span>
-            <a href="#kontak-section" className="customer-footer-sublink">
+            <span>•</span>
+            <a href="#kontak-section" className="hover:text-white transition-colors">
               Privasi
             </a>
-            <span className="customer-footer-separator">•</span>
-            <a href="#kontak-section" className="customer-footer-sublink">
+            <span>•</span>
+            <a href="#kontak-section" className="hover:text-white transition-colors">
               Kebijakan Cookie
             </a>
           </div>

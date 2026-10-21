@@ -221,16 +221,16 @@ export function StoreInfoForm({
   };
 
   return (
-    <div className="profile-outline-card">
-      <h2 className="card-outline-title">Informasi Toko</h2>
+    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-black font-display">Informasi Toko</h2>
 
-      <form id="form-info-toko" className="store-info-form" onSubmit={handleSubmit} noValidate>
+      <form id="form-info-toko" className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
         {/* Avatar & Store Name Row */}
-        <div className="form-avatar-name-row">
-          <div className="avatar-upload-block">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <label
               htmlFor="store-logo-file"
-              className="store-avatar-circle"
+              className="relative w-20 h-20 rounded-full border border-gray-300 flex items-center justify-center bg-[#c6ea8d] overflow-hidden cursor-pointer transition-transform hover:scale-105 shrink-0"
               id="store-avatar-preview"
               tabIndex={0}
               role="button"
@@ -246,18 +246,18 @@ export function StoreInfoForm({
                 <img
                   src={avatarPreview}
                   alt="Logo Toko"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                  className="w-full h-full object-cover rounded-full"
                 />
               ) : (
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l2-5h14l2 5" />
                   <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
                   <path d="M9 22V12h6v10" />
                   <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
                 </svg>
               )}
-              <div className="avatar-badge-upload" title="Pilih foto untuk logo toko">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white shadow-md border border-gray-300 flex items-center justify-center" title="Pilih foto untuk logo toko">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
@@ -267,7 +267,7 @@ export function StoreInfoForm({
 
             <label
               htmlFor="store-logo-file"
-              className="btn-ubah-logo"
+              className="px-3 py-1.5 text-xs font-bold text-gray-800 bg-gray-200 hover:bg-gray-300 rounded-xl cursor-pointer transition-colors select-none"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -284,19 +284,19 @@ export function StoreInfoForm({
               type="file"
               id="store-logo-file"
               accept="image/*"
-              className="visually-hidden"
+              className="sr-only"
               aria-label="Upload logo toko"
               onChange={handleLogoUpload}
             />
           </div>
 
-          <div className="form-group flex-grow">
-            <label htmlFor="nama-toko" className="field-label">Nama Toko</label>
+          <div className="flex flex-col gap-1.5 flex-1 w-full">
+            <label htmlFor="nama-toko" className="text-sm font-bold text-black font-display">Nama Toko</label>
             <input
               type="text"
               id="nama-toko"
               name="namaToko"
-              className="outline-input"
+              className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeName}
               required
               onChange={(e) => setStoreName(e.target.value)}
@@ -305,12 +305,12 @@ export function StoreInfoForm({
         </div>
 
         {/* Deskripsi Toko */}
-        <div className="form-group">
-          <label htmlFor="deskripsi-toko" className="field-label">Deskripsi Toko</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="deskripsi-toko" className="text-sm font-bold text-black font-display">Deskripsi Toko</label>
           <textarea
             id="deskripsi-toko"
             name="deskripsiToko"
-            className="outline-textarea"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors resize-none leading-relaxed"
             rows={4}
             value={storeDesc}
             onChange={(e) => setStoreDesc(e.target.value)}
@@ -318,26 +318,26 @@ export function StoreInfoForm({
         </div>
 
         {/* WhatsApp & Email Row */}
-        <div className="form-row-two-col">
-          <div className="form-group">
-            <label htmlFor="wa-toko" className="field-label">Nomor WhatsApp</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="wa-toko" className="text-sm font-bold text-black font-display">Nomor WhatsApp</label>
             <input
               type="tel"
               id="wa-toko"
               name="nomorWa"
-              className="outline-input"
+              className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeWa}
               required
               onChange={(e) => setStoreWa(e.target.value)}
             />
           </div>
-          <div className="form-group">
-            <label htmlFor="email-toko" className="field-label">Email Toko</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email-toko" className="text-sm font-bold text-black font-display">Email Toko</label>
             <input
               type="email"
               id="email-toko"
               name="emailToko"
-              className="outline-input"
+              className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeEmail}
               required
               onChange={(e) => setStoreEmail(e.target.value)}
@@ -346,22 +346,16 @@ export function StoreInfoForm({
         </div>
 
         {/* Alamat Toko */}
-        <div className="form-group position-relative" id="alamat-search-group">
-          <label htmlFor="alamat-toko" className="field-label">Alamat Toko</label>
-          <div className="search-input-wrapper">
-            <span className="search-input-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </span>
+        <div className="flex flex-col gap-1.5 relative" id="alamat-search-group">
+          <label htmlFor="alamat-toko" className="text-sm font-bold text-black font-display">Alamat Toko</label>
+          <div className="relative flex items-center">
             <input
               type="text"
               id="alamat-toko"
               name="alamatToko"
-              className="outline-input search-outline-input"
+              className="w-full px-4 pr-10 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={addressValue}
-              placeholder="Cari jalan, tempat, toko (misal: piaggone)..."
+              placeholder="Cari jalan, tempat, toko (misal: Jl. Veteran)..."
               autoComplete="off"
               required
               onChange={handleAddressInput}
@@ -369,7 +363,7 @@ export function StoreInfoForm({
             {addressValue && (
               <button
                 type="button"
-                className="search-clear-btn"
+                className="absolute right-3.5 p-1 text-gray-400 hover:text-black cursor-pointer"
                 id="btn-clear-alamat"
                 aria-label="Hapus pencarian alamat"
                 onClick={handleClearAddress}
@@ -380,32 +374,32 @@ export function StoreInfoForm({
                 </svg>
               </button>
             )}
-            {isSearchingOSM && <div className="search-spinner" id="search-spinner" aria-hidden="true" />}
+            {isSearchingOSM && <div className="absolute right-3.5 w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" id="search-spinner" aria-hidden="true" />}
           </div>
 
           {/* Autocomplete Suggestions Dropdown for Alamat */}
           {showOsmDropdown && (
-            <ul className="autocomplete-dropdown-list" id="alamat-suggestions-dropdown" role="listbox">
+            <ul className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto z-40 p-1.5 flex flex-col gap-0.5" id="alamat-suggestions-dropdown" role="listbox">
               {osmSuggestions.length === 0 ? (
-                <li className="autocomplete-empty-state">
+                <li className="p-3 text-xs text-gray-500 text-center">
                   Tidak ada hasil ditemukan di OpenStreetMap untuk "{addressValue}"
                 </li>
               ) : (
                 osmSuggestions.map((item) => (
                   <li
                     key={`${item.title}-${item.lat}-${item.lng}`}
-                    className="autocomplete-dropdown-item"
+                    className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-gray-100 text-left transition-colors cursor-pointer select-none"
                     onClick={() => handleSelectOsmItem(item)}
                   >
-                    <div className="autocomplete-item-icon">
+                    <div className="text-black mt-0.5 shrink-0">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
                         <circle cx="12" cy="10" r="2.5" />
                       </svg>
                     </div>
-                    <div className="autocomplete-item-content">
-                      <span className="autocomplete-item-title">{item.title}</span>
-                      <span className="autocomplete-item-sub">{item.subtitle}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-gray-900 truncate">{item.title}</span>
+                      <span className="text-[11px] text-gray-500 truncate">{item.subtitle}</span>
                     </div>
                   </li>
                 ))
@@ -415,23 +409,23 @@ export function StoreInfoForm({
         </div>
 
         {/* Kota & Kecamatan Cascading Autocomplete */}
-        <div className="form-row-two-col">
-          <div className="form-group position-relative" id="kota-input-group">
-            <label htmlFor="kota-toko" className="field-label">Kota</label>
-            <div className="autocomplete-input-wrapper">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5 relative" id="kota-input-group">
+            <label htmlFor="kota-toko" className="text-sm font-bold text-black font-display">Kota</label>
+            <div className="relative flex items-center">
               <input
                 type="text"
                 id="kota-toko"
                 name="kotaToko"
-                className="outline-input"
+                className="w-full px-4 py-3 pr-8 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
                 value={cityValue}
-                placeholder="Ketik nama kota (misal: M)..."
+                placeholder="Ketik nama kota (misal: Malang)..."
                 autoComplete="off"
                 required
                 onFocus={handleKotaFocus}
                 onChange={handleKotaInput}
               />
-              <span className="dropdown-chevron-icon" aria-hidden="true">
+              <span className="absolute right-3 pointer-events-none text-gray-500" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -439,25 +433,25 @@ export function StoreInfoForm({
             </div>
 
             {showCityDropdown && (
-              <ul className="autocomplete-dropdown-list" id="kota-suggestions-dropdown" role="listbox">
+              <ul className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto z-40 p-1.5 flex flex-col gap-0.5" id="kota-suggestions-dropdown" role="listbox">
                 {citySuggestions.length === 0 ? (
-                  <li className="autocomplete-empty-state">Kota tidak ditemukan</li>
+                  <li className="p-3 text-xs text-gray-500 text-center">Kota tidak ditemukan</li>
                 ) : (
                   citySuggestions.map((c) => (
                     <li
                       key={c.name}
-                      className="autocomplete-dropdown-item"
+                      className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-gray-100 text-left transition-colors cursor-pointer select-none"
                       onClick={() => handleSelectKota(c)}
                     >
-                      <div className="autocomplete-item-icon">
+                      <div className="text-black mt-0.5 shrink-0">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
                       </div>
-                      <div className="autocomplete-item-content">
-                        <span className="autocomplete-item-title">{c.name}</span>
-                        <span className="autocomplete-item-sub">{c.province} &bull; {c.kecamatans.length} Kecamatan</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-gray-900 truncate">{c.name}</span>
+                        <span className="text-[11px] text-gray-500 truncate">{c.province} &bull; {c.kecamatans.length} Kecamatan</span>
                       </div>
                     </li>
                   ))
@@ -466,14 +460,14 @@ export function StoreInfoForm({
             )}
           </div>
 
-          <div className="form-group position-relative" id="kecamatan-input-group">
-            <label htmlFor="kecamatan-toko" className="field-label">Kecamatan</label>
-            <div className="autocomplete-input-wrapper">
+          <div className="flex flex-col gap-1.5 relative" id="kecamatan-input-group">
+            <label htmlFor="kecamatan-toko" className="text-sm font-bold text-black font-display">Kecamatan</label>
+            <div className="relative flex items-center">
               <input
                 type="text"
                 id="kecamatan-toko"
                 name="kecamatanToko"
-                className="outline-input"
+                className="w-full px-4 py-3 pr-8 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
                 value={districtValue}
                 placeholder="Pilih kecamatan..."
                 autoComplete="off"
@@ -481,7 +475,7 @@ export function StoreInfoForm({
                 onFocus={handleDistrictFocus}
                 onChange={handleDistrictInput}
               />
-              <span className="dropdown-chevron-icon" aria-hidden="true">
+              <span className="absolute right-3 pointer-events-none text-gray-500" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -489,27 +483,27 @@ export function StoreInfoForm({
             </div>
 
             {showDistrictDropdown && (
-              <ul className="autocomplete-dropdown-list" id="kecamatan-suggestions-dropdown" role="listbox">
+              <ul className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto z-40 p-1.5 flex flex-col gap-0.5" id="kecamatan-suggestions-dropdown" role="listbox">
                 {districtSuggestions.length === 0 ? (
-                  <li className="autocomplete-empty-state">
+                  <li className="p-3 text-xs text-gray-500 text-center">
                     {!cityValue ? 'Pilih kota terlebih dahulu' : 'Kecamatan tidak ditemukan'}
                   </li>
                 ) : (
                   districtSuggestions.map((k) => (
                     <li
                       key={`${k.name}-${k.lat}`}
-                      className="autocomplete-dropdown-item"
+                      className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-gray-100 text-left transition-colors cursor-pointer select-none"
                       onClick={() => handleSelectDistrict(k)}
                     >
-                      <div className="autocomplete-item-icon">
+                      <div className="text-black mt-0.5 shrink-0">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                           <circle cx="12" cy="10" r="3" />
                         </svg>
                       </div>
-                      <div className="autocomplete-item-content">
-                        <span className="autocomplete-item-title">Kecamatan {k.name}</span>
-                        <span className="autocomplete-item-sub">{cityValue || 'Indonesia'}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-gray-900 truncate">Kecamatan {k.name}</span>
+                        <span className="text-[11px] text-gray-500 truncate">{cityValue || 'Indonesia'}</span>
                       </div>
                     </li>
                   ))
@@ -519,8 +513,12 @@ export function StoreInfoForm({
           </div>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn-save-primary" id="btn-save-profile">
+        <div className="pt-2">
+          <button
+            type="submit"
+            className="w-full py-3.5 px-6 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+            id="btn-save-profile"
+          >
             Simpan Perubahan
           </button>
         </div>

@@ -1,7 +1,5 @@
 /* Global Entry Styles */
 @import "tailwindcss";
-@import './styles/rescuebyte.css';
-@import './styles/customer.css';
 @import 'leaflet/dist/leaflet.css';
 
 @theme {
@@ -10,4 +8,40 @@
   --font-display: 'Sora', sans-serif;
   --font-sora: 'Sora', sans-serif;
   --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+
+  --color-primary: #15803d;
+  --color-primary-dark: #166534;
+  --color-primary-light: #22c55e;
+  --color-brand-green: #3c6a00;
+  --color-brand-lime: #bef264;
+  --color-brand-gold: #eab308;
+  --color-brand-red: #ef4444;
+  --color-surface-app: #f7f7f5;
+  --color-surface-card: #ffffff;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Ensure Brand Loading Overlay covers every element including Leaflet and Header */
+#brand-loading-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+}
+
+/* Isolate Leaflet map stacking context */
+#store-map-wrapper {
+  isolation: isolate;
+  position: relative;
+  z-index: 1;
+}
+

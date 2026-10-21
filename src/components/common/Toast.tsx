@@ -6,17 +6,19 @@ export interface ToastProps {
 /**
  * Toast Notification Component
  * Displays temporary feedback messages with slide-in animation.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
+ * Styled with Tailwind CSS utility classes.
  */
 export function Toast({ message, isVisible }: ToastProps) {
   return (
     <div
-      className={`toast-notification ${isVisible ? 'show' : ''}`}
+      className={`fixed bottom-6 right-6 z-[9990] flex items-center gap-3 px-4 py-3 bg-gray-900/95 text-white rounded-xl shadow-xl backdrop-blur-sm transition-all duration-300 pointer-events-none ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}
       id="toast-notification"
       role="status"
       aria-live="polite"
     >
-      <div className="toast-icon">
+      <div className="text-emerald-400 shrink-0">
         <svg
           width="20"
           height="20"
@@ -31,7 +33,7 @@ export function Toast({ message, isVisible }: ToastProps) {
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       </div>
-      <div className="toast-message" id="toast-message">
+      <div className="text-sm font-medium" id="toast-message">
         {message}
       </div>
     </div>

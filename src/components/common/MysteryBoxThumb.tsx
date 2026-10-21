@@ -9,6 +9,7 @@ interface MysteryBoxThumbProps {
 /**
  * Reusable Mystery Box Product Thumbnail
  * Displays either user-uploaded photo or high-fidelity cardboard mystery box artwork from assets.
+ * Styled with Tailwind CSS classes.
  */
 export function MysteryBoxThumb({
   imageUrl,
@@ -16,12 +17,14 @@ export function MysteryBoxThumb({
   className = '',
 }: MysteryBoxThumbProps) {
   return (
-    <div className={`mystery-box-thumb-wrapper ${className}`} aria-label={altText}>
+    <div
+      className={`relative overflow-hidden flex items-center justify-center rounded-xl bg-gray-50 border border-gray-200/80 ${className}`}
+      aria-label={altText}
+    >
       <img
         src={imageUrl || mystBoxSvg}
         alt={altText}
-        className="mystery-box-img-preview"
-        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        className="w-full h-full object-contain p-1"
       />
     </div>
   );

@@ -22,7 +22,7 @@ export interface StoreProfileProps {
 /**
  * StoreProfile Page View
  * Composes StoreInfoForm on the left, and OperationalCard + StoreLocationMap on the right.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
+ * Styled with Tailwind CSS classes.
  */
 export function StoreProfile({
   storeName,
@@ -72,10 +72,10 @@ export function StoreProfile({
   };
 
   return (
-    <section className="page-view active" id="view-profil" aria-labelledby="heading-profil">
-      <h1 className="visually-hidden" id="heading-profil">Pengaturan Profil {storeName}</h1>
+    <section className="flex flex-col gap-6" id="view-profil" aria-labelledby="heading-profil">
+      <h1 className="sr-only" id="heading-profil">Pengaturan Profil {storeName}</h1>
 
-      <div className="profile-layout-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column: Informasi Toko Form */}
         <StoreInfoForm
           initialName={storeName}
@@ -93,7 +93,7 @@ export function StoreProfile({
         />
 
         {/* Right Column: Operasional & Peta Lokasi Toko */}
-        <div className="profile-right-column">
+        <div className="flex flex-col gap-6">
           <OperationalCard onShowToast={onShowToast} />
 
           <StoreLocationMap

@@ -33,6 +33,7 @@ const TEMPLATES = [
 /**
  * ProductDescriptionModal
  * Rich modal editor for product description with quick presets, formatting helpers, and character counter.
+ * Styled with Tailwind CSS classes.
  */
 export function ProductDescriptionModal({
   isOpen,
@@ -95,17 +96,17 @@ export function ProductDescriptionModal({
   };
 
   return (
-    <div className="product-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
-      <div className="product-modal-container" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
+      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-200 overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
-        <div className="product-modal-header">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
-            <h3 className="product-modal-title" id="modal-desc-title">Editor Deskripsi Produk</h3>
-            <p className="product-modal-sub">Lengkapi deskripsi menu surplus makanan agar pembeli lebih yakin</p>
+            <h3 className="text-lg font-bold text-gray-900 font-display" id="modal-desc-title">Editor Deskripsi Produk</h3>
+            <p className="text-xs text-gray-500">Lengkapi deskripsi menu surplus makanan agar pembeli lebih yakin</p>
           </div>
           <button
             type="button"
-            className="product-modal-close-btn"
+            className="w-9 h-9 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Tutup Editor"
             onClick={onClose}
           >
@@ -117,14 +118,14 @@ export function ProductDescriptionModal({
         </div>
 
         {/* Preset Templates */}
-        <div className="product-modal-presets">
-          <span className="preset-label">Template Cepat:</span>
-          <div className="preset-tags">
+        <div className="p-3.5 bg-gray-50 border-b border-gray-100 flex items-center gap-2.5 flex-wrap">
+          <span className="text-xs font-bold text-gray-500 shrink-0">Template Cepat:</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
             {TEMPLATES.map((tpl) => (
               <button
                 key={tpl.label}
                 type="button"
-                className="preset-chip"
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:border-black hover:text-black transition-colors cursor-pointer"
                 onClick={() => handleApplyTemplate(tpl.content)}
               >
                 + {tpl.label}
@@ -134,11 +135,11 @@ export function ProductDescriptionModal({
         </div>
 
         {/* Toolbar & Tabs */}
-        <div className="product-modal-toolbar">
-          <div className="toolbar-tools">
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 border-b border-gray-100 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              className="toolbar-btn"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
               title="Tebal"
               onClick={() => insertFormatting('**', '**')}
             >
@@ -146,15 +147,15 @@ export function ProductDescriptionModal({
             </button>
             <button
               type="button"
-              className="toolbar-btn italic-tool"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer italic"
               title="Miring"
               onClick={() => insertFormatting('*', '*')}
             >
-              <i>I</i>
+              I
             </button>
             <button
               type="button"
-              className="toolbar-btn"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
               title="Poin Bullet"
               onClick={() => insertFormatting('\n• ')}
             >
@@ -162,7 +163,7 @@ export function ProductDescriptionModal({
             </button>
             <button
               type="button"
-              className="toolbar-btn clear-tool"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer ml-1"
               title="Bersihkan Teks"
               onClick={() => setText('')}
             >
@@ -170,17 +171,21 @@ export function ProductDescriptionModal({
             </button>
           </div>
 
-          <div className="toolbar-tabs">
+          <div className="flex items-center gap-1 bg-gray-200/60 p-0.5 rounded-xl">
             <button
               type="button"
-              className={`toolbar-tab-btn ${activeTab === 'editor' ? 'active' : ''}`}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                activeTab === 'editor' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
               onClick={() => setActiveTab('editor')}
             >
               Editor
             </button>
             <button
               type="button"
-              className={`toolbar-tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                activeTab === 'preview' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
               onClick={() => setActiveTab('preview')}
             >
               Pratinjau
@@ -189,11 +194,11 @@ export function ProductDescriptionModal({
         </div>
 
         {/* Editor Body */}
-        <div className="product-modal-body">
+        <div className="p-4 flex-1 min-h-[220px]">
           {activeTab === 'editor' ? (
             <textarea
               ref={textareaRef}
-              className="product-modal-textarea"
+              className="w-full h-full min-h-[200px] p-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors resize-none leading-relaxed"
               placeholder="Tuliskan deskripsi produk, variasi menu, atau catatan pengambilan di sini..."
               value={text}
               maxLength={1200}
@@ -201,35 +206,39 @@ export function ProductDescriptionModal({
               rows={8}
             />
           ) : (
-            <div className="product-modal-preview">
+            <div className="w-full min-h-[200px] p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800 space-y-2">
               {text.trim() ? (
-                <div className="preview-content-rendered">
+                <div>
                   {text.split('\n').map((line, idx) => (
-                    <p key={idx} className={line.trim() ? 'preview-paragraph' : 'preview-spacer'}>
+                    <p key={idx} className={line.trim() ? 'mb-1 leading-relaxed' : 'h-2'}>
                       {line}
                     </p>
                   ))}
                 </div>
               ) : (
-                <div className="preview-empty">Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.</div>
+                <div className="text-gray-400 text-xs italic text-center py-10">Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.</div>
               )}
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="product-modal-footer">
-          <div className="char-counter">
-            <span className={text.length > 1000 ? 'text-amber-600 font-semibold' : ''}>
+        <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/50">
+          <div className="text-xs text-gray-500 font-medium">
+            <span className={text.length > 1000 ? 'text-amber-600 font-bold' : ''}>
               {text.length}
             </span>{' '}
             / 1200 karakter
           </div>
-          <div className="modal-actions">
-            <button type="button" className="btn-modal-cancel" onClick={onClose}>
+          <div className="flex items-center gap-3">
+            <button type="button" className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer" onClick={onClose}>
               Batal
             </button>
-            <button type="button" className="btn-modal-save" onClick={handleSave}>
+            <button
+              type="button"
+              className="px-5 py-2.5 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+              onClick={handleSave}
+            >
               Terapkan Deskripsi
             </button>
           </div>

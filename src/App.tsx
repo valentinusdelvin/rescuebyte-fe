@@ -81,6 +81,7 @@ export function App() {
     setActiveView(viewId);
     if (label) setActiveLabel(label);
     if (tab) setOrderTab(tab);
+    window.scrollTo({ top: 0, behavior: 'instant' });
 
     if (viewId === 'view-customer-home') {
       window.history.replaceState(null, '', '#beranda-customer');
@@ -151,7 +152,7 @@ export function App() {
             onShowToast={showToast}
           />
 
-          <div className="app-layout">
+          <div className="flex min-h-[calc(100vh-80px)] bg-[#f7f7f5] relative">
             <Sidebar
               activeView={activeView}
               storeName={storeName}
@@ -160,7 +161,7 @@ export function App() {
               onCloseMobile={() => setIsMobileOpen(false)}
             />
 
-            <main className="app-main" id="main-content">
+            <main className="flex-1 p-[32px_36px] max-md:p-[24px_20px] bg-[#f7f7f5] overflow-y-auto min-w-0" id="main-content">
               {activeView === 'view-beranda' && (
                 <Dashboard
                   onShowToast={showToast}

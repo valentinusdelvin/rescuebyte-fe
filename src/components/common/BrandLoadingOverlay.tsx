@@ -16,7 +16,6 @@ interface RadialTick {
  * 24-segment radial progress indicator:
  * Smooth gradient from deep forest green (#1B5E20) through brand primary (#2E7D32)
  * to luminous light mint (#EBFCEE), with delicately stepped opacities (1.00 down to 0.11).
- * Leaves no awkward empty gaps, forming an exquisite continuous ring around the RescueBite logo.
  */
 const RADIAL_TICKS: RadialTick[] = [
   { color: '#1B5E20', opacity: 1.0 },
@@ -47,14 +46,7 @@ const RADIAL_TICKS: RadialTick[] = [
 
 /**
  * BrandLoadingOverlay Component
- *
- * Modern, premium, minimalist brand loading indicator:
- * - Transparent container pod (no solid white card/frame)
- * - Prominent, crisp, enlarged RescueBite logo in the center
- * - Continuous, silky-smooth 24-ray radial spinner in dark-to-light green gradient
- * - Balanced, translucent dark slate overlay with restrained optical backdrop blur
- * - Soft enter and exit opacity transitions
- * - Supports prefers-reduced-motion
+ * Styled with Tailwind CSS.
  */
 export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
   const [isRendered, setIsRendered] = useState(isVisible);
@@ -78,22 +70,27 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
 
   return (
     <div
-      className={`brand-loading-backdrop ${isExiting ? 'is-exiting' : ''}`}
+      id="brand-loading-overlay"
+      style={{ zIndex: 99999 }}
+      className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
+        isExiting ? 'opacity-0' : 'opacity-100'
+      }`}
       role="status"
       aria-live="polite"
       aria-busy="true"
-      id="brand-loading-overlay"
     >
-      <div className={`brand-spinner-pod ${isExiting ? 'is-exiting' : ''}`}>
-        {/* Radial tick spinner around the logo (170x170 viewBox with center at 85, 85) */}
+      <div className={`relative w-[170px] h-[170px] flex items-center justify-center transition-transform duration-200 ${
+        isExiting ? 'scale-95' : 'scale-100'
+      }`}>
+        {/* Radial tick spinner around the logo */}
         <svg
-          className="brand-radial-spinner-svg"
+          className="w-[170px] h-[170px]"
           viewBox="0 0 170 170"
           width="170"
           height="170"
           aria-hidden="true"
         >
-          <g className="brand-radial-ticks-group">
+          <g className="animate-spin origin-center">
             {RADIAL_TICKS.map((tick, i) => (
               <line
                 key={i}
@@ -111,12 +108,12 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
           </g>
         </svg>
 
-        {/* RescueBite logo centered, enlarged, and razor sharp */}
-        <div className="brand-spinner-logo-center">
+        {/* RescueBite logo centered */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <img
             src={rescuebyteLogo}
             alt="RescueBite"
-            className="brand-loading-logo"
+            className="w-[86px] h-[78px] object-contain drop-shadow-sm"
             width="86"
             height="78"
             loading="eager"

@@ -19,9 +19,8 @@ const PRODUCT_TABS: { id: ProductStatusTab; label: string }[] = [
 
 /**
  * Daganganku Page Component
- * Displays merchant active products list segmented by status tabs,
- * with search, filtering, and stock/status actions.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
+ * Displays merchant active products list segmented by status tabs.
+ * Styled with Tailwind CSS classes.
  */
 export function Daganganku({
   onShowToast,
@@ -69,7 +68,7 @@ export function Daganganku({
 
     // 4. Sort order
     if (sortOrder === 'terbaru') {
-      // Keep default or by ID
+      // Keep default
     } else if (sortOrder === 'terlama') {
       result.reverse();
     } else if (sortOrder === 'harga_terendah') {
@@ -99,7 +98,7 @@ export function Daganganku({
     setProducts(updated);
 
     if (onShowToast) {
-      onShowToast(`Status "${item.name}" diubah menjadi ${nextStatus === 'aktif' ? 'Aktif' : 'Nonaktif'}`);
+      onShowToast(`Status "${item.name}" berhasil diubah menjadi ${nextStatus === 'aktif' ? 'Aktif' : 'Habis'}`);
     }
   };
 
@@ -107,27 +106,23 @@ export function Daganganku({
     setItemToDelete(item);
   };
 
-  const handleExecuteDelete = async () => {
+  const handleExecuteDelete = () => {
     if (!itemToDelete) return;
     const target = itemToDelete;
-    setItemToDelete(null);
-
-    if (onTriggerLoading) {
-      await onTriggerLoading('Menghapus Produk...', 'Memperbarui etalase toko', 800);
-    }
     const updated = deleteProduct(target.id);
     setProducts(updated);
+    setItemToDelete(null);
     if (onShowToast) onShowToast(`Produk "${target.name}" berhasil dihapus`);
   };
 
   return (
-    <section className="page-view active" id="view-daganganku" aria-labelledby="heading-daganganku">
-      <h2 className="section-title" id="heading-daganganku">Daganganku</h2>
+    <section className="flex flex-col gap-6" id="view-daganganku" aria-labelledby="heading-daganganku">
+      <h2 className="text-xl font-bold text-gray-900 font-display" id="heading-daganganku">Daganganku</h2>
 
-      <div className="daganganku-main-card">
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs flex flex-col overflow-hidden">
         {/* Horizontal Navigation Tabs */}
-        <div className="order-tabs-wrapper">
-          <nav className="order-tabs-list" role="tablist" aria-label="Filter Status Dagangan">
+        <div className="border-b border-gray-200/80 overflow-x-auto">
+          <nav className="flex items-center min-w-max px-4" role="tablist" aria-label="Filter Status Dagangan">
             {PRODUCT_TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -137,7 +132,9 @@ export function Daganganku({
                   role="tab"
                   id={`tab-product-${tab.id}`}
                   aria-selected={isActive}
-                  className={`order-tab-btn ${isActive ? 'active' : ''}`}
+                  className={`px-5 py-4 text-xs font-bold border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
+                    isActive ? 'border-[#15803d] text-[#15803d]' : 'border-transparent text-gray-500 hover:text-[#15803d]'
+                  }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
@@ -148,11 +145,11 @@ export function Daganganku({
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="order-filters-row">
+        <div className="p-4 md:p-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-b border-gray-100">
           {/* Search Box */}
-          <div className="order-search-box">
+          <div className="relative flex-1 flex items-center">
             <svg
-              className="order-search-icon"
+              className="absolute left-3.5 text-gray-400 pointer-events-none"
               width="18"
               height="18"
               viewBox="0 0 24 24"
@@ -168,7 +165,7 @@ export function Daganganku({
             </svg>
             <input
               type="text"
-              className="order-search-input"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-black bg-white"
               placeholder="Cari Nama Produk..."
               aria-label="Cari Nama Produk"
               value={searchQuery}
@@ -177,9 +174,9 @@ export function Daganganku({
           </div>
 
           {/* Filter Dropdown */}
-          <div className="order-filter-dropdown">
+          <div className="relative flex items-center min-w-[150px]">
             <select
-              className="order-filter-select"
+              className="w-full appearance-none bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-black focus:outline-black cursor-pointer"
               aria-label="Pilih Filter Kategori"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
@@ -188,15 +185,15 @@ export function Daganganku({
               <option value="diskon_tinggi">Diskon Tertinggi</option>
               <option value="stok_sedikit">Stok Menipis</option>
             </select>
-            <svg className="order-filter-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="absolute right-3 pointer-events-none text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
 
           {/* Sort Dropdown */}
-          <div className="order-filter-dropdown order-sort-dropdown">
+          <div className="relative flex items-center min-w-[160px]">
             <select
-              className="order-filter-select"
+              className="w-full appearance-none bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-black focus:outline-black cursor-pointer"
               aria-label="Urutan Tanggal"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
@@ -206,25 +203,25 @@ export function Daganganku({
               <option value="harga_terendah">Harga Terendah</option>
               <option value="harga_tertinggi">Harga Tertinggi</option>
             </select>
-            <svg className="order-filter-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="absolute right-3 pointer-events-none text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
         </div>
 
         {/* Product Items List */}
-        <div className="product-list-container">
+        <div className="p-4 md:p-6 flex flex-col gap-3">
           {filteredProducts.length === 0 ? (
-            <div className="daganganku-empty-state">
-              <div className="empty-box-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div className="py-12 px-4 text-center flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 mb-3 border border-gray-100">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                   <path d="m3.3 7 8.7 5 8.7-5" />
                   <path d="M12 22V12" />
                 </svg>
               </div>
-              <h3 className="empty-state-title">Belum ada dagangan pada filter ini</h3>
-              <p className="empty-state-sub">
+              <h3 className="text-base font-bold text-gray-900 font-display">Belum ada dagangan pada filter ini</h3>
+              <p className="text-xs text-gray-500 max-w-sm mt-1">
                 {searchQuery
                   ? `Tidak ada produk yang cocok dengan "${searchQuery}".`
                   : 'Mulai buat paket mystery box atau surplus makanan untuk toko Anda sekarang.'}
@@ -232,7 +229,7 @@ export function Daganganku({
               {onNavigateToCreate && (
                 <button
                   type="button"
-                  className="btn-save-primary mt-4"
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                   onClick={onNavigateToCreate}
                 >
                   Buat Dagangan Sekarang
@@ -245,48 +242,53 @@ export function Daganganku({
               const isSegeraHabis = item.status === 'segera_habis' || (item.stock > 0 && item.stock <= 2);
 
               return (
-                <article key={item.id} className="product-row-card">
+                <article key={item.id} className="p-4 rounded-2xl border border-gray-200/80 bg-white hover:border-gray-400 hover:shadow-xs transition-all flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {/* Left: Thumbnail */}
-                  <div className="product-row-thumb">
+                  <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-200/80 flex items-center justify-center p-1 overflow-hidden shrink-0">
                     <img
                       src={item.imageUrl || mystBoxImg}
                       alt={item.name}
-                      className="product-row-img"
+                      className="w-full h-full object-contain"
                     />
                   </div>
 
                   {/* Center: Info */}
-                  <div className="product-row-info">
-                    <h4 className="product-row-title">{item.name}</h4>
-                    <p className="product-row-desc">{item.description}</p>
-                    <span className="product-row-date">{item.createdAt}</span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
+                    <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
+                    <span className="text-[11px] text-gray-400 mt-1">{item.createdAt}</span>
                   </div>
 
                   {/* Metrics Col 1: Stok */}
-                  <div className="product-row-metric metric-stock">
-                    <span className="metric-label">Stok</span>
-                    <div className="metric-stock-value">
-                      <span className="stock-number">{item.stock}</span>
-                      <span className="stock-divider">/{item.maxStock || 10}</span>
+                  <div className="flex flex-col items-start sm:items-center min-w-[70px]">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stok</span>
+                    <div className="mt-0.5">
+                      <span className="text-sm font-bold text-gray-900">{item.stock}</span>
+                      <span className="text-xs text-gray-400 font-normal">/{item.maxStock || 10}</span>
                     </div>
                   </div>
 
                   {/* Metrics Col 2: Harga */}
-                  <div className="product-row-metric metric-price">
-                    <span className="metric-label">Harga</span>
-                    <div className="price-stack">
-                      <span className="price-rescue">{formatRupiah(item.rescuePrice)}</span>
-                      <span className="price-normal">{formatRupiah(item.normalPrice)}</span>
+                  <div className="flex flex-col items-start sm:items-end min-w-[110px]">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Harga</span>
+                    <div className="flex flex-col items-start sm:items-end mt-0.5">
+                      <span className="text-sm font-extrabold text-black font-display">{formatRupiah(item.rescuePrice)}</span>
+                      <span className="text-[11px] text-gray-400 line-through">{formatRupiah(item.normalPrice)}</span>
                     </div>
                   </div>
 
                   {/* Status Badge */}
-                  <div className="product-row-status">
-                    <span className="metric-label">Status</span>
+                  <div className="flex flex-col items-start sm:items-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</span>
                     <button
                       type="button"
-                      className={`product-status-pill ${isAktif ? 'status-active' : isSegeraHabis ? 'status-warning' : 'status-inactive'
-                        }`}
+                      className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all hover:scale-105 cursor-pointer select-none ${
+                        isAktif
+                          ? 'bg-[#dcfce7] text-[#15803d]'
+                          : isSegeraHabis
+                          ? 'bg-[#fef3c7] text-[#b45309]'
+                          : 'bg-[#f3f4f6] text-[#6b7280]'
+                      }`}
                       title="Klik untuk mengubah status aktif/nonaktif"
                       onClick={() => handleToggleStatus(item)}
                     >
@@ -294,15 +296,15 @@ export function Daganganku({
                     </button>
                   </div>
 
-                  {/* Optional Delete/Quick action */}
+                  {/* Delete Button */}
                   <button
                     type="button"
-                    className="product-row-delete-btn"
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0 self-center"
                     title="Hapus Produk"
                     aria-label={`Hapus ${item.name}`}
                     onClick={() => handleRequestDelete(item)}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
@@ -324,3 +326,5 @@ export function Daganganku({
     </section>
   );
 }
+
+export default Daganganku;

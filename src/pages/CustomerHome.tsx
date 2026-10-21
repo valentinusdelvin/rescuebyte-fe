@@ -41,7 +41,7 @@ const POPULAR_BOXES: CustomerMysteryBox[] = [
   },
   {
     id: 'pop-2',
-    storeName: 'Sate Khas Senayan – GI',
+    storeName: 'Sate Khas Senayan - GI',
     category: '🍢 Indonesian Heritage Cuisine',
     remainingBoxesText: 'Sisa 3 Box',
     distanceText: '1.2 km',
@@ -211,7 +211,7 @@ export function CustomerHome({
   });
 
   return (
-    <div className="customer-page-root" id="customer-page-root">
+    <div className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased" id="customer-page-root">
       {/* 1. Floating Pill Header */}
       <CustomerHeader
         activeTab="beranda"
@@ -220,45 +220,45 @@ export function CustomerHome({
       />
 
       {/* 2. Hero Section */}
-      <section className="customer-hero-section" id="hero-section">
+      <section className="relative min-h-[520px] pt-28 pb-16 px-6 flex items-center overflow-hidden border-b border-black/5" id="hero-section">
         {/* Background photo & overlay */}
-        <div className="customer-hero-bg-layer">
+        <div className="absolute inset-0 z-0">
           <img
             src={heroBg}
             alt="Suasana Cafe RescueBite"
-            className="customer-hero-bg-img"
+            className="w-full h-full object-cover object-center brightness-95 contrast-105"
           />
-          <div className="customer-hero-overlay" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 sm:via-white/80 to-white/30" />
         </div>
 
-        {/* Ambient Floating Leaves SVGs */}
-        <div className="floating-leaf-anim leaf-1" aria-hidden="true">🍃</div>
-        <div className="floating-leaf-anim leaf-2" aria-hidden="true">🌱</div>
-        <div className="floating-leaf-anim leaf-3" aria-hidden="true">🌿</div>
+        {/* Ambient Floating Elements */}
+        <div className="absolute top-[15%] left-[45%] text-2xl opacity-75 pointer-events-none z-10 animate-bounce" aria-hidden="true">🍃</div>
+        <div className="absolute top-[35%] left-[55%] text-3xl opacity-75 pointer-events-none z-10 animate-pulse" aria-hidden="true">🌱</div>
+        <div className="absolute bottom-[20%] left-[40%] text-xl opacity-75 pointer-events-none z-10 animate-bounce" aria-hidden="true">🌿</div>
 
-        <div className="customer-hero-container">
-          <div className="customer-hero-grid">
+        <div className="relative z-10 w-full max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.85fr] items-center gap-10">
             {/* Left Headline & Value Proposition */}
-            <div className="customer-hero-content">
-              <span className="customer-hero-badge">
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#3c6a00] bg-[#3c6a00]/12 px-3.5 py-1.5 rounded-full mb-4 tracking-wide">
                 🌿 Selamatkan Makanan, Hemat Maksimal
               </span>
 
-              <h1 className="customer-hero-title">
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.18] text-[#0b1510] tracking-tight mb-4">
                 Selamatkan Makanan Lezat, <br />
-                <span className="customer-hero-title-highlight">
+                <span className="text-[#3c6a00]">
                   Hemat Hingga 70% Setiap Malam
                 </span>
               </h1>
 
-              <p className="customer-hero-subtitle">
+              <p className="text-sm sm:text-base leading-relaxed text-[#434844] max-w-xl mb-7">
                 Mystery Box berisi makanan berlebih berkualitas prima dari kafe, resto, dan bakery favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan bantu kurangi food waste!
               </p>
 
-              <div className="customer-hero-cta-group">
+              <div className="flex items-center gap-3.5 flex-wrap">
                 <a
                   href="#marketplace-section"
-                  className="customer-hero-primary-btn"
+                  className="inline-flex items-center gap-2 bg-[#0b1510] hover:bg-[#202a24] text-white px-6 py-3 rounded-full text-sm sm:text-[15px] font-semibold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById('marketplace-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -273,7 +273,7 @@ export function CustomerHome({
 
                 <a
                   href="#about-us-section"
-                  className="customer-hero-secondary-btn"
+                  className="inline-flex items-center bg-white/85 hover:bg-white border border-black/15 text-[#1b1c1c] px-5 py-2.5 rounded-full text-sm sm:text-[15px] font-semibold transition-all hover:border-black"
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById('about-us-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -285,15 +285,15 @@ export function CustomerHome({
             </div>
 
             {/* Right Hero Visual: Mystery Box with Warm Ray Lighting */}
-            <div className="customer-hero-visual">
-              <div className="customer-hero-box-card">
-                <div className="customer-hero-box-glow" />
+            <div className="flex justify-center items-center mt-8 lg:mt-0">
+              <div className="relative w-full max-w-[380px] bg-white/45 backdrop-blur-md border border-white/70 rounded-3xl p-6 shadow-xl text-center transition-transform hover:-translate-y-1">
+                <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-radial from-amber-400/30 via-lime-300/20 to-transparent blur-2xl pointer-events-none" />
                 <img
                   src={mystBoxImg}
                   alt="RescueBite Mystery Box"
-                  className="customer-hero-box-img"
+                  className="relative z-10 w-full max-h-60 object-contain drop-shadow-xl"
                 />
-                <div className="customer-hero-box-tag">
+                <div className="relative z-10 inline-block mt-3.5 text-xs sm:text-sm font-bold text-[#1b1c1c] bg-white border border-black/10 px-3.5 py-1.5 rounded-full shadow-xs">
                   ✨ Surprise Box Terbatas
                 </div>
               </div>
@@ -303,18 +303,18 @@ export function CustomerHome({
       </section>
 
       {/* 3. Section: Mystery Box Populer */}
-      <section className="customer-section-wrapper" id="marketplace-section">
-        <div className="customer-section-container">
+      <section className="px-6 py-10 lg:py-12" id="marketplace-section">
+        <div className="w-full max-w-7xl mx-auto">
           {/* Section Header */}
-          <div className="customer-section-header-row">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
             <div className="flex items-center gap-2.5">
               <span className="w-3 h-3 rounded-full bg-red-600 animate-pulse flex-shrink-0" />
-              <h2 className="customer-section-title">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
                 Mystery Box Populer
               </h2>
             </div>
 
-            <div className="customer-location-badge">
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
@@ -324,7 +324,7 @@ export function CustomerHome({
           </div>
 
           {/* Popular Cards Grid (3 Columns) */}
-          <div className="customer-cards-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {POPULAR_BOXES.map((box) => (
               <MysteryBoxCard
                 key={box.id}
@@ -338,22 +338,22 @@ export function CustomerHome({
       </section>
 
       {/* 4. Section: Mystery Box Populer di Sekitarmu (Radius 5 km) */}
-      <section className="customer-section-wrapper pt-6 pb-12">
-        <div className="customer-section-container">
+      <section className="px-6 pt-4 pb-12">
+        <div className="w-full max-w-7xl mx-auto">
           {/* Section Header with Filter Controls */}
-          <div className="customer-section-header-row items-start sm:items-center">
-            <h2 className="customer-section-title">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
               Mystery Box Populer di Sekitarmu (Radius 5 km)
             </h2>
 
             {/* Filter Dropdowns */}
-            <div className="customer-filter-group">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {/* Distance Filter */}
-              <div className="customer-filter-select-wrapper">
+              <div className="relative">
                 <label htmlFor="filter-distance" className="sr-only">Filter Jarak</label>
                 <select
                   id="filter-distance"
-                  className="customer-filter-select"
+                  className="appearance-none bg-white border border-black/15 rounded-full py-1.5 pl-3.5 pr-8 text-xs sm:text-sm font-semibold text-[#1b1c1c] cursor-pointer hover:border-[#3c6a00] focus:outline-none focus:ring-1 focus:ring-[#3c6a00] transition-colors"
                   value={selectedDistance}
                   onChange={(e) => setSelectedDistance(e.target.value)}
                 >
@@ -361,14 +361,19 @@ export function CustomerHome({
                   <option value="< 2 km">📍 Jarak: &lt; 2 km</option>
                   <option value="< 5 km">📍 Jarak: &lt; 5 km</option>
                 </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
 
               {/* Category Filter */}
-              <div className="customer-filter-select-wrapper">
+              <div className="relative">
                 <label htmlFor="filter-category" className="sr-only">Filter Kategori</label>
                 <select
                   id="filter-category"
-                  className="customer-filter-select"
+                  className="appearance-none bg-white border border-black/15 rounded-full py-1.5 pl-3.5 pr-8 text-xs sm:text-sm font-semibold text-[#1b1c1c] cursor-pointer hover:border-[#3c6a00] focus:outline-none focus:ring-1 focus:ring-[#3c6a00] transition-colors"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -376,11 +381,16 @@ export function CustomerHome({
                   <option value="Makanan Berat">🍱 Kategori: Makanan Berat</option>
                   <option value="Pastry & Bakery">🥐 Kategori: Pastry & Bakery</option>
                 </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
 
               {/* Grid Layout Toggle Icon */}
-              <div className="customer-layout-toggle-btn" title="Tampilan Grid Aktif">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg border border-black/15 bg-white text-[#1b1c1c] shadow-xs" title="Tampilan Grid Aktif">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="7" height="7" />
                   <rect x="14" y="3" width="7" height="7" />
                   <rect x="14" y="14" width="7" height="7" />
@@ -391,7 +401,7 @@ export function CustomerHome({
           </div>
 
           {/* Radius Cards Grid (3 Columns) */}
-          <div className="customer-cards-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRadiusBoxes.map((box) => (
               <MysteryBoxCard
                 key={box.id}
@@ -405,60 +415,62 @@ export function CustomerHome({
       </section>
 
       {/* 5. Section: About Us (Dual Organic Bento Cards with Lime Backdrop) */}
-      <section className="customer-about-section" id="about-us-section">
-        <div className="customer-about-container">
+      <section className="bg-[#f1fbe8] px-6 py-16 sm:py-20 relative overflow-hidden" id="about-us-section">
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-12 sm:gap-14">
           {/* Bento Card 1: Top */}
-          <div className="customer-bento-card">
-            <div className="customer-bento-content">
-              <span className="customer-bento-tag">About Us</span>
-              <h2 className="customer-bento-title">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] items-center gap-8 sm:gap-12">
+            <div>
+              <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2.5">
+                About Us
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold leading-tight text-[#0b1510] mb-4">
                 Lebih dari Sekadar <br />
                 <span className="text-[#3c6a00]">Makanan Murah</span>
               </h2>
-              <p className="customer-bento-desc">
+              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844]">
                 RescueBite bukan sekadar platform belanja diskon makanan. Kami hadir sebagai jembatan ekologis antara toko dan kafe berkualitas dengan kamu yang peduli. Setiap harinya, tonan makanan lezat dan higienis berisiko terbuang hanya karena pergantian display harian.
               </p>
-              <p className="customer-bento-desc mt-3">
+              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] mt-3">
                 Bersama RescueBite, kamu menyelamatkan hidangan berharga, memangkas jejak emisi karbon pangan, sekaligus menikmati kelezatan premium resto bintang lima dengan harga sangat terjangkau.
               </p>
             </div>
 
-            <div className="customer-bento-visual">
-              <div className="customer-bento-blob-frame">
+            <div className="flex justify-center items-center">
+              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[38%_62%_63%_37%/41%_44%_56%_59%] flex items-center justify-center shadow-lg p-7 transition-all duration-500 hover:rotate-1 hover:scale-105">
                 <img
                   src={mystBoxImg}
                   alt="RescueBite Mystery Box Organic Artwork"
-                  className="customer-bento-box-img"
+                  className="w-4/5 h-4/5 object-contain drop-shadow-md"
                 />
-                <div className="customer-bento-sparkle s-1">✨</div>
-                <div className="customer-bento-sparkle s-2">🌿</div>
+                <div className="absolute top-[12%] right-[14%] text-xl pointer-events-none">✨</div>
+                <div className="absolute bottom-[12%] left-[16%] text-xl pointer-events-none">🌿</div>
               </div>
             </div>
           </div>
 
           {/* Bento Card 2: Inverted Bottom */}
-          <div className="customer-bento-card inverted">
-            <div className="customer-bento-visual">
-              <div className="customer-bento-blob-frame">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] items-center gap-8 sm:gap-12">
+            <div className="flex justify-center items-center order-2 lg:order-1">
+              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[63%_37%_38%_62%/56%_59%_41%_44%] flex items-center justify-center shadow-lg p-7 transition-all duration-500 hover:rotate-1 hover:scale-105">
                 <img
                   src={mystBoxImg}
                   alt="Second Chance Food Rescue"
-                  className="customer-bento-box-img"
+                  className="w-4/5 h-4/5 object-contain drop-shadow-md"
                 />
-                <div className="customer-bento-sparkle s-3">🌟</div>
-                <div className="customer-bento-sparkle s-4">🌱</div>
+                <div className="absolute top-[16%] left-[14%] text-xl pointer-events-none">🌟</div>
+                <div className="absolute bottom-[14%] right-[18%] text-xl pointer-events-none">🌱</div>
               </div>
             </div>
 
-            <div className="customer-bento-content">
-              <h2 className="customer-bento-title">
+            <div className="order-1 lg:order-2">
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold leading-tight text-[#0b1510] mb-4">
                 Good Food Deserve A <br />
                 <span className="text-[#3c6a00]">Second Chance</span>
               </h2>
-              <p className="customer-bento-desc">
+              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844]">
                 Di balik setiap Mystery Box terdapat komitmen nyata menjaga bumi kita. Makanan berkualitas tinggi layak dinikmati seutuhnya, bukan menjadi sampah emisi karbon di tempat pembuangan.
               </p>
-              <p className="customer-bento-desc mt-3">
+              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] mt-3">
                 Mari jadi bagian dari gerakan penyelamatan pangan cerdas Indonesia. Rasakan sensasi kejutan lezat setiap malam, hemat pengeluaran bulanan, dan rawat lingkungan hidup bersama-sama untuk hari esok yang lebih hijau.
               </p>
             </div>
@@ -467,11 +479,13 @@ export function CustomerHome({
       </section>
 
       {/* 6. Section: Apa Kata Mereka (Testimonials) */}
-      <section className="customer-section-wrapper py-16" id="testimoni-section">
-        <div className="customer-section-container">
+      <section className="px-6 py-16" id="testimoni-section">
+        <div className="w-full max-w-7xl mx-auto">
           <div className="text-left mb-10">
-            <span className="customer-bento-tag">Apa Kata Mereka</span>
-            <h2 className="customer-section-title text-2xl sm:text-3xl mt-1">
+            <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2">
+              Apa Kata Mereka
+            </span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#1b1c1c] mt-1">
               Cerita Nyata dari <span className="text-[#3c6a00]">Pengguna</span>
             </h2>
           </div>
@@ -481,7 +495,7 @@ export function CustomerHome({
             {TESTIMONIALS.map((testi) => (
               <div
                 key={testi.id}
-                className="customer-testi-card"
+                className="bg-white border border-black/8 rounded-2xl p-6 shadow-xs flex flex-col transition-all hover:-translate-y-1 hover:border-[#3c6a00]/30 hover:shadow-md"
                 id={`testi-${testi.id}`}
               >
                 {/* Header User Profile */}
@@ -489,7 +503,7 @@ export function CustomerHome({
                   <img
                     src={testi.avatarSrc}
                     alt={testi.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-[#3c6a00]/20 shadow-sm"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-[#3c6a00]/20 shadow-xs"
                   />
                   <div>
                     <h3 className="font-bold text-[#1b1c1c] text-sm">
@@ -505,7 +519,7 @@ export function CustomerHome({
                 </div>
 
                 {/* Quote Content */}
-                <p className="customer-testi-quote">
+                <p className="text-sm leading-relaxed text-gray-600 italic">
                   "{testi.quote}"
                 </p>
               </div>

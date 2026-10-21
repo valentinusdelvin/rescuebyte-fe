@@ -10,7 +10,7 @@ export interface BuatDaganganProps {
 }
 
 /**
- * Format a number or numeric string with Indonesian dot thousand separator (e.g. 45000 -> "45.000", 1000000 -> "1.000.000").
+ * Format a number or numeric string with Indonesian dot thousand separator.
  */
 const formatWithDots = (val: number | string): string => {
   if (val === '' || val === null || val === undefined) return '';
@@ -31,6 +31,7 @@ const parseFromDots = (val: string): number => {
  * BuatDagangan Page Component
  * Allows merchants to create food rescue listings with real photo upload,
  * dynamic pricing calculation with discount badges, and dot-thousand formatted inputs.
+ * Styled with Tailwind CSS classes.
  */
 export function BuatDagangan({
   onShowToast,
@@ -111,41 +112,44 @@ export function BuatDagangan({
     if (onShowToast) onShowToast('Foto produk dihapus');
   };
 
-  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!productName.trim()) {
-      if (onShowToast) onShowToast('Mohon masukkan nama produk');
-      return;
-    }
-    if (normalPrice <= 0 || rescuePrice <= 0) {
-      if (onShowToast) onShowToast('Harga normal dan harga rescue harus lebih dari Rp 0');
-      return;
-    }
-    if (rescuePrice >= normalPrice) {
-      if (onShowToast) onShowToast('Harga rescue harus lebih terjangkau daripada harga normal');
+      if (onShowToast) onShowToast('Nama produk wajib diisi!');
       return;
     }
 
-    // Trigger brand loading overlay
+    if (rescuePrice <= 0 || normalPrice <= 0) {
+      if (onShowToast) onShowToast('Harga produk harus lebih dari 0!');
+      return;
+    }
+
+    if (rescuePrice >= normalPrice) {
+      if (onShowToast) onShowToast('Harga Rescue harus lebih hemat daripada Harga Normal!');
+      return;
+    }
+
+    if (stock <= 0) {
+      if (onShowToast) onShowToast('Stok tersedia minimal 1 box!');
+      return;
+    }
+
     if (onTriggerLoading) {
       await onTriggerLoading(
-        'Menyimpan Produk Dagangan...',
-        'Mendaftarkan menu surplus ke etalase RescueByte',
-        1100
+        'Menyimpan Dagangan Baru...',
+        `Mendaftarkan ${productName.trim()} ke etalase toko`
       );
     }
 
-    // Persist product
     addProduct({
       name: productName.trim(),
       description: description.trim(),
       normalPrice,
       rescuePrice,
-      stock: stock > 0 ? stock : 5,
-      maxStock: maxStock >= stock ? maxStock : stock,
-      status: stock > 0 ? (stock <= 2 ? 'segera_habis' : 'aktif') : 'habis',
+      stock,
+      maxStock: maxStock || stock,
+      status: 'aktif',
       imageUrl: photoPreview || undefined,
     });
 
@@ -160,26 +164,26 @@ export function BuatDagangan({
   };
 
   return (
-    <section className="page-view active" id="view-buat-dagangan" aria-labelledby="heading-buat-dagangan">
-      <h2 className="section-title" id="heading-buat-dagangan">Buat Dagangan</h2>
+    <section className="flex flex-col gap-6" id="view-buat-dagangan" aria-labelledby="heading-buat-dagangan">
+      <h2 className="text-xl font-bold text-gray-900 font-display" id="heading-buat-dagangan">Buat Dagangan</h2>
 
-      <form id="form-buat-dagangan" className="buat-dagangan-grid" onSubmit={handleSubmit} noValidate>
+      <form id="form-buat-dagangan" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start" onSubmit={handleSubmit} noValidate>
         {/* LEFT COLUMN: Informasi Dasar & Harga */}
-        <div className="buat-dagangan-left-col">
+        <div className="flex flex-col gap-6">
           {/* Card 1: Informasi Dasar */}
-          <div className="dagangan-card">
-            <h3 className="dagangan-card-title">Informasi Dasar</h3>
+          <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
+            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Informasi Dasar</h3>
 
             {/* Nama Produk */}
-            <div className="form-group">
-              <label htmlFor="input-nama-produk" className="field-label">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="input-nama-produk" className="text-xs font-bold text-gray-700">
                 Nama Produk
               </label>
               <input
                 type="text"
                 id="input-nama-produk"
                 name="namaProduk"
-                className="outline-input"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
                 placeholder="Contoh: Meal Mystery Box"
                 value={productName}
                 required
@@ -187,14 +191,14 @@ export function BuatDagangan({
               />
             </div>
 
-            {/* Deskripsi Produk (Clicking the box triggers the Modal Editor, without extra buttons or hint texts) */}
-            <div className="form-group">
-              <label htmlFor="preview-deskripsi" className="field-label">
+            {/* Deskripsi Produk */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="preview-deskripsi" className="text-xs font-bold text-gray-700">
                 Deskripsi Produk
               </label>
               <div
                 id="preview-deskripsi"
-                className="outline-input desc-textarea-clickable"
+                className="w-full min-h-[100px] p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-black cursor-pointer transition-colors text-sm text-gray-800 leading-relaxed"
                 tabIndex={0}
                 role="button"
                 aria-label="Klik untuk mengedit Deskripsi Produk"
@@ -207,32 +211,32 @@ export function BuatDagangan({
                 }}
               >
                 {description.trim() ? (
-                  <p className="desc-preview-text">{description}</p>
+                  <p className="line-clamp-4">{description}</p>
                 ) : (
-                  <p className="desc-preview-placeholder">Tuliskan deskripsi produk, standar kebersihan, isi menu, dll...</p>
+                  <p className="text-gray-400 italic">Tuliskan deskripsi produk, standar kebersihan, isi menu, dll...</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Card 2: Harga Normal & Harga Rescue */}
-          <div className="dagangan-card">
-            <h3 className="dagangan-card-title">Harga & Porsi</h3>
+          <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
+            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Harga & Porsi</h3>
 
-            <div className="form-row-two-col">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Harga Normal */}
-              <div className="form-group">
-                <label htmlFor="harga-normal" className="field-label">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="harga-normal" className="text-xs font-bold text-gray-700">
                   Harga Normal
                 </label>
-                <div className="currency-input-wrapper">
-                  <span className="currency-prefix" aria-hidden="true">Rp</span>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 font-bold text-sm text-gray-400 pointer-events-none" aria-hidden="true">Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     id="harga-normal"
                     name="hargaNormal"
-                    className="outline-input currency-input"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
                     value={normalPrice === 0 ? '' : formatWithDots(normalPrice)}
                     placeholder="0"
                     required
@@ -242,18 +246,18 @@ export function BuatDagangan({
               </div>
 
               {/* Harga Rescue */}
-              <div className="form-group">
-                <label htmlFor="harga-rescue" className="field-label">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="harga-rescue" className="text-xs font-bold text-gray-700">
                   Harga Rescue
                 </label>
-                <div className="currency-input-wrapper">
-                  <span className="currency-prefix" aria-hidden="true">Rp</span>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 font-bold text-sm text-gray-400 pointer-events-none" aria-hidden="true">Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     id="harga-rescue"
                     name="hargaRescue"
-                    className="outline-input currency-input"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
                     value={rescuePrice === 0 ? '' : formatWithDots(rescuePrice)}
                     placeholder="0"
                     required
@@ -265,44 +269,44 @@ export function BuatDagangan({
 
             {/* Dynamic Discount & Savings Badge */}
             {discountPercent > 0 && (
-              <div className="discount-summary-banner" aria-live="polite">
-                <div className="discount-badge">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-100 border border-gray-200 text-xs text-gray-900 font-medium" aria-live="polite">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black text-white font-bold text-xs shrink-0">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   Hemat {discountPercent}%
                 </div>
-                <span className="discount-summary-text">
+                <span>
                   Pembeli hemat <b>Rp {savingsAmount.toLocaleString('id-ID')}</b> per box dari harga restoran normal!
                 </span>
               </div>
             )}
 
             {/* Porsi Stok Tambahan */}
-            <div className="form-row-two-col mt-4">
-              <div className="form-group">
-                <label htmlFor="stok-tersedia" className="field-label">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="stok-tersedia" className="text-xs font-bold text-gray-700">
                   Stok Tersedia
                 </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   id="stok-tersedia"
-                  className="outline-input"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
                   value={stock === 0 ? '' : formatWithDots(stock)}
                   placeholder="0"
                   onChange={(e) => setStock(parseFromDots(e.target.value))}
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="stok-maksimal" className="field-label">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="stok-maksimal" className="text-xs font-bold text-gray-700">
                   Kapasitas / Total Box
                 </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   id="stok-maksimal"
-                  className="outline-input"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
                   value={maxStock === 0 ? '' : formatWithDots(maxStock)}
                   placeholder="0"
                   onChange={(e) => setMaxStock(parseFromDots(e.target.value))}
@@ -313,9 +317,9 @@ export function BuatDagangan({
         </div>
 
         {/* RIGHT COLUMN: Upload Foto Produk & Submit Button */}
-        <div className="buat-dagangan-right-col">
-          <div className="dagangan-card photo-upload-card">
-            <h3 className="dagangan-card-title">Upload Foto Produk</h3>
+        <div className="flex flex-col gap-6">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
+            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Upload Foto Produk</h3>
 
             {/* Hidden File Input */}
             <input
@@ -329,7 +333,9 @@ export function BuatDagangan({
 
             {/* Interactive Upload Box */}
             <div
-              className={`product-dropzone ${isDragging ? 'dragging' : ''} ${photoPreview ? 'has-photo' : ''}`}
+              className={`relative rounded-2xl border-2 border-dashed border-gray-200 hover:border-black bg-gray-50/60 min-h-[260px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all overflow-hidden ${
+                isDragging ? 'border-black bg-gray-100' : ''
+              }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -349,12 +355,12 @@ export function BuatDagangan({
               }}
             >
               {photoPreview ? (
-                <div className="photo-preview-container">
-                  <img src={photoPreview} alt={productName || 'Preview Foto'} className="uploaded-photo-img" />
-                  <div className="photo-preview-overlay">
+                <div className="relative w-full h-[240px] rounded-xl overflow-hidden group">
+                  <img src={photoPreview} alt={productName || 'Preview Foto'} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                     <button
                       type="button"
-                      className="photo-action-btn edit-btn"
+                      className="px-3 py-1.5 rounded-lg bg-white/95 text-xs font-bold text-gray-900 hover:bg-white transition-colors cursor-pointer shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         fileInputRef.current?.click();
@@ -364,7 +370,7 @@ export function BuatDagangan({
                     </button>
                     <button
                       type="button"
-                      className="photo-action-btn delete-btn"
+                      className="px-3 py-1.5 rounded-lg bg-red-600 text-xs font-bold text-white hover:bg-red-700 transition-colors cursor-pointer shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemovePhoto();
@@ -373,30 +379,33 @@ export function BuatDagangan({
                       Hapus
                     </button>
                   </div>
-                  {photoName && <span className="photo-file-label">{photoName}</span>}
+                  {photoName && <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md truncate max-w-[80%]">{photoName}</span>}
                 </div>
               ) : (
-                <div className="dropzone-content">
-                  {/* Cloud Check Icon matching Figma asset cloud-tambahkan.svg */}
-                  <div className="dropzone-icon-circle">
+                <div className="flex flex-col items-center gap-2 pointer-events-none">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-1">
                     <img
                       src={cloudTambahkanIcon}
                       alt="Tambah Foto"
-                      className="dropzone-cloud-icon"
-                      width="60"
-                      height="60"
+                      className="w-10 h-10 object-contain"
+                      width="40"
+                      height="40"
                     />
                   </div>
-                  <p className="dropzone-main-text">Tambahkan Foto Produk</p>
-                  <p className="dropzone-sub-text">JPEG, PNG, maks 5 MB</p>
+                  <p className="text-sm font-bold text-gray-800">Tambahkan Foto Produk</p>
+                  <p className="text-xs text-gray-400">JPEG, PNG, maks 5 MB</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Action Button: Simpan Perubahan */}
-          <div className="buat-dagangan-actions">
-            <button type="submit" className="btn-save-primary w-full" id="btn-simpan-dagangan">
+          <div>
+            <button
+              type="submit"
+              className="w-full py-3.5 px-6 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+              id="btn-simpan-dagangan"
+            >
               Simpan Perubahan
             </button>
           </div>
