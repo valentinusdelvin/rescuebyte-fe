@@ -16,6 +16,7 @@ export function CustomerHeader({
   onNavigateSeller,
   onOpenAuthModal,
 }: CustomerHeaderProps) {
+  const [selectedTab, setSelectedTab] = useState<'beranda' | 'marketplace' | 'kontak'>(activeTab);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
@@ -26,166 +27,168 @@ export function CustomerHeader({
     }
   };
 
-  return (
-    <header className="fixed top-4 left-0 right-0 z-50 px-4 flex justify-center pointer-events-none" id="customer-header">
-      <div className="pointer-events-auto flex items-center justify-between gap-4 bg-white/90 backdrop-blur-md border border-gray-200/80 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] rounded-full px-3 py-1.5 w-full max-w-4xl transition-all">
-        {/* Brand Logo Circular Badge */}
-        <a
-          href="#beranda-customer"
-          className="w-9 h-9 rounded-full bg-white border border-gray-200/80 shadow-xs flex items-center justify-center overflow-hidden shrink-0 hover:scale-105 transition-transform"
-          aria-label="RescueBite Customer Home"
-          onClick={(e) => {
-            e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        >
-          <img
-            src={rescueBiteLogo}
-            alt="RescueBite"
-            className="w-6 h-6 object-contain"
-          />
-        </a>
+  const handleSelectTab = (tab: 'beranda' | 'marketplace' | 'kontak') => {
+    setSelectedTab(tab);
+    if (tab === 'beranda') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'marketplace') {
+      scrollToSection('marketplace-section');
+    } else if (tab === 'kontak') {
+      scrollToSection('kontak-section');
+    }
+  };
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Navigasi Utama Pelanggan">
+  const handleAuthClick = () => {
+    if (onNavigateSeller) {
+      onNavigateSeller();
+    } else if (onOpenAuthModal) {
+      onOpenAuthModal();
+    }
+  };
+
+  return (
+    <header className="fixed top-5 left-0 right-0 z-50 px-4 flex justify-center pointer-events-none" id="customer-header">
+      <div className="pointer-events-auto flex items-center justify-center gap-3 sm:gap-4 md:gap-5">
+          {/* 1. Standalone Circular Logo Badge */}
           <a
             href="#beranda-customer"
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-              activeTab === 'beranda'
-                ? 'bg-emerald-50 text-emerald-800'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
+            className="w-13 h-13 md:w-16 md:h-16 rounded-full bg-white border-2 border-black shadow-sm flex items-center justify-center overflow-hidden shrink-0 hover:scale-105 transition-transform"
+            aria-label="RescueBite Customer Home"
             onClick={(e) => {
               e.preventDefault();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              handleSelectTab('beranda');
             }}
           >
-            Beranda
+            <img
+              src={rescueBiteLogo}
+              alt="RescueBite"
+              className="w-8 h-8 md:w-10 md:h-10 object-contain"
+            />
           </a>
-          <a
-            href="#marketplace"
-            className="px-4 py-1.5 rounded-full text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('marketplace-section');
-            }}
-          >
-            Marketplace
-          </a>
-          <a
-            href="#kontak"
-            className="px-4 py-1.5 rounded-full text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('kontak-section');
-            }}
-          >
-            Kontak
-          </a>
-        </nav>
 
-        {/* Right CTA Actions */}
-        <div className="flex items-center gap-2">
-          {/* Seller Mode Switcher Quick Link */}
-          {onNavigateSeller && (
+          {/* 2. Standalone Center Navigation Pill */}
+          <div className="bg-white border-2 border-black rounded-full p-1.5 md:p-2 flex items-center shadow-sm">
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-2 lg:gap-3" aria-label="Navigasi Utama Pelanggan">
+              <a
+                href="#beranda-customer"
+                className={`px-8 lg:px-10 py-2.5 lg:py-3 rounded-full text-base font-bold transition-all ${selectedTab === 'beranda'
+                    ? 'bg-[#1e2420] text-white shadow-xs'
+                    : 'text-[#1b1c1c] hover:text-black hover:bg-gray-100'
+                  }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('beranda');
+                }}
+              >
+                Beranda
+              </a>
+              <a
+                href="#marketplace"
+                className={`px-6 lg:px-8 py-2.5 lg:py-3 rounded-full text-base font-bold transition-all ${selectedTab === 'marketplace'
+                    ? 'bg-[#1e2420] text-white shadow-xs'
+                    : 'text-[#1b1c1c] hover:text-black hover:bg-gray-100'
+                  }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('marketplace');
+                }}
+              >
+                Marketplace
+              </a>
+              <a
+                href="#kontak"
+                className={`px-6 lg:px-8 py-2.5 lg:py-3 rounded-full text-base font-bold transition-all ${selectedTab === 'kontak'
+                    ? 'bg-[#1e2420] text-white shadow-xs'
+                    : 'text-[#1b1c1c] hover:text-black hover:bg-gray-100'
+                  }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('kontak');
+                }}
+              >
+                Kontak
+              </a>
+            </nav>
+
+            {/* Mobile Hamburger inside the pill for small screens */}
             <button
               type="button"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-xs font-bold hover:bg-emerald-100 transition-colors cursor-pointer"
-              onClick={onNavigateSeller}
-              title="Beralih ke Portal Toko / Seller"
+              className="flex md:hidden px-4 py-2 text-sm font-bold text-[#1b1c1c] items-center gap-2 cursor-pointer"
+              aria-label="Buka menu navigasi"
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l2-5h14l2 5" />
-                <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
-                <path d="M9 22V12h6v10" />
+              <span className="font-bold">Menu</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
-              <span>Portal Toko</span>
             </button>
-          )}
-
-          {/* Auth Button */}
-          <button
-            type="button"
-            className="px-4 py-1.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-            id="btn-customer-auth"
-            onClick={onOpenAuthModal}
-          >
-            Daftar/Masuk
-          </button>
-
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            className="flex md:hidden p-1.5 text-gray-700 hover:text-gray-900 cursor-pointer"
-            aria-label="Buka menu navigasi"
-            aria-expanded={isMobileMenuOpen}
-            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
         </div>
+
+        {/* 3. Standalone Daftar/Masuk Pill Button - Navigates to Restaurant Dashboard */}
+        <button
+          type="button"
+          className="px-7 md:px-10 py-2.5 md:py-3.5 rounded-full bg-white border-2 border-black text-[#1b1c1c] hover:bg-gray-50 text-base font-bold shadow-sm transition-all cursor-pointer shrink-0"
+          id="btn-customer-auth"
+          onClick={handleAuthClick}
+          title="Beralih ke Dashboard Restoran"
+        >
+          Daftar/Masuk
+        </button>
       </div>
 
       {/* Mobile Drawer Navigation */}
       {isMobileMenuOpen && (
-        <div className="pointer-events-auto absolute top-full left-4 right-4 mt-2 p-4 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 shadow-xl flex flex-col gap-2 md:hidden" id="customer-mobile-menu">
-          <nav className="flex flex-col gap-1">
+        <div className="pointer-events-auto absolute top-full left-4 right-4 mt-3 p-4 bg-white/98 backdrop-blur-md rounded-2xl border-[1.5px] border-black shadow-2xl flex flex-col gap-2 md:hidden" id="customer-mobile-menu">
+          <nav className="flex flex-col gap-1.5">
             <a
               href="#beranda-customer"
-              className="px-3 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800"
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold ${selectedTab === 'beranda' ? 'bg-[#1e2420] text-white' : 'text-[#1b1c1c] hover:bg-gray-100'
+                }`}
               onClick={(e) => {
                 e.preventDefault();
                 setIsMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                handleSelectTab('beranda');
               }}
             >
               Beranda
             </a>
             <a
               href="#marketplace"
-              className="px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold ${selectedTab === 'marketplace' ? 'bg-[#1e2420] text-white' : 'text-[#1b1c1c] hover:bg-gray-100'
+                }`}
               onClick={(e) => {
                 e.preventDefault();
-                scrollToSection('marketplace-section');
+                setIsMobileMenuOpen(false);
+                handleSelectTab('marketplace');
               }}
             >
               Marketplace
             </a>
             <a
               href="#kontak"
-              className="px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold ${selectedTab === 'kontak' ? 'bg-[#1e2420] text-white' : 'text-[#1b1c1c] hover:bg-gray-100'
+                }`}
               onClick={(e) => {
                 e.preventDefault();
-                scrollToSection('kontak-section');
+                setIsMobileMenuOpen(false);
+                handleSelectTab('kontak');
               }}
             >
               Kontak
             </a>
-            {onNavigateSeller && (
-              <button
-                type="button"
-                className="px-3 py-2 rounded-xl text-sm font-semibold text-left text-emerald-800 hover:bg-emerald-50 transition-colors cursor-pointer"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onNavigateSeller();
-                }}
-              >
-                🏬 Masuk Portal Toko (Seller)
-              </button>
-            )}
             <button
               type="button"
-              className="w-full mt-2 py-2 px-4 rounded-xl bg-emerald-700 text-white text-xs font-bold text-center cursor-pointer"
+              className="w-full mt-2 py-2 px-4 rounded-xl bg-black text-white text-xs font-bold text-center cursor-pointer"
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                if (onOpenAuthModal) onOpenAuthModal();
+                handleAuthClick();
               }}
             >
-              Daftar / Masuk
+              Daftar / Masuk (Dashboard Restoran)
             </button>
           </nav>
         </div>

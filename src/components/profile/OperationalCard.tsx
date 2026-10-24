@@ -51,7 +51,7 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
 
   return (
     <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6">
-      <h2 className="text-2xl font-bold text-black font-display">Informasi Operasional</h2>
+      <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Informasi Operasional</h2>
 
       <div className="flex flex-col gap-6">
         {/* Status Toko Section */}
@@ -83,7 +83,7 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
 
         {/* Jam Operasional Section */}
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-black font-display">Jam Operasional</h3>
+          <h3 className="text-sm font-semibold text-gray-800">Jam Operasional</h3>
           <div className="flex items-center gap-3">
             <input
               type="text"
@@ -109,7 +109,7 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
 
         {/* Hari Operasional Section */}
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-bold text-black font-display">Hari Operasional</h3>
+          <h3 className="text-sm font-semibold text-gray-800">Hari Operasional</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3.5 gap-x-4">
             {DAY_LIST.map(({ key, label }) => (
               <label

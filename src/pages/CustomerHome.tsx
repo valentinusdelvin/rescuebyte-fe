@@ -5,7 +5,8 @@ import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../types';
 
-import heroBg from '../assets/customer/hero-bg.jpg';
+import heroFullBanner from '../assets/customer/hero-official-banner.png';
+import glowingBoxImg from '../assets/customer/glowing-box.jpg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
 import cardSaladStop from '../assets/customer/card-saladstop.jpg';
@@ -14,7 +15,6 @@ import cardDapurSolo from '../assets/customer/card-dapur-solo.jpg';
 import cardTousLesJours from '../assets/customer/card-tous-les-jours.jpg';
 import avatarReza from '../assets/customer/avatar-reza.jpg';
 import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
-import mystBoxImg from '../assets/myst-box.svg';
 
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
@@ -219,85 +219,33 @@ export function CustomerHome({
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
-      {/* 2. Hero Section */}
-      <section className="relative min-h-[520px] pt-28 pb-16 px-6 flex items-center overflow-hidden border-b border-black/5" id="hero-section">
-        {/* Background photo & overlay */}
+      {/* 2. Hero Section - Desain Awal (Crisp Unblurred Panoramic Cafe Background with 3D Glowing Box on Right) */}
+      <section className="relative min-h-[460px] md:min-h-[520px] lg:min-h-[540px] pt-32 md:pt-36 pb-16 px-6 sm:px-12 flex items-center overflow-hidden border-b border-black/5" id="hero-section">
+        {/* Full-width crisp unblurred panoramic banner */}
         <div className="absolute inset-0 z-0">
           <img
-            src={heroBg}
-            alt="Suasana Cafe RescueBite"
-            className="w-full h-full object-cover object-center brightness-95 contrast-105"
+            src={heroFullBanner}
+            alt="Suasana Cafe & Glowing Mystery Box RescueBite"
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 sm:via-white/80 to-white/30" />
         </div>
 
-        {/* Ambient Floating Elements */}
-        <div className="absolute top-[15%] left-[45%] text-2xl opacity-75 pointer-events-none z-10 animate-bounce" aria-hidden="true">🍃</div>
-        <div className="absolute top-[35%] left-[55%] text-3xl opacity-75 pointer-events-none z-10 animate-pulse" aria-hidden="true">🌱</div>
-        <div className="absolute bottom-[20%] left-[40%] text-xl opacity-75 pointer-events-none z-10 animate-bounce" aria-hidden="true">🌿</div>
-
         <div className="relative z-10 w-full max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.85fr] items-center gap-10">
-            {/* Left Headline & Value Proposition */}
-            <div>
-              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#3c6a00] bg-[#3c6a00]/12 px-3.5 py-1.5 rounded-full mb-4 tracking-wide">
-                🌿 Selamatkan Makanan, Hemat Maksimal
-              </span>
-
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.18] text-[#0b1510] tracking-tight mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
+            {/* Left Headline & Description matching Desain Awal verbatim */}
+            <div className="max-w-xl">
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-extrabold leading-[1.2] text-[#1b1c1c] tracking-tight mb-3.5">
                 Selamatkan Makanan Lezat, <br />
-                <span className="text-[#3c6a00]">
-                  Hemat Hingga 70% Setiap Malam
-                </span>
+                Hemat Hingga 70% Setiap Malam
               </h1>
 
-              <p className="text-sm sm:text-base leading-relaxed text-[#434844] max-w-xl mb-7">
-                Mystery Box berisi makanan berlebih berkualitas prima dari kafe, resto, dan bakery favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan bantu kurangi food waste!
+              <p className="text-xs sm:text-sm md:text-base leading-relaxed text-[#1b1c1c] font-medium max-w-lg">
+                Beli Mystery Box berisi makanan berlebih berkualitas prima dari kafe, bakery, dan restoran favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan berdampak nyata bagi bumi.
               </p>
-
-              <div className="flex items-center gap-3.5 flex-wrap">
-                <a
-                  href="#marketplace-section"
-                  className="inline-flex items-center gap-2 bg-[#0b1510] hover:bg-[#202a24] text-white px-6 py-3 rounded-full text-sm sm:text-[15px] font-semibold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('marketplace-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  <span>Jelajahi Box Hari Ini</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <polyline points="19 12 12 19 5 12" />
-                  </svg>
-                </a>
-
-                <a
-                  href="#about-us-section"
-                  className="inline-flex items-center bg-white/85 hover:bg-white border border-black/15 text-[#1b1c1c] px-5 py-2.5 rounded-full text-sm sm:text-[15px] font-semibold transition-all hover:border-black"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('about-us-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  Pelajari Gerakan Kami
-                </a>
-              </div>
             </div>
 
-            {/* Right Hero Visual: Mystery Box with Warm Ray Lighting */}
-            <div className="flex justify-center items-center mt-8 lg:mt-0">
-              <div className="relative w-full max-w-[380px] bg-white/45 backdrop-blur-md border border-white/70 rounded-3xl p-6 shadow-xl text-center transition-transform hover:-translate-y-1">
-                <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-radial from-amber-400/30 via-lime-300/20 to-transparent blur-2xl pointer-events-none" />
-                <img
-                  src={mystBoxImg}
-                  alt="RescueBite Mystery Box"
-                  className="relative z-10 w-full max-h-60 object-contain drop-shadow-xl"
-                />
-                <div className="relative z-10 inline-block mt-3.5 text-xs sm:text-sm font-bold text-[#1b1c1c] bg-white border border-black/10 px-3.5 py-1.5 rounded-full shadow-xs">
-                  ✨ Surprise Box Terbatas
-                </div>
-              </div>
-            </div>
+            {/* Right half is intentionally open to showcase the integrated 3D Glowing Mystery Box in the banner photo */}
+            <div className="hidden lg:block min-h-[300px]" aria-hidden="true" />
           </div>
         </div>
       </section>
@@ -436,11 +384,11 @@ export function CustomerHome({
             </div>
 
             <div className="flex justify-center items-center">
-              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[38%_62%_63%_37%/41%_44%_56%_59%] flex items-center justify-center shadow-lg p-7 transition-all duration-500 hover:rotate-1 hover:scale-105">
+              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[38%_62%_63%_37%/41%_44%_56%_59%] flex items-center justify-center shadow-lg p-5 overflow-hidden transition-all duration-500 hover:rotate-1 hover:scale-105">
                 <img
-                  src={mystBoxImg}
+                  src={glowingBoxImg}
                   alt="RescueBite Mystery Box Organic Artwork"
-                  className="w-4/5 h-4/5 object-contain drop-shadow-md"
+                  className="w-full h-full object-cover rounded-2xl drop-shadow-md"
                 />
                 <div className="absolute top-[12%] right-[14%] text-xl pointer-events-none">✨</div>
                 <div className="absolute bottom-[12%] left-[16%] text-xl pointer-events-none">🌿</div>
@@ -451,11 +399,11 @@ export function CustomerHome({
           {/* Bento Card 2: Inverted Bottom */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] items-center gap-8 sm:gap-12">
             <div className="flex justify-center items-center order-2 lg:order-1">
-              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[63%_37%_38%_62%/56%_59%_41%_44%] flex items-center justify-center shadow-lg p-7 transition-all duration-500 hover:rotate-1 hover:scale-105">
+              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[63%_37%_38%_62%/56%_59%_41%_44%] flex items-center justify-center shadow-lg p-5 overflow-hidden transition-all duration-500 hover:rotate-1 hover:scale-105">
                 <img
-                  src={mystBoxImg}
+                  src={glowingBoxImg}
                   alt="Second Chance Food Rescue"
-                  className="w-4/5 h-4/5 object-contain drop-shadow-md"
+                  className="w-full h-full object-cover rounded-2xl drop-shadow-md"
                 />
                 <div className="absolute top-[16%] left-[14%] text-xl pointer-events-none">🌟</div>
                 <div className="absolute bottom-[14%] right-[18%] text-xl pointer-events-none">🌱</div>

@@ -33,7 +33,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
 
   return (
     <section className="flex flex-col gap-6" id="view-riwayat" aria-labelledby="heading-riwayat">
-      <h2 className="text-xl font-bold text-gray-900 font-display" id="heading-riwayat">Riwayat Pesanan</h2>
+      <h2 className="text-xl font-bold text-gray-900 tracking-tight" id="heading-riwayat">Riwayat Pesanan</h2>
 
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs flex flex-col overflow-hidden">
         {/* Horizontal Navigation Tabs */}
@@ -50,7 +50,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   className={`px-5 py-4 text-xs font-bold border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-                    isActive ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'
+                    isActive ? 'border-[#15803d] text-[#15803d]' : 'border-transparent text-gray-500 hover:text-[#15803d]'
                   }`}
                   onClick={() => handleTabChange(tab.id)}
                 >
@@ -167,11 +167,11 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
             alt="Ilustrasi mystery box belum ada pesanan"
             className="w-48 sm:w-60 h-auto mb-6 object-contain"
           />
-          <h3 className="text-lg md:text-xl font-bold text-gray-900 font-display mb-2">
-            Kamu belum memiliki pesanan
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+            Belum Ada Pesanan Masuk
           </h3>
           <p className="text-xs md:text-sm text-gray-500 max-w-md leading-relaxed">
-            Yuk jelajahi berbagai mystery box makanan dari restoran favorit di sekitarmu dan lakukan reservasi sekarang!
+            Belum ada pesanan pada status ini. Pesanan baru dari pelanggan akan otomatis ditampilkan di sini.
           </p>
         </div>
       </div>

@@ -84,11 +84,10 @@ export function MysteryBoxCard({
           {item.tags.map((tag, idx) => (
             <span
               key={`${tag}-${idx}`}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                idx === 0
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${idx === 0
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-100'
                   : 'bg-gray-100 text-gray-600'
-              }`}
+                }`}
             >
               {tag}
             </span>

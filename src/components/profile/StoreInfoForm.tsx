@@ -222,15 +222,15 @@ export function StoreInfoForm({
 
   return (
     <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6">
-      <h2 className="text-2xl font-bold text-black font-display">Informasi Toko</h2>
+      <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Informasi Toko</h2>
 
       <form id="form-info-toko" className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
         {/* Avatar & Store Name Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          <div className="flex flex-col items-center gap-2.5 shrink-0">
             <label
               htmlFor="store-logo-file"
-              className="relative w-20 h-20 rounded-full border border-gray-300 flex items-center justify-center bg-[#c6ea8d] overflow-hidden cursor-pointer transition-transform hover:scale-105 shrink-0"
+              className="group/avatar relative w-[82px] h-[82px] rounded-full border border-gray-300 flex items-center justify-center bg-[#bef264] cursor-pointer transition-transform hover:scale-[1.03] shrink-0"
               id="store-avatar-preview"
               tabIndex={0}
               role="button"
@@ -249,15 +249,18 @@ export function StoreInfoForm({
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
-                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l2-5h14l2 5" />
                   <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
                   <path d="M9 22V12h6v10" />
                   <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
                 </svg>
               )}
-              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white shadow-md border border-gray-300 flex items-center justify-center" title="Pilih foto untuk logo toko">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <div
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] border-[1.5px] border-gray-400 flex items-center justify-center transition-all group-hover/avatar:scale-110 group-hover/avatar:border-gray-900 group-hover/avatar:bg-gray-50 z-10"
+                title="Pilih foto untuk logo toko"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
@@ -267,7 +270,7 @@ export function StoreInfoForm({
 
             <label
               htmlFor="store-logo-file"
-              className="px-3 py-1.5 text-xs font-bold text-gray-800 bg-gray-200 hover:bg-gray-300 rounded-xl cursor-pointer transition-colors select-none"
+              className="px-3.5 py-1 text-xs font-semibold text-white bg-gray-400 hover:bg-gray-500 rounded-full cursor-pointer transition-all select-none active:scale-98"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -291,7 +294,7 @@ export function StoreInfoForm({
           </div>
 
           <div className="flex flex-col gap-1.5 flex-1 w-full">
-            <label htmlFor="nama-toko" className="text-sm font-bold text-black font-display">Nama Toko</label>
+            <label htmlFor="nama-toko" className="text-sm font-semibold text-gray-800">Nama Toko</label>
             <input
               type="text"
               id="nama-toko"
@@ -306,7 +309,7 @@ export function StoreInfoForm({
 
         {/* Deskripsi Toko */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="deskripsi-toko" className="text-sm font-bold text-black font-display">Deskripsi Toko</label>
+          <label htmlFor="deskripsi-toko" className="text-sm font-semibold text-gray-800">Deskripsi Toko</label>
           <textarea
             id="deskripsi-toko"
             name="deskripsiToko"
@@ -320,7 +323,7 @@ export function StoreInfoForm({
         {/* WhatsApp & Email Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="wa-toko" className="text-sm font-bold text-black font-display">Nomor WhatsApp</label>
+            <label htmlFor="wa-toko" className="text-sm font-semibold text-gray-800">Nomor WhatsApp</label>
             <input
               type="tel"
               id="wa-toko"
@@ -332,7 +335,7 @@ export function StoreInfoForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email-toko" className="text-sm font-bold text-black font-display">Email Toko</label>
+            <label htmlFor="email-toko" className="text-sm font-semibold text-gray-800">Email Toko</label>
             <input
               type="email"
               id="email-toko"
@@ -347,7 +350,7 @@ export function StoreInfoForm({
 
         {/* Alamat Toko */}
         <div className="flex flex-col gap-1.5 relative" id="alamat-search-group">
-          <label htmlFor="alamat-toko" className="text-sm font-bold text-black font-display">Alamat Toko</label>
+          <label htmlFor="alamat-toko" className="text-sm font-semibold text-gray-800">Alamat Toko</label>
           <div className="relative flex items-center">
             <input
               type="text"
@@ -411,7 +414,7 @@ export function StoreInfoForm({
         {/* Kota & Kecamatan Cascading Autocomplete */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5 relative" id="kota-input-group">
-            <label htmlFor="kota-toko" className="text-sm font-bold text-black font-display">Kota</label>
+            <label htmlFor="kota-toko" className="text-sm font-semibold text-gray-800">Kota</label>
             <div className="relative flex items-center">
               <input
                 type="text"
@@ -461,7 +464,7 @@ export function StoreInfoForm({
           </div>
 
           <div className="flex flex-col gap-1.5 relative" id="kecamatan-input-group">
-            <label htmlFor="kecamatan-toko" className="text-sm font-bold text-black font-display">Kecamatan</label>
+            <label htmlFor="kecamatan-toko" className="text-sm font-semibold text-gray-800">Kecamatan</label>
             <div className="relative flex items-center">
               <input
                 type="text"

@@ -298,7 +298,7 @@ export function StoreLocationMap({
   return (
     <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-4" id="card-lokasi-toko">
       <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-        <h2 className="text-2xl font-bold text-black font-display">Lokasi Toko</h2>
+        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Lokasi Toko</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"

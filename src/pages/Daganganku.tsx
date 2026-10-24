@@ -117,7 +117,7 @@ export function Daganganku({
 
   return (
     <section className="flex flex-col gap-6" id="view-daganganku" aria-labelledby="heading-daganganku">
-      <h2 className="text-xl font-bold text-gray-900 font-display" id="heading-daganganku">Daganganku</h2>
+      <h2 className="text-xl font-bold text-gray-900 tracking-tight" id="heading-daganganku">Daganganku</h2>
 
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs flex flex-col overflow-hidden">
         {/* Horizontal Navigation Tabs */}
@@ -220,7 +220,7 @@ export function Daganganku({
                   <path d="M12 22V12" />
                 </svg>
               </div>
-              <h3 className="text-base font-bold text-gray-900 font-display">Belum ada dagangan pada filter ini</h3>
+              <h3 className="text-base font-bold text-gray-900">Belum ada dagangan pada filter ini</h3>
               <p className="text-xs text-gray-500 max-w-sm mt-1">
                 {searchQuery
                   ? `Tidak ada produk yang cocok dengan "${searchQuery}".`
@@ -272,7 +272,7 @@ export function Daganganku({
                   <div className="flex flex-col items-start sm:items-end min-w-[110px]">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Harga</span>
                     <div className="flex flex-col items-start sm:items-end mt-0.5">
-                      <span className="text-sm font-extrabold text-black font-display">{formatRupiah(item.rescuePrice)}</span>
+                      <span className="text-sm font-extrabold text-gray-900">{formatRupiah(item.rescuePrice)}</span>
                       <span className="text-[11px] text-gray-400 line-through">{formatRupiah(item.normalPrice)}</span>
                     </div>
                   </div>

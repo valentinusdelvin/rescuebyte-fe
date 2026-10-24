@@ -165,14 +165,14 @@ export function BuatDagangan({
 
   return (
     <section className="flex flex-col gap-6" id="view-buat-dagangan" aria-labelledby="heading-buat-dagangan">
-      <h2 className="text-xl font-bold text-gray-900 font-display" id="heading-buat-dagangan">Buat Dagangan</h2>
+      <h2 className="text-xl font-bold text-gray-900 tracking-tight" id="heading-buat-dagangan">Buat Dagangan</h2>
 
       <form id="form-buat-dagangan" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start" onSubmit={handleSubmit} noValidate>
         {/* LEFT COLUMN: Informasi Dasar & Harga */}
         <div className="flex flex-col gap-6">
           {/* Card 1: Informasi Dasar */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
-            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Informasi Dasar</h3>
+            <h3 className="text-base font-bold text-gray-900 pb-3 border-b border-gray-100">Informasi Dasar</h3>
 
             {/* Nama Produk */}
             <div className="flex flex-col gap-1.5">
@@ -221,7 +221,7 @@ export function BuatDagangan({
 
           {/* Card 2: Harga Normal & Harga Rescue */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
-            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Harga & Porsi</h3>
+            <h3 className="text-base font-bold text-gray-900 pb-3 border-b border-gray-100">Harga & Porsi</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Harga Normal */}
@@ -269,15 +269,15 @@ export function BuatDagangan({
 
             {/* Dynamic Discount & Savings Badge */}
             {discountPercent > 0 && (
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-100 border border-gray-200 text-xs text-gray-900 font-medium" aria-live="polite">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black text-white font-bold text-xs shrink-0">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-green-50/80 border border-green-200/80 text-xs text-green-950 font-medium" aria-live="polite">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#15803d] text-white font-bold text-xs shrink-0 shadow-xs">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   Hemat {discountPercent}%
                 </div>
-                <span>
-                  Pembeli hemat <b>Rp {savingsAmount.toLocaleString('id-ID')}</b> per box dari harga restoran normal!
+                <span className="text-green-900">
+                  Pembeli hemat <b className="text-green-950 font-bold">Rp {savingsAmount.toLocaleString('id-ID')}</b> per box dari harga restoran normal!
                 </span>
               </div>
             )}
@@ -319,7 +319,7 @@ export function BuatDagangan({
         {/* RIGHT COLUMN: Upload Foto Produk & Submit Button */}
         <div className="flex flex-col gap-6">
           <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col gap-5">
-            <h3 className="text-base font-bold text-gray-900 font-display pb-3 border-b border-gray-100">Upload Foto Produk</h3>
+            <h3 className="text-base font-bold text-gray-900 pb-3 border-b border-gray-100">Upload Foto Produk</h3>
 
             {/* Hidden File Input */}
             <input
