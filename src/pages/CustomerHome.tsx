@@ -18,6 +18,8 @@ import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
+  onNavigateMarketplace?: () => void;
+  onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -174,6 +176,8 @@ const TESTIMONIALS: TestimonialItem[] = [
  */
 export function CustomerHome({
   onNavigateSeller,
+  onNavigateMarketplace,
+  onNavigateDetail,
   onShowToast,
 }: CustomerHomeProps) {
   // Modal states
@@ -186,8 +190,12 @@ export function CustomerHome({
   const [selectedDistance, setSelectedDistance] = useState<string>('Jarak Terdekat');
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
-    setSelectedBox(box);
-    setIsOrderModalOpen(true);
+    if (onNavigateDetail) {
+      onNavigateDetail(box);
+    } else {
+      setSelectedBox(box);
+      setIsOrderModalOpen(true);
+    }
   };
 
   const handleConfirmOrder = (box: CustomerMysteryBox, quantity: number) => {
@@ -217,6 +225,15 @@ export function CustomerHome({
         activeTab="beranda"
         onNavigateSeller={onNavigateSeller}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onSelectTab={(tab) => {
+          if (tab === 'marketplace') {
+            if (onNavigateMarketplace) {
+              onNavigateMarketplace();
+            } else {
+              window.location.hash = '#marketplace';
+            }
+          }
+        }}
       />
 
       {/* 2. Hero Section - Desain Awal (Crisp Unblurred Panoramic Cafe Background with 3D Glowing Box on Right) */}

@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CustomerHome } from './pages/CustomerHome';
+import { CustomerMarketplace } from './pages/CustomerMarketplace';
+import { CustomerProductDetail } from './pages/CustomerProductDetail';
+import { CustomerCart } from './pages/CustomerCart';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './pages/Dashboard';
@@ -11,7 +14,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 import { Toast } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
-import { ActiveViewId, OrderStatusTab } from './types';
+import { ActiveViewId, OrderStatusTab, CustomerMysteryBox } from './types';
 
 /**
  * Root Application Component
@@ -29,9 +32,14 @@ export function App() {
     if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) return 'view-riwayat';
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'view-buat-dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
+    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) return 'view-customer-product-detail';
+    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'view-customer-cart';
+    if (hash.startsWith('#marketplace')) return 'view-customer-marketplace';
     // Default to Customer Landing Page
     return 'view-customer-home';
   });
+
+  const [selectedProduct, setSelectedProduct] = useState<CustomerMysteryBox | null>(null);
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
     const hash = window.location.hash.toLowerCase();
@@ -51,6 +59,9 @@ export function App() {
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'Buat Dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'Daganganku';
     if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
+    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail')) return 'Detail Produk';
+    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'Keranjang Saya';
+    if (hash.startsWith('#marketplace')) return 'Marketplace';
     return 'Beranda Pelanggan';
   });
 
@@ -85,6 +96,12 @@ export function App() {
 
     if (viewId === 'view-customer-home') {
       window.history.replaceState(null, '', '#beranda-customer');
+    } else if (viewId === 'view-customer-marketplace') {
+      window.history.replaceState(null, '', '#marketplace');
+    } else if (viewId === 'view-customer-product-detail') {
+      window.history.replaceState(null, '', '#detail-produk');
+    } else if (viewId === 'view-customer-cart') {
+      window.history.replaceState(null, '', '#keranjang');
     } else if (viewId === 'view-beranda') {
       window.history.replaceState(null, '', '#beranda-seller');
     } else if (viewId === 'view-profil') {
@@ -123,8 +140,17 @@ export function App() {
       } else if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) {
         setActiveView('view-daganganku');
         setActiveLabel('Daganganku');
+      } else if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+        setActiveView('view-customer-product-detail');
+        setActiveLabel('Detail Produk');
+      } else if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+        setActiveView('view-customer-cart');
+        setActiveLabel('Keranjang Saya');
+      } else if (hash.startsWith('#marketplace')) {
+        setActiveView('view-customer-marketplace');
+        setActiveLabel('Marketplace');
       } else {
-        // Customer view for #beranda-customer, #customer, #marketplace, or empty hash
+        // Customer view for #beranda-customer, #customer, or empty hash
         setActiveView('view-customer-home');
         setActiveLabel('Beranda Pelanggan');
       }
@@ -136,9 +162,42 @@ export function App() {
 
   return (
     <>
-      {/* 1. Customer View: Full page landing */}
+      {/* 1. Customer Views */}
       {activeView === 'view-customer-home' ? (
         <CustomerHome
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateDetail={(item) => {
+            setSelectedProduct(item);
+            handleNavigate('view-customer-product-detail', 'Detail Produk');
+          }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-marketplace' ? (
+        <CustomerMarketplace
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateDetail={(item) => {
+            setSelectedProduct(item);
+            handleNavigate('view-customer-product-detail', 'Detail Produk');
+          }}
+          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-product-detail' ? (
+        <CustomerProductDetail
+          product={selectedProduct}
+          onNavigateBack={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-cart' ? (
+        <CustomerCart
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />

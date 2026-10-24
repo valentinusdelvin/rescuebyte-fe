@@ -36,6 +36,9 @@ export interface OSMSuggestion extends Coordinates {
 
 export type ActiveViewId =
   | 'view-customer-home'
+  | 'view-customer-marketplace'
+  | 'view-customer-product-detail'
+  | 'view-customer-cart'
   | 'view-beranda'
   | 'view-profil'
   | 'view-riwayat'
