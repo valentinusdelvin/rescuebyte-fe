@@ -52,19 +52,27 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
   const [isRendered, setIsRendered] = useState(isVisible);
   const [isExiting, setIsExiting] = useState(false);
 
-  useEffect(() => {
+  // Sync render state during render when isVisible changes (React recommended pattern)
+  const [prevIsVisible, setPrevIsVisible] = useState(isVisible);
+  if (isVisible !== prevIsVisible) {
+    setPrevIsVisible(isVisible);
     if (isVisible) {
       setIsRendered(true);
       setIsExiting(false);
     } else if (isRendered) {
       setIsExiting(true);
+    }
+  }
+
+  useEffect(() => {
+    if (isExiting) {
       const timer = setTimeout(() => {
         setIsRendered(false);
         setIsExiting(false);
       }, 220);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, isRendered]);
+  }, [isExiting]);
 
   if (!isRendered) return null;
 
@@ -72,16 +80,14 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
     <div
       id="brand-loading-overlay"
       style={{ zIndex: 99999 }}
-      className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
-        isExiting ? 'opacity-0' : 'opacity-100'
-      }`}
+      className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${isExiting ? 'opacity-0' : 'opacity-100'
+        }`}
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
-      <div className={`relative w-[170px] h-[170px] flex items-center justify-center transition-transform duration-200 ${
-        isExiting ? 'scale-95' : 'scale-100'
-      }`}>
+      <div className={`relative w-[170px] h-[170px] flex items-center justify-center transition-transform duration-200 ${isExiting ? 'scale-95' : 'scale-100'
+        }`}>
         {/* Radial tick spinner around the logo */}
         <svg
           className="w-[170px] h-[170px]"

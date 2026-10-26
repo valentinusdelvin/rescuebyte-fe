@@ -51,6 +51,8 @@ export interface CustomerMysteryBox {
   id: string;
   storeName: string;
   category: string;
+  categoryBadge?: string;
+  portionText?: string;
   distanceText: string;
   remainingBoxesText: string;
   discountPercent: number;
@@ -60,7 +62,7 @@ export interface CustomerMysteryBox {
   description: string;
   tags: string[];
   rating?: number;
-  reviewCount?: number;
+  reviewCount?: number | string;
   imageSrc: string;
   isRadiusItem?: boolean;
 }
@@ -81,7 +83,7 @@ export interface StoreCartGroup {
   storeName: string;
   storeAvatar: string;
   rating: number;
-  reviewCount: number;
+  reviewCount: number | string;
   distanceText: string;
   pickupTime: string;
   availablePickupTimes: string[];
@@ -141,3 +143,25 @@ export interface FilterSummaryItem {
 }
 
 export type PerformanceFilterKey = 'bulan-ini' | 'minggu-ini' | 'tahun-ini';
+
+export interface UserPayload {
+  avatar_url: string;
+  created_at: string;
+  email: string;
+  id: string;
+  name: string;
+  provider: 'LOCAL' | 'GOOGLE' | string;
+  role: string;
+  role_id: number;
+  updated_at: string;
+}
+
+export interface AuthPayload {
+  access_token: string;
+  refresh_token: string;
+  user: UserPayload;
+}
+
+export interface AuthApiResponse {
+  payload: AuthPayload;
+}

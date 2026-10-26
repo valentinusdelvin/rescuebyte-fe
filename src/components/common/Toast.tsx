@@ -1,26 +1,60 @@
+// Toast notification component with motion/react
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { Check, ShoppingBag, CheckCircle2 } from 'lucide-react';
+import { Check, ShoppingBag, CheckCircle2, X, AlertCircle } from 'lucide-react';
+
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastProps {
   message: string;
   isVisible: boolean;
+  type?: ToastType;
   onClose?: () => void;
 }
 
 /**
  * Toast Notification Component
- * Features dark theme, emerald green accent, rounded corners, and fluid motion enter/exit.
- * Complies with .agents/docs/architecture.md, styling.md, and prefers-reduced-motion.
+ * Features dynamic icon and theme matching toast intent:
+ *  - Error: Coral/Red badge with 'X' cross icon
+ *  - Warning: Amber badge with 'AlertCircle' icon
+ *  - Success: Emerald Green badge with 'Check' or context icon
+ * Fluid spring motion enter/exit compliant with prefers-reduced-motion.
  */
-export function Toast({ message, isVisible, onClose }: ToastProps) {
+export function Toast({ message, isVisible, type, onClose }: ToastProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  // Pick suitable Lucide icon based on action message
+  // Determine toast category (explicit type or keyword detection)
+  const isError =
+    type === 'error' ||
+    (type === undefined &&
+      /(minimal|tidak cocok|gagal|harus|salah|belum|wajib|silakan isi|error|batal|peringatan)/i.test(message));
+
+  const isWarning = type === 'warning';
+
   const isCart = message.toLowerCase().includes('keranjang');
   const isCheckout = message.toLowerCase().includes('pesanan') || message.toLowerCase().includes('checkout');
   const isPayment = message.toLowerCase().includes('pembayaran');
 
-  const IconComponent = isCart ? ShoppingBag : isCheckout || isPayment ? CheckCircle2 : Check;
+  const IconComponent = isError
+    ? X
+    : isWarning
+      ? AlertCircle
+      : isCart
+        ? ShoppingBag
+        : isCheckout || isPayment
+          ? CheckCircle2
+          : Check;
+
+  const containerBorder = isError
+    ? 'border-[#4a1d1d]'
+    : isWarning
+      ? 'border-[#4a3a1d]'
+      : 'border-[#203926]';
+
+  const badgeClasses = isError
+    ? 'bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#ef4444]'
+    : isWarning
+      ? 'bg-[#f59e0b]/20 border border-[#f59e0b]/40 text-[#f59e0b]'
+      : 'bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981]';
 
   return (
     <AnimatePresence>
@@ -50,11 +84,14 @@ export function Toast({ message, isVisible, onClose }: ToastProps) {
             damping: 32,
             mass: 0.8,
           }}
-          className="fixed bottom-24 right-4 sm:right-6 z-[9990] flex items-center gap-3.5 px-4 py-3.5 bg-[#0d1611]/95 text-white border border-[#203926] rounded-2xl shadow-2xl backdrop-blur-md max-w-sm w-auto pointer-events-auto"
+          className={`fixed bottom-24 right-4 sm:right-6 z-[9990] flex items-center gap-3.5 px-4 py-3.5 bg-[#0d1611]/95 text-white border ${containerBorder} rounded-2xl shadow-2xl backdrop-blur-md max-w-sm w-auto pointer-events-auto`}
         >
-          {/* Emerald Green Accent Badge with Icon */}
-          <div className="w-8 h-8 rounded-full bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] flex items-center justify-center shrink-0 shadow-xs">
-            <IconComponent className="w-4 h-4 stroke-[2.4]" />
+          {/* Accent Badge with Icon (X for errors, Check for success) */}
+          <div
+            className={`w-8 h-8 rounded-full ${badgeClasses} flex items-center justify-center shrink-0 shadow-xs`}
+            aria-hidden="true"
+          >
+            <IconComponent className="w-4 h-4 stroke-[2.5]" />
           </div>
 
           {/* Toast Message Content */}

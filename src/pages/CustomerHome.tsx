@@ -5,8 +5,14 @@ import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../types';
 
-import heroFullBanner from '../assets/customer/hero-official-banner.png';
-import glowingBoxImg from '../assets/customer/glowing-box.jpg';
+import heroFullBanner from '../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
+import aboutUsTopImg from '../assets/customer/about-us-top.svg';
+import aboutUsBottomImg from '../assets/customer/about-us-bottom.svg';
+import bgShapeTopRight from '../assets/customer/bg-shape-top-right.svg';
+import bgShapeCircle from '../assets/customer/bg-shape-circle.svg';
+import bgShapeBottomLeft from '../assets/customer/bg-shape-bottom-left.svg';
+import bgShapeBottom from '../assets/customer/bg-shape-bottom.svg';
+import bgShapeAccent from '../assets/customer/bg-shape-accent.svg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
 import cardSaladStop from '../assets/customer/card-saladstop.jpg';
@@ -19,54 +25,59 @@ import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
   onNavigateMarketplace?: () => void;
+  onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onShowToast?: (message: string) => void;
 }
 
 /**
  * Mystery Box Mock Data (Popular Section)
+ * Matched verbatim with reference design image and Design.md specifications.
  */
 const POPULAR_BOXES: CustomerMysteryBox[] = [
   {
     id: 'pop-1',
     storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    remainingBoxesText: 'Hanya Sisa 2 Box',
+    category: 'PASTRY SURPRISE',
+    categoryBadge: '🥐 PASTRY SURPRISE',
+    remainingBoxesText: 'Sisa 2 Box!',
     distanceText: '0.8 km',
-    discountPercent: 65,
-    originalPrice: 100000,
+    discountPercent: 68,
+    originalPrice: 110000,
     rescuePrice: 35000,
-    pickupTime: 'Ambil: 19:40 - 21:00 WIB (Sisa 45 mnt lagi)',
-    description: 'Artisan Croissant French Butter, Pain au Chocolat, dan savory quiche fresh dari baking oven terakhir.',
-    tags: ['✓ Halal MUI', 'Sisa Hanya 2 Box'],
+    pickupTime: 'Ambil: 19:45 - 21:00 WIB',
+    description: 'Artisan French Viennoiserie Surprise Box... isi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
+    tags: ['Halal MUI', 'Gluten & Dairy'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'pop-2',
-    storeName: 'Sate Khas Senayan - GI',
-    category: '🍢 Indonesian Heritage Cuisine',
-    remainingBoxesText: 'Sisa 3 Box',
-    distanceText: '1.2 km',
+    storeName: 'Sate Khas Senayan – GI',
+    category: 'NUSANTARA SURPRISE',
+    categoryBadge: '🍱 NUSANTARA SURPRISE',
+    remainingBoxesText: 'Sisa 4 Box',
+    distanceText: '2.1 km',
     discountPercent: 60,
     originalPrice: 95000,
     rescuePrice: 38000,
     pickupTime: 'Ambil: 20:30 - 21:30 WIB',
-    description: 'Paket Nasi Kuning / Nasi Uduk komplit dengan Sate Ayam, Tahu Tempe Bacem, & Sambal khas Senayan.',
-    tags: ['✓ Halal MUI', 'Porsi Mengenyangkan (1-2 Orang)'],
+    description: 'Paket Makan Malam Kenyang: Aneka sate ayam legendaris / tahu telur / nasi uduk lauk lengkap terkemas higienis standar resto.',
+    tags: ['Halal MUI', 'Porsi Kenyang (1-2 Orang)'],
     imageSrc: cardSateSenayan,
   },
   {
     id: 'pop-3',
     storeName: 'SaladStop! Kemang Village',
-    category: '🥗 Healthy Salad & Fresh Bowl',
-    remainingBoxesText: 'Tinggal 1 Box Terakhir',
-    distanceText: '1.5 km',
-    discountPercent: 70,
-    originalPrice: 140000,
+    category: 'FRESH SALAD & WARM BOWL',
+    categoryBadge: '🥗 FRESH SALAD & WARM BOWL',
+    remainingBoxesText: '! Hanya 1 Box Tersisa!',
+    distanceText: '3.4 km',
+    discountPercent: 65,
+    originalPrice: 120000,
     rescuePrice: 42000,
     pickupTime: 'Ambil: 20:15 - 21:15 WIB',
-    description: 'Mystery Salad Bag: Gourmet Signature Salad/Bowl with warm grains, fresh organic greens, dan dressing sehat spesial signature.',
-    tags: ['✓ 100% Organik Bersertifikat', 'Rendah Kalori'],
+    description: 'Mystery Salad Bag: Gourmet signature salad bowl atau warm grain bowl kaya serat dan protein nabati, dipersiapkan segar sore ini.',
+    tags: ['Plant-Based Option', 'Kacang & Wijen'],
     imageSrc: cardSaladStop,
   },
 ];
@@ -79,50 +90,56 @@ const RADIUS_BOXES: CustomerMysteryBox[] = [
     id: 'rad-1',
     storeName: 'Anomali Coffee Teuku Cik Ditiro',
     category: '☕ Pastry & Savory Snack Box',
-    remainingBoxesText: 'Sisa 4 Jam',
-    distanceText: 'Menteng • 1.1 km',
-    discountPercent: 60,
-    originalPrice: 62000,
+    categoryBadge: '☕ Pastry & Savory Snack Box',
+    portionText: 'Porsi Sedang 450g',
+    remainingBoxesText: 'Sisa 5 box',
+    distanceText: '1.2 km • Cikini',
+    discountPercent: 67,
+    originalPrice: 75000,
     rescuePrice: 25000,
-    pickupTime: 'Jadwal Ambil: 21:00 - 22:00 WIB',
-    description: 'Kombinasi croissant gurih, quiche jamur, atau cake hari ini dari produsen produk bahan lokal terbaik Indonesia.',
-    tags: ['✓ Halal MUI', 'Sisa 4 Jam'],
+    pickupTime: '21:00 - 22:00 WIB',
+    description: 'Kombinasi croissant gurih, quiche jamur, atau cinnamon roll premium produksi harian kafe spesialis kopi Indonesia.',
+    tags: ['Halal MUI', 'Gluten & Dairy'],
     rating: 4.9,
-    reviewCount: 120,
+    reviewCount: '1.2k',
     imageSrc: cardAnomaliCoffee,
     isRadiusItem: true,
   },
   {
     id: 'rad-2',
     storeName: 'Dapur Solo Matraman',
-    category: '🍛 Lauk Fresh & Nasi Tradisional',
-    remainingBoxesText: 'Hanya 2 Box',
-    distanceText: 'Matraman • 2.3 km',
+    category: '🍱 Lauk Pauk & Nasi Kotak Tradisional',
+    categoryBadge: '🍱 Lauk Pauk & Nasi Kotak Tradisional',
+    portionText: 'Porsi Lengkap 500g',
+    remainingBoxesText: 'Sisa 3 box',
+    distanceText: '2.4 km • Matraman',
     discountPercent: 60,
     originalPrice: 70000,
     rescuePrice: 28000,
-    pickupTime: 'Jadwal Ambil: 20:45 - 21:45 WIB',
-    description: 'Surprise box lauk lezat: ayam goreng lengkuas/empal daging, sayur urap segar, tempe mendoan & sambal terasi khas.',
-    tags: ['✓ Halal MUI', 'Sisa 2 Box'],
-    rating: 4.9,
-    reviewCount: 95,
+    pickupTime: '20:45 - 21:45 WIB',
+    description: 'Surplus sajian khas Jawa: ayam goreng rempah / empal / serundeng, sayuran segar, telur balado & sambal terasi lezat.',
+    tags: ['Halal MUI', 'Kacang & Rempah'],
+    rating: 4.8,
+    reviewCount: '890',
     imageSrc: cardDapurSolo,
     isRadiusItem: true,
   },
   {
     id: 'rad-3',
     storeName: 'Tous Les Jours Pacific Place',
-    category: '🍞 Pastry & Roti Manis Fresh Harian',
-    remainingBoxesText: 'Sisa Akhir',
-    distanceText: 'SCBD Sudirman • 3.2 km',
-    discountPercent: 55,
-    originalPrice: 72000,
+    category: '🥐 Morning Bake Surplus Package',
+    categoryBadge: '🥐 Morning Bake Surplus Package',
+    portionText: '4-5 Pcs Roti Manis & Gurih',
+    remainingBoxesText: 'Sisa 6 box',
+    distanceText: '2.8 km • SCBD',
+    discountPercent: 64,
+    originalPrice: 90000,
     rescuePrice: 32000,
-    pickupTime: 'Jadwal Ambil: 21:15 - 22:00 WIB',
-    description: 'Koleksi roti premium manis dan savory: croissant, red bean pastry, choco twist, dan roti bun fresh yang dipanggang pagi tadi.',
-    tags: ['✓ Halal MUI', 'Sisa Akhir'],
-    rating: 4.8,
-    reviewCount: 210,
+    pickupTime: '21:15 - 22:00 WIB',
+    description: 'Koleksi aneka roti artisan Korea, red bean bread, sosis bun panggang, dan sponge cake harum yang dipanggang pagi tadi.',
+    tags: ['Halal MUI', 'Gluten & Telur'],
+    rating: 4.9,
+    reviewCount: '2.4k',
     imageSrc: cardTousLesJours,
     isRadiusItem: true,
   },
@@ -152,14 +169,49 @@ const TESTIMONIALS: TestimonialItem[] = [
   },
   {
     id: 'testi-3',
-    name: 'Reza Akbar',
+    name: 'Nadia Putri',
     role: 'Pelanggan',
     rating: 5,
     avatarSrc: avatarReza,
     quote:
       'Konsepnya keren banget! Sensasi nungguin mystery box itu nagih, dan makanannya 100% higienis dan enak. Berasa makan makanan resto bintang lima tapi bayarnya seharga warung. Rekomen parah!',
   },
+  {
+    id: 'testi-4',
+    name: 'Dimas Pratama',
+    role: 'Pelanggan',
+    rating: 5,
+    avatarSrc: avatarFahmi,
+    quote:
+      'Dapet pastry box isi 4 macam roti dan sandwich sourdough yang masih fresh banget. Rasanya premium dan packagingnya rapi. Gerakan penyelamatan makanan ini patut didukung penuh!',
+  },
+  {
+    id: 'testi-5',
+    name: 'Maya Lestari',
+    role: 'Seller',
+    rating: 5,
+    avatarSrc: avatarReza,
+    quote:
+      'Sistem notifikasi dan pickup QR code-nya super simpel. Konsumen datang tepat waktu sebelum resto tutup. Ngebantu operasional dapur jadi jauh lebih efisien.',
+  },
+  {
+    id: 'testi-6',
+    name: 'Budi Santoso',
+    role: 'Pelanggan',
+    rating: 5,
+    avatarSrc: avatarFahmi,
+    quote:
+      'Menu lauk nusantaranya mantap, porsi kenyang dan higienis. Senang bisa makan enak sekaligus berkontribusi mengurangi sampah makanan berlebih di kota ini.',
+  },
 ];
+
+/**
+ * Continuous infinite marquee track data:
+ * Two identical 12-card halves (4848px each, total 9696px).
+ * Translating -50% guarantees the screen is ALWAYS 100% filled with zero gaps on any screen size.
+ */
+const HALF_TRACK = [...TESTIMONIALS, ...TESTIMONIALS];
+const MARQUEE_CARDS = [...HALF_TRACK, ...HALF_TRACK];
 
 /**
  * Customer Home Page Component ("Beranda Customer")
@@ -177,6 +229,7 @@ const TESTIMONIALS: TestimonialItem[] = [
 export function CustomerHome({
   onNavigateSeller,
   onNavigateMarketplace,
+  onNavigateAuth,
   onNavigateDetail,
   onShowToast,
 }: CustomerHomeProps) {
@@ -184,10 +237,6 @@ export function CustomerHome({
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-
-  // Filters for radius section
-  const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
-  const [selectedDistance, setSelectedDistance] = useState<string>('Jarak Terdekat');
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
     if (onNavigateDetail) {
@@ -210,21 +259,21 @@ export function CustomerHome({
     }
   };
 
-  // Filtered radius boxes
-  const filteredRadiusBoxes = RADIUS_BOXES.filter((box) => {
-    if (selectedCategory === 'Semua') return true;
-    if (selectedCategory === 'Makanan Berat') return box.category.includes('Tradisional') || box.category.includes('Nasi');
-    if (selectedCategory === 'Pastry & Bakery') return box.category.includes('Pastry') || box.category.includes('Roti') || box.category.includes('Snack');
-    return true;
-  });
-
   return (
     <div className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased" id="customer-page-root">
       {/* 1. Floating Pill Header */}
       <CustomerHeader
         activeTab="beranda"
         onNavigateSeller={onNavigateSeller}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onNavigateAuth={onNavigateAuth}
+        onShowToast={onShowToast}
+        onOpenAuthModal={() => {
+          if (onNavigateAuth) {
+            onNavigateAuth();
+          } else {
+            setIsAuthModalOpen(true);
+          }
+        }}
         onSelectTab={(tab) => {
           if (tab === 'marketplace') {
             if (onNavigateMarketplace) {
@@ -236,9 +285,10 @@ export function CustomerHome({
         }}
       />
 
-      {/* 2. Hero Section - Desain Awal (Crisp Unblurred Panoramic Cafe Background with 3D Glowing Box on Right) */}
-      <section className="relative min-h-[460px] md:min-h-[520px] lg:min-h-[540px] pt-32 md:pt-36 pb-16 px-6 sm:px-12 flex items-center overflow-hidden border-b border-black/5" id="hero-section">
-        {/* Full-width crisp unblurred panoramic banner */}
+      {/* 2. Hero Section */}
+      {/* 2A. Desktop Version: Full Panoramic Cafe Banner with 3D Glowing Mystery Box on right (matches Figma verbatim) */}
+      <section className="relative min-h-[440px] lg:min-h-[480px] xl:min-h-[520px] pt-32 md:pt-36 pb-12 sm:pb-16 px-6 sm:px-12 hidden lg:flex items-center overflow-hidden border-b border-black/5" id="hero-section">
+        {/* Full-width panoramic banner background */}
         <div className="absolute inset-0 z-0">
           <img
             src={heroFullBanner}
@@ -248,21 +298,49 @@ export function CustomerHome({
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
-            {/* Left Headline & Description matching Desain Awal verbatim */}
-            <div className="max-w-xl">
-              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-extrabold leading-[1.2] text-[#1b1c1c] tracking-tight mb-3.5">
+          <div className="grid grid-cols-2 items-center">
+            {/* Left Headline & Description matching Figma typography, shifted slightly right away from corner leaves */}
+            <div className="max-w-[440px] ml-10 lg:ml-14">
+              <h1 className="font-display text-[28px] lg:text-[32px] font-extrabold leading-[1.2] text-[#1b1c1c] tracking-tight mb-3">
                 Selamatkan Makanan Lezat, <br />
                 Hemat Hingga 70% Setiap Malam
               </h1>
 
-              <p className="text-xs sm:text-sm md:text-base leading-relaxed text-[#1b1c1c] font-medium max-w-lg">
+              <p className="text-[13px] md:text-sm leading-relaxed text-[#1b1c1c] font-medium max-w-[400px]">
                 Beli Mystery Box berisi makanan berlebih berkualitas prima dari kafe, bakery, dan restoran favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan berdampak nyata bagi bumi.
               </p>
             </div>
 
             {/* Right half is intentionally open to showcase the integrated 3D Glowing Mystery Box in the banner photo */}
-            <div className="hidden lg:block min-h-[300px]" aria-hidden="true" />
+            <div className="min-h-[300px]" aria-hidden="true" />
+          </div>
+        </div>
+      </section>
+
+      {/* 2B. Mobile Version: Stacked Layout with Text on top and Glowing Kardus at the bottom (Fore Coffee style) */}
+      <section className="lg:hidden relative pt-28 sm:pt-32 pb-0 flex flex-col justify-between overflow-hidden border-b border-black/5 bg-[#fcf9f8]" id="hero-section-mobile">
+        {/* Top: Centered Headline & Description */}
+        <div className="px-6 text-center z-10">
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold leading-[1.2] text-[#1b1c1c] tracking-tight mb-3 max-w-sm mx-auto">
+            Selamatkan Makanan Lezat, <br />
+            Hemat Hingga 70% Setiap Malam
+          </h1>
+
+          <p className="text-xs sm:text-sm leading-relaxed text-[#434844] font-medium max-w-sm mx-auto">
+            Beli Mystery Box berisi makanan berlebih berkualitas prima dari kafe, bakery, dan restoran favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan berdampak nyata bagi bumi.
+          </p>
+        </div>
+
+        {/* Bottom: The Cardboard Mystery Box sitting at the bottom without overlapping text */}
+        <div className="w-full mt-4 -mb-1 relative overflow-hidden flex justify-center items-end">
+          <div className="w-full h-[220px] sm:h-[260px] relative">
+            <img
+              src={heroFullBanner}
+              alt="RescueBite Mystery Box"
+              className="w-full h-full object-cover object-[78%_center]"
+            />
+            {/* Subtle top gradient fade into clean page background */}
+            <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#fcf9f8] to-transparent pointer-events-none" />
           </div>
         </div>
       </section>
@@ -273,18 +351,32 @@ export function CustomerHome({
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
             <div className="flex items-center gap-2.5">
-              <span className="w-3 h-3 rounded-full bg-red-600 animate-pulse flex-shrink-0" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] flex-shrink-0" aria-hidden="true" />
               <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
                 Mystery Box Populer
               </h2>
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#434844]">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-[#d94a38] shrink-0"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 9v4l2.5 2.5" />
+                <path d="M5 3 2 6" />
+                <path d="m22 6-3-3" />
+                <path d="M10 2h4" />
               </svg>
-              <span>Jakarta Selatan • Menampilkan pilihan terbaik di sekitarmu</span>
+              <span>Stok kritis • Otomatis dialihkan donasi jika lewat batas waktu</span>
             </div>
           </div>
 
@@ -305,69 +397,16 @@ export function CustomerHome({
       {/* 4. Section: Mystery Box Populer di Sekitarmu (Radius 5 km) */}
       <section className="px-6 pt-4 pb-12">
         <div className="w-full max-w-7xl mx-auto">
-          {/* Section Header with Filter Controls */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+          {/* Section Header */}
+          <div className="mb-6">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
               Mystery Box Populer di Sekitarmu (Radius 5 km)
             </h2>
-
-            {/* Filter Dropdowns */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Distance Filter */}
-              <div className="relative">
-                <label htmlFor="filter-distance" className="sr-only">Filter Jarak</label>
-                <select
-                  id="filter-distance"
-                  className="appearance-none bg-white border border-black/15 rounded-full py-1.5 pl-3.5 pr-8 text-xs sm:text-sm font-semibold text-[#1b1c1c] cursor-pointer hover:border-[#3c6a00] focus:outline-none focus:ring-1 focus:ring-[#3c6a00] transition-colors"
-                  value={selectedDistance}
-                  onChange={(e) => setSelectedDistance(e.target.value)}
-                >
-                  <option value="Jarak Terdekat">📍 Jarak: Jarak Terdekat</option>
-                  <option value="< 2 km">📍 Jarak: &lt; 2 km</option>
-                  <option value="< 5 km">📍 Jarak: &lt; 5 km</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Category Filter */}
-              <div className="relative">
-                <label htmlFor="filter-category" className="sr-only">Filter Kategori</label>
-                <select
-                  id="filter-category"
-                  className="appearance-none bg-white border border-black/15 rounded-full py-1.5 pl-3.5 pr-8 text-xs sm:text-sm font-semibold text-[#1b1c1c] cursor-pointer hover:border-[#3c6a00] focus:outline-none focus:ring-1 focus:ring-[#3c6a00] transition-colors"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="Semua">🍱 Kategori: Semua Menu</option>
-                  <option value="Makanan Berat">🍱 Kategori: Makanan Berat</option>
-                  <option value="Pastry & Bakery">🥐 Kategori: Pastry & Bakery</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Grid Layout Toggle Icon */}
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg border border-black/15 bg-white text-[#1b1c1c] shadow-xs" title="Tampilan Grid Aktif">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7" />
-                  <rect x="14" y="3" width="7" height="7" />
-                  <rect x="14" y="14" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" />
-                </svg>
-              </div>
-            </div>
           </div>
 
           {/* Radius Cards Grid (3 Columns) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRadiusBoxes.map((box) => (
+            {RADIUS_BOXES.map((box) => (
               <MysteryBoxCard
                 key={box.id}
                 item={box}
@@ -379,114 +418,155 @@ export function CustomerHome({
         </div>
       </section>
 
-      {/* 5. Section: About Us (Dual Organic Bento Cards with Lime Backdrop) */}
-      <section className="bg-[#f1fbe8] px-6 py-16 sm:py-20 relative overflow-hidden" id="about-us-section">
-        <div className="w-full max-w-6xl mx-auto flex flex-col gap-12 sm:gap-14">
-          {/* Bento Card 1: Top */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] items-center gap-8 sm:gap-12">
-            <div>
-              <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2.5">
+      {/* 5. Section: About Us (Matching Figma verbatim with organic backdrop & new SVG artwork) */}
+      <section className="relative px-6 py-16 sm:py-24 bg-white overflow-hidden" id="about-us-section">
+        {/* Organic Lime Fluid Backdrop Blobs matching Figma visual */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden -z-0" aria-hidden="true">
+          {/* Top-Right Organic Shape (Rectangle 16 (1).svg) behind Row 1 photo */}
+          <img
+            src={bgShapeTopRight}
+            alt=""
+            className="absolute -right-20 lg:-right-8 -top-8 w-[560px] sm:w-[640px] lg:w-[700px] h-auto select-none pointer-events-none -z-10"
+          />
+
+          {/* Left-Side Accent Organic Shape (Rectangle 18.svg) */}
+          <img
+            src={bgShapeAccent}
+            alt=""
+            className="absolute -left-16 sm:-left-8 top-16 w-[200px] sm:w-[260px] lg:w-[280px] h-auto select-none pointer-events-none -z-10"
+          />
+
+          {/* Center Floating Organic Pebble (Ellipse 1116.svg) */}
+          <img
+            src={bgShapeCircle}
+            alt=""
+            className="absolute left-[44%] lg:left-[48%] top-[48%] -translate-x-1/2 -translate-y-1/2 w-32 sm:w-44 lg:w-52 h-auto select-none pointer-events-none -z-10"
+          />
+
+          {/* Bottom-Left Organic Shape (Rectangle 19.svg) behind Row 2 photo */}
+          <img
+            src={bgShapeBottomLeft}
+            alt=""
+            className="absolute -left-20 sm:-left-10 bottom-6 sm:bottom-12 w-[480px] sm:w-[560px] lg:w-[610px] h-auto select-none pointer-events-none -z-10"
+          />
+
+          {/* Bottom Organic Wave / Hill (Rectangle 20.svg) */}
+          <img
+            src={bgShapeBottom}
+            alt=""
+            className="absolute right-0 bottom-0 w-[600px] sm:w-[780px] lg:w-[930px] h-auto select-none pointer-events-none -z-10"
+          />
+        </div>
+
+        <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col gap-16 sm:gap-24">
+          {/* Row 1: Lebih dari Sekadar Makanan Murah */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-14">
+            {/* Left Column: Text */}
+            <div className="max-w-xl">
+              <span className="text-[#3c6a00] font-bold text-sm sm:text-base tracking-wide block mb-2.5">
                 About Us
               </span>
-              <h2 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold leading-tight text-[#0b1510] mb-4">
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.15] text-[#1b1c1c] tracking-tight mb-4">
                 Lebih dari Sekadar <br />
                 <span className="text-[#3c6a00]">Makanan Murah</span>
               </h2>
-              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844]">
-                RescueBite bukan sekadar platform belanja diskon makanan. Kami hadir sebagai jembatan ekologis antara toko dan kafe berkualitas dengan kamu yang peduli. Setiap harinya, tonan makanan lezat dan higienis berisiko terbuang hanya karena pergantian display harian.
-              </p>
-              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] mt-3">
-                Bersama RescueBite, kamu menyelamatkan hidangan berharga, memangkas jejak emisi karbon pangan, sekaligus menikmati kelezatan premium resto bintang lima dengan harga sangat terjangkau.
+              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
+                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
               </p>
             </div>
 
-            <div className="flex justify-center items-center">
-              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[38%_62%_63%_37%/41%_44%_56%_59%] flex items-center justify-center shadow-lg p-5 overflow-hidden transition-all duration-500 hover:rotate-1 hover:scale-105">
+            {/* Right Column: Organic SVG Photo 1 */}
+            <div className="flex justify-center lg:justify-end items-center">
+              <div className="relative w-full max-w-[460px] sm:max-w-[500px] lg:max-w-[530px]">
                 <img
-                  src={glowingBoxImg}
-                  alt="RescueBite Mystery Box Organic Artwork"
-                  className="w-full h-full object-cover rounded-2xl drop-shadow-md"
+                  src={aboutUsTopImg}
+                  alt="Lebih dari Sekadar Makanan Murah - RescueBite"
+                  className="w-full h-auto object-contain select-none transition-transform duration-500 hover:scale-[1.01] drop-shadow-sm"
                 />
-                <div className="absolute top-[12%] right-[14%] text-xl pointer-events-none">✨</div>
-                <div className="absolute bottom-[12%] left-[16%] text-xl pointer-events-none">🌿</div>
               </div>
             </div>
           </div>
 
-          {/* Bento Card 2: Inverted Bottom */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] items-center gap-8 sm:gap-12">
-            <div className="flex justify-center items-center order-2 lg:order-1">
-              <div className="relative w-full max-w-[340px] aspect-square bg-white rounded-[63%_37%_38%_62%/56%_59%_41%_44%] flex items-center justify-center shadow-lg p-5 overflow-hidden transition-all duration-500 hover:rotate-1 hover:scale-105">
+          {/* Row 2: Good Food Deserve A Second Chance */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-14">
+            {/* Left Column: Organic SVG Photo 2 (Mobile Order 2, Desktop Order 1) */}
+            <div className="flex justify-center lg:justify-start items-center order-2 lg:order-1">
+              <div className="relative w-full max-w-[420px] sm:max-w-[450px] lg:max-w-[480px]">
                 <img
-                  src={glowingBoxImg}
-                  alt="Second Chance Food Rescue"
-                  className="w-full h-full object-cover rounded-2xl drop-shadow-md"
+                  src={aboutUsBottomImg}
+                  alt="Good Food Deserve A Second Chance - RescueBite"
+                  className="w-full h-auto object-contain select-none transition-transform duration-500 hover:scale-[1.01] drop-shadow-sm"
                 />
-                <div className="absolute top-[16%] left-[14%] text-xl pointer-events-none">🌟</div>
-                <div className="absolute bottom-[14%] right-[18%] text-xl pointer-events-none">🌱</div>
               </div>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <h2 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold leading-tight text-[#0b1510] mb-4">
-                Good Food Deserve A <br />
-                <span className="text-[#3c6a00]">Second Chance</span>
-              </h2>
-              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844]">
-                Di balik setiap Mystery Box terdapat komitmen nyata menjaga bumi kita. Makanan berkualitas tinggi layak dinikmati seutuhnya, bukan menjadi sampah emisi karbon di tempat pembuangan.
-              </p>
-              <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] mt-3">
-                Mari jadi bagian dari gerakan penyelamatan pangan cerdas Indonesia. Rasakan sensasi kejutan lezat setiap malam, hemat pengeluaran bulanan, dan rawat lingkungan hidup bersama-sama untuk hari esok yang lebih hijau.
-              </p>
+            {/* Right Column: Text (Mobile Order 1, Desktop Order 2) */}
+            <div className="order-1 lg:order-2 flex flex-col lg:items-end">
+              <div className="max-w-xl">
+                <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.15] text-[#1b1c1c] tracking-tight mb-4 lg:text-right">
+                  Good Food Deserve A <br />
+                  <span className="text-[#3c6a00]">Second Chance</span>
+                </h2>
+                <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
+                  Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. Section: Apa Kata Mereka (Testimonials) */}
-      <section className="px-6 py-16" id="testimoni-section">
-        <div className="w-full max-w-7xl mx-auto">
-          <div className="text-left mb-10">
-            <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2">
-              Apa Kata Mereka
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#1b1c1c] mt-1">
-              Cerita Nyata dari <span className="text-[#3c6a00]">Pengguna</span>
-            </h2>
-          </div>
+      {/* 6. Section: Apa Kata Mereka (Continuous Infinite Marquee using Tailwind CSS) */}
+      <section className="py-16 sm:py-20 overflow-hidden" id="testimoni-section">
+        <div className="w-full max-w-7xl mx-auto px-6 mb-8 text-left">
+          <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2">
+            APA KATA MEREKA
+          </span>
+          <h2 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight">
+            Cerita Nyata dari <span className="text-[#3c6a00]">Pengguna</span>
+          </h2>
+        </div>
 
-          {/* 3 Review Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((testi) => (
+        <div className="relative w-full overflow-hidden group">
+          {/* Left subtle fade */}
+          <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
+
+          {/* Right subtle fade */}
+          <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
+
+          {/* Infinite Marquee Track: Seamless 50% continuous loop with 100% screen coverage */}
+          <div className="flex gap-6 w-max shrink-0 animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:[animation-play-state:paused] [will-change:transform] [transform:translate3d(0,0,0)] [backface-visibility:hidden]">
+            {MARQUEE_CARDS.map((testi, idx) => (
               <div
-                key={testi.id}
-                className="bg-white border border-black/8 rounded-2xl p-6 shadow-xs flex flex-col transition-all hover:-translate-y-1 hover:border-[#3c6a00]/30 hover:shadow-md"
-                id={`testi-${testi.id}`}
+                key={`${testi.id}-${idx}`}
+                className="w-[300px] sm:w-[350px] md:w-[380px] shrink-0 bg-white border border-black/8 rounded-2xl sm:rounded-3xl p-6 shadow-xs flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:border-[#3c6a00]/40 hover:shadow-md select-none"
               >
-                {/* Header User Profile */}
-                <div className="flex items-center gap-3.5 mb-3">
-                  <img
-                    src={testi.avatarSrc}
-                    alt={testi.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-[#3c6a00]/20 shadow-xs"
-                  />
-                  <div>
-                    <h3 className="font-bold text-[#1b1c1c] text-sm">
-                      {testi.name}
-                    </h3>
-                    <span className="text-xs text-gray-500 font-medium">
-                      {testi.role}
-                    </span>
-                    <div className="flex text-amber-500 text-xs mt-0.5">
-                      {'★'.repeat(testi.rating)}
+                <div>
+                  {/* Header User Profile */}
+                  <div className="flex items-center gap-3.5 mb-4">
+                    <img
+                      src={testi.avatarSrc}
+                      alt={testi.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-[#3c6a00]/20 shadow-xs"
+                    />
+                    <div>
+                      <h3 className="font-bold text-[#1b1c1c] text-sm">
+                        {testi.name}
+                      </h3>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {testi.role}
+                      </span>
+                      <div className="flex text-amber-500 text-xs mt-0.5">
+                        {'★'.repeat(testi.rating)}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Quote Content */}
-                <p className="text-sm leading-relaxed text-gray-600 italic">
-                  "{testi.quote}"
-                </p>
+                  {/* Quote Content */}
+                  <p className="text-sm leading-relaxed text-gray-600 italic">
+                    &ldquo;{testi.quote}&rdquo;
+                  </p>
+                </div>
               </div>
             ))}
           </div>

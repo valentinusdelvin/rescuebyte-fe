@@ -18,6 +18,7 @@ export interface CustomerProductDetailProps {
   onNavigateMarketplace?: () => void;
   onNavigateCart?: () => void;
   onNavigateSeller?: () => void;
+  onNavigateAuth?: () => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -47,6 +48,7 @@ export function CustomerProductDetail({
   onNavigateMarketplace,
   onNavigateCart,
   onNavigateSeller,
+  onNavigateAuth,
   onShowToast,
 }: CustomerProductDetailProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -234,7 +236,14 @@ export function CustomerProductDetail({
           activeTab="marketplace"
           onSelectTab={handleHeaderTab}
           onNavigateSeller={onNavigateSeller}
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onNavigateAuth={onNavigateAuth}
+          onOpenAuthModal={() => {
+            if (onNavigateAuth) {
+              onNavigateAuth();
+            } else {
+              setIsAuthModalOpen(true);
+            }
+          }}
         />
 
         {/* 2. Main Content Grid */}
@@ -270,7 +279,7 @@ export function CustomerProductDetail({
                   <button
                     type="button"
                     onClick={() => setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 flex items-center justify-center shadow-2xs transition-all cursor-pointer hidden sm:flex"
+                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 hidden sm:flex items-center justify-center shadow-2xs transition-all cursor-pointer"
                     title="Foto sebelumnya"
                     aria-label="Foto sebelumnya"
                   >
@@ -313,7 +322,7 @@ export function CustomerProductDetail({
                   <button
                     type="button"
                     onClick={() => setSelectedImageIndex((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 flex items-center justify-center shadow-2xs transition-all cursor-pointer hidden sm:flex"
+                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 hidden sm:flex items-center justify-center shadow-2xs transition-all cursor-pointer"
                     title="Foto selanjutnya"
                     aria-label="Foto selanjutnya"
                   >
