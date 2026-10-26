@@ -146,32 +146,9 @@ export function CustomerHeader({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateIndicatorPosition]);
 
-  // Scrollspy: update selected tab as user scrolls through sections
+  // Keep active tab indicator locked to the activeTab (Beranda on home page) without scrollspy switching
   useEffect(() => {
-    // Only perform scrollspy on the home landing page
-    if (activeTab !== 'beranda') return;
-
-    const handleScroll = () => {
-      if (isAutoScrollingRef.current) return;
-
-      const scrollY = window.scrollY;
-      const kontakEl = document.getElementById('kontak-section');
-      const marketplaceEl = document.getElementById('marketplace-section');
-
-      const kontakTop = kontakEl ? kontakEl.offsetTop - 350 : Infinity;
-      const marketplaceTop = marketplaceEl ? marketplaceEl.offsetTop - 250 : Infinity;
-
-      if (scrollY >= kontakTop) {
-        setSelectedTab((prev) => (prev !== 'kontak' ? 'kontak' : prev));
-      } else if (scrollY >= marketplaceTop) {
-        setSelectedTab((prev) => (prev !== 'marketplace' ? 'marketplace' : prev));
-      } else {
-        setSelectedTab((prev) => (prev !== 'beranda' ? 'beranda' : prev));
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    setSelectedTab(activeTab);
   }, [activeTab]);
 
   const scrollToSection = (id: string) => {
