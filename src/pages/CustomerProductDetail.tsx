@@ -3,7 +3,6 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ShoppingCart, Plus } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
 
@@ -17,6 +16,7 @@ export interface CustomerProductDetailProps {
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateCart?: () => void;
+  onNavigateCheckout?: (product: CustomerMysteryBox, quantity: number) => void;
   onNavigateSeller?: () => void;
   onShowToast?: (message: string) => void;
 }
@@ -46,6 +46,7 @@ export function CustomerProductDetail({
   onNavigateHome,
   onNavigateMarketplace,
   onNavigateCart,
+  onNavigateCheckout,
   onNavigateSeller,
   onShowToast,
 }: CustomerProductDetailProps) {
@@ -79,7 +80,6 @@ export function CustomerProductDetail({
   const maxQuantity = 5;
 
   // Modals & Cart State
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [cartCount, setCartCount] = useState<number>(getCartCount);
   const [isCartBouncing, setIsCartBouncing] = useState(false);
@@ -115,14 +115,11 @@ export function CustomerProductDetail({
   };
 
   const handleReservasi = () => {
-    // Open the confirmation reservation modal
-    setIsOrderModalOpen(true);
-  };
-
-  const handleConfirmOrder = (_box: CustomerMysteryBox, _qty: number) => {
-    // Reservation order confirmed via checkout modal
-    if (onShowToast) {
-      onShowToast('Pesanan berhasil dibuat!');
+    // Navigate directly to checkout page
+    if (onNavigateCheckout) {
+      onNavigateCheckout(activeBoxItem, quantity);
+    } else {
+      window.location.assign('#checkout');
     }
   };
 
@@ -684,36 +681,32 @@ export function CustomerProductDetail({
                   </div>
                 </div>
 
-                {/* Action Buttons: +Keranjang (30% on left) & Reservasi Sekarang (70% on right) */}
+                {/* Action Buttons: Keranjang (left) & Reservasi Sekarang (right) */}
                 <div className="flex items-center gap-2.5 sm:gap-3 w-full mt-2">
-                  {/* 30% Width: + Keranjang Button */}
+                  {/* Keranjang Button (Icon Only) */}
                   <button
                     ref={addToCartBtnRef}
                     type="button"
                     onClick={handleAddToCart}
-                    className="w-[30%] py-3.5 px-2 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
+                    className="w-14 sm:w-16 py-3.5 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white flex items-center justify-center shrink-0 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
                     id="btn-tambah-keranjang"
                     title="Tambah ke Keranjang"
                     aria-label="Tambah ke Keranjang"
                   >
                     <div className="relative flex items-center justify-center">
-                      <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-                      <Plus className="w-3 h-3 text-emerald-600 group-hover:text-emerald-300 stroke-[3] absolute -top-1 -right-1.5" />
+                      <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" />
+                      <Plus className="w-3.5 h-3.5 text-emerald-600 group-hover:text-emerald-300 stroke-[3] absolute -top-1 -right-1.5" />
                     </div>
-                    <span className="font-bold text-xs sm:text-sm hidden xs:inline sm:inline">
-                      +Keranjang
-                    </span>
                   </button>
 
-                  {/* 70% Width: Reservasi Sekarang Button */}
+                  {/* Reservasi Sekarang Button */}
                   <button
                     type="button"
                     onClick={handleReservasi}
-                    className="w-[70%] py-3.5 px-3 sm:px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
                     id="btn-reservasi-sekarang"
                     title="Reservasi Sekarang"
                   >
-                    <ShoppingCart className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                     <span>Reservasi Sekarang</span>
                   </button>
                 </div>
@@ -813,14 +806,6 @@ export function CustomerProductDetail({
         onContactSupport={() => {
           if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');
         }}
-      />
-
-      {/* 4. Customer Order Modal */}
-      <CustomerOrderModal
-        item={activeBoxItem}
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        onConfirmOrder={handleConfirmOrder}
       />
 
       {/* 5. Quick Auth Modal */}

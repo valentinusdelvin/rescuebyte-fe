@@ -3,6 +3,7 @@ import { CustomerHome } from './pages/CustomerHome';
 import { CustomerMarketplace } from './pages/CustomerMarketplace';
 import { CustomerProductDetail } from './pages/CustomerProductDetail';
 import { CustomerCart } from './pages/CustomerCart';
+import { CustomerCheckout } from './pages/CustomerCheckout';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './pages/Dashboard';
@@ -14,7 +15,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 import { Toast } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
-import { ActiveViewId, OrderStatusTab, CustomerMysteryBox } from './types';
+import { ActiveViewId, OrderStatusTab, CustomerMysteryBox, CheckoutPayload } from './types';
 
 /**
  * Root Application Component
@@ -34,12 +35,14 @@ export function App() {
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) return 'view-customer-product-detail';
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'view-customer-cart';
+    if (hash.startsWith('#checkout')) return 'view-customer-checkout';
     if (hash.startsWith('#marketplace')) return 'view-customer-marketplace';
     // Default to Customer Landing Page
     return 'view-customer-home';
   });
 
   const [selectedProduct, setSelectedProduct] = useState<CustomerMysteryBox | null>(null);
+  const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
     const hash = window.location.hash.toLowerCase();
@@ -61,6 +64,7 @@ export function App() {
     if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail')) return 'Detail Produk';
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'Keranjang Saya';
+    if (hash.startsWith('#checkout')) return 'Checkout';
     if (hash.startsWith('#marketplace')) return 'Marketplace';
     return 'Beranda Pelanggan';
   });
@@ -102,6 +106,8 @@ export function App() {
       window.history.replaceState(null, '', '#detail-produk');
     } else if (viewId === 'view-customer-cart') {
       window.history.replaceState(null, '', '#keranjang');
+    } else if (viewId === 'view-customer-checkout') {
+      window.history.replaceState(null, '', '#checkout');
     } else if (viewId === 'view-beranda') {
       window.history.replaceState(null, '', '#beranda-seller');
     } else if (viewId === 'view-profil') {
@@ -146,6 +152,9 @@ export function App() {
       } else if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
         setActiveView('view-customer-cart');
         setActiveLabel('Keranjang Saya');
+      } else if (hash.startsWith('#checkout')) {
+        setActiveView('view-customer-checkout');
+        setActiveLabel('Checkout');
       } else if (hash.startsWith('#marketplace')) {
         setActiveView('view-customer-marketplace');
         setActiveLabel('Marketplace');
@@ -191,6 +200,37 @@ export function App() {
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
+          onNavigateCheckout={(product, qty) => {
+            setCheckoutPayload({
+              source: 'direct',
+              items: [
+                {
+                  id: product.id,
+                  name: product.category
+                    ? `${product.category.replace(/^[^\w\s]+/, '').trim()} Reguler`
+                    : 'Mystery Bakery Box Reguler',
+                  storeId: 'store-terasa',
+                  storeName: product.storeName || 'TerasRasa Bakery',
+                  storeAvatar: 'TR',
+                  storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
+                  rating: product.rating || 4.8,
+                  reviewCount: product.reviewCount || 320,
+                  distanceText: product.distanceText || '1.2 km',
+                  categoryTags:
+                    product.tags && product.tags.length > 0
+                      ? product.tags
+                      : ['Roti & Pastry', '✓ Halal'],
+                  originalPrice: product.originalPrice || 40000,
+                  rescuePrice: product.rescuePrice || 20000,
+                  discountPercent: product.discountPercent || 50,
+                  quantity: qty,
+                  imageSrc: product.imageSrc,
+                  pickupTime: product.pickupTime,
+                },
+              ],
+            });
+            handleNavigate('view-customer-checkout', 'Checkout');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />
@@ -198,6 +238,23 @@ export function App() {
         <CustomerCart
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateCheckout={(items) => {
+            setCheckoutPayload({
+              source: 'cart',
+              items: items && items.length > 0 ? items : [],
+            });
+            handleNavigate('view-customer-checkout', 'Checkout');
+          }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-checkout' ? (
+        <CustomerCheckout
+          payload={checkoutPayload}
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
+          onNavigateDetail={() => handleNavigate('view-customer-product-detail', 'Detail Produk')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />

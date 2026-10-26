@@ -7,7 +7,6 @@ import {
   saveCart,
   removeCartItem,
   removeCartStore,
-  clearCart,
   subscribeToCart,
 } from '../services/cartService';
 
@@ -17,6 +16,7 @@ export interface CustomerCartProps {
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateSeller?: () => void;
+  onNavigateCheckout?: (items?: import('../types').CheckoutItem[]) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -27,18 +27,15 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-
-
 export function CustomerCart({
   onNavigateHome,
   onNavigateMarketplace,
   onNavigateSeller,
+  onNavigateCheckout,
   onShowToast,
 }: CustomerCartProps) {
   const [cartStores, setCartStores] = useState<StoreCartGroup[]>(getStoredCart);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [isPaying, setIsPaying] = useState(false);
 
   // Synchronize cartStores with cartService updates
   useEffect(() => {
@@ -137,29 +134,32 @@ export function CustomerCart({
       if (onShowToast) onShowToast('Keranjangmu masih kosong.');
       return;
     }
-    setIsCheckingOut(true);
-    setTimeout(() => {
-      setIsCheckingOut(false);
-      clearCart();
-      if (onShowToast) {
-        onShowToast('Pesanan berhasil dibuat!');
-      }
-    }, 1000);
-  };
+    const flattenedItems = cartStores.flatMap((store) =>
+      store.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        storeId: store.storeId,
+        storeName: store.storeName,
+        storeAvatar: store.storeAvatar,
+        storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
+        rating: store.rating,
+        reviewCount: store.reviewCount,
+        distanceText: store.distanceText,
+        categoryTags: item.categoryTags,
+        originalPrice: item.originalPrice,
+        rescuePrice: item.rescuePrice,
+        discountPercent: item.discountPercent,
+        quantity: item.quantity,
+        imageSrc: item.imageSrc,
+        pickupTime: store.pickupTime,
+      }))
+    );
 
-  const handlePayNow = () => {
-    if (totalBoxes === 0) {
-      if (onShowToast) onShowToast('Keranjangmu masih kosong.');
-      return;
+    if (onNavigateCheckout) {
+      onNavigateCheckout(flattenedItems);
+    } else {
+      window.location.assign('#checkout');
     }
-    setIsPaying(true);
-    setTimeout(() => {
-      setIsPaying(false);
-      clearCart();
-      if (onShowToast) {
-        onShowToast('Pembayaran berhasil!');
-      }
-    }, 1000);
   };
 
   const handleHeaderTab = (tab: 'beranda' | 'marketplace' | 'kontak') => {
@@ -533,12 +533,12 @@ export function CustomerCart({
                     </span>
                   </div>
 
-                  {/* Checkout & Instant Payment Buttons */}
-                  <div className="flex flex-col gap-2 mt-1">
+                  {/* Checkout Button matching Image 3 */}
+                  <div className="mt-1">
                     <button
                       type="button"
                       onClick={handleCheckout}
-                      disabled={isCheckingOut || isPaying || totalBoxes === 0}
+                      disabled={totalBoxes === 0}
                       className="w-full py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
                       id="btn-lanjut-checkout"
                     >
@@ -546,23 +546,7 @@ export function CustomerCart({
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <span>{isCheckingOut ? 'Memproses Pesanan...' : 'Lanjut ke Checkout (Bayar di Toko) →'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePayNow}
-                      disabled={isCheckingOut || isPaying || totalBoxes === 0}
-                      className="w-full py-2.5 px-4 rounded-xl border border-[#3c6a00] bg-white hover:bg-[#3c6a00]/5 text-[#3c6a00] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none"
-                      id="btn-bayar-sekarang"
-                      title="Bayar langsung dengan QRIS / E-Wallet"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="16" />
-                        <path d="M16 10H9.5a2.5 2.5 0 0 0 0 5H14a2.5 2.5 0 0 1 0 5H8" />
-                      </svg>
-                      <span>{isPaying ? 'Memproses Pembayaran...' : 'Bayar Sekarang (QRIS / E-Wallet)'}</span>
+                      <span>Lanjut ke Checkout →</span>
                     </button>
                   </div>
                 </article>
