@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { ShoppingCart, Plus } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerMysteryBox } from '../types';
+import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
 
 // Existing local assets as initial gallery examples (fallback slot used if missing)
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
@@ -16,6 +19,18 @@ export interface CustomerProductDetailProps {
   onNavigateCart?: () => void;
   onNavigateSeller?: () => void;
   onShowToast?: (message: string) => void;
+}
+
+interface FlyingCartItem {
+  id: number;
+  src: string;
+  startX: number;
+  startY: number;
+  startWidth: number;
+  startHeight: number;
+  targetX: number;
+  targetY: number;
+  quantity: number;
 }
 
 /**
@@ -34,6 +49,8 @@ export function CustomerProductDetail({
   onNavigateSeller,
   onShowToast,
 }: CustomerProductDetailProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   // Use product prop or default to Figma mock data for TerasRasa Bakery
   const storeName = product?.storeName || 'TerasRasa Bakery';
   const title = product ? `${product.category.replace(/^[^\w\s]+/, '').trim()} Reguler` : 'Mystery Bakery Box Reguler';
@@ -61,10 +78,27 @@ export function CustomerProductDetail({
   const [quantity, setQuantity] = useState(1);
   const maxQuantity = 5;
 
-  // Modals & Cart
+  // Modals & Cart State
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartCount, setCartCount] = useState<number>(getCartCount);
+  const [isCartBouncing, setIsCartBouncing] = useState(false);
+  const [flyingItems, setFlyingItems] = useState<FlyingCartItem[]>([]);
+
+  // DOM Refs for animation positioning
+  const heroImageRef = useRef<HTMLImageElement>(null);
+  const heroImageContainerRef = useRef<HTMLDivElement>(null);
+  const addToCartBtnRef = useRef<HTMLButtonElement>(null);
+  const cartButtonRef = useRef<HTMLButtonElement>(null);
+  const flyingIdRef = useRef<number>(1);
+
+  // Synchronize cart count with centralized cartService
+  useEffect(() => {
+    const unsubscribe = subscribeToCart((count) => {
+      setCartCount(count);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleDecreaseQuantity = () => {
     if (quantity > 1) {
@@ -81,14 +115,73 @@ export function CustomerProductDetail({
   };
 
   const handleReservasi = () => {
-    // Open the confirmation modal or complete reservation
+    // Open the confirmation reservation modal
     setIsOrderModalOpen(true);
   };
 
-  const handleConfirmOrder = (box: CustomerMysteryBox, qty: number) => {
-    setCartCount((prev) => prev + qty);
+  const handleConfirmOrder = (_box: CustomerMysteryBox, _qty: number) => {
+    // Reservation order confirmed via checkout modal
     if (onShowToast) {
-      onShowToast(`🎉 Berhasil memesan ${qty}x ${box.storeName}! Silakan ambil pada ${pickupTime}.`);
+      onShowToast('Pesanan berhasil dibuat!');
+    }
+  };
+
+  // Fly-to-Cart trigger when user clicks "+ Keranjang"
+  const handleAddToCart = () => {
+    const targetEl = cartButtonRef.current;
+    const sourceEl = heroImageRef.current || heroImageContainerRef.current || addToCartBtnRef.current;
+
+    if (!targetEl || !sourceEl || shouldReduceMotion) {
+      // Direct add without animation if reduced motion or elements missing
+      const newCount = addToCart(activeBoxItem, quantity);
+      setCartCount(newCount);
+      setIsCartBouncing(true);
+      if (onShowToast) {
+        onShowToast('Berhasil ditambahkan ke keranjang');
+      }
+      return;
+    }
+
+    // Determine initial and target coordinates with getBoundingClientRect()
+    const startRect = sourceEl.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+
+    // Center target on floating cart button
+    const targetX = targetRect.left + targetRect.width / 2 - 24;
+    const targetY = targetRect.top + targetRect.height / 2 - 24;
+
+    const nextId = flyingIdRef.current;
+    flyingIdRef.current += 1;
+
+    const newItem: FlyingCartItem = {
+      id: nextId,
+      src: galleryImages[selectedImageIndex] || activeBoxItem.imageSrc,
+      startX: startRect.left,
+      startY: startRect.top,
+      startWidth: startRect.width,
+      startHeight: startRect.height,
+      targetX,
+      targetY,
+      quantity,
+    };
+
+    setFlyingItems((prev) => [...prev, newItem]);
+  };
+
+  const handleFlyComplete = (id: number, qtyToAdd: number) => {
+    // 1. Cleanup flying element
+    setFlyingItems((prev) => prev.filter((item) => item.id !== id));
+
+    // 2. Persist in cartService
+    const newCount = addToCart(activeBoxItem, qtyToAdd);
+    setCartCount(newCount);
+
+    // 3. Trigger bounce / scale animation on cart button
+    setIsCartBouncing(true);
+
+    // 4. Show success toast
+    if (onShowToast) {
+      onShowToast('Berhasil ditambahkan ke keranjang');
     }
   };
 
@@ -231,9 +324,13 @@ export function CustomerProductDetail({
                 </div>
 
                 {/* Main Large Hero Image */}
-                <div className="flex-1 aspect-[4/3] sm:aspect-square rounded-3xl overflow-hidden relative shadow-sm border border-black/10 bg-[#231f1c]">
+                <div
+                  ref={heroImageContainerRef}
+                  className="flex-1 aspect-[4/3] sm:aspect-square rounded-3xl overflow-hidden relative shadow-sm border border-black/10 bg-[#231f1c]"
+                >
                   {galleryImages[selectedImageIndex] ? (
                     <img
+                      ref={heroImageRef}
                       src={galleryImages[selectedImageIndex]}
                       alt={`Foto utama ${title}`}
                       className="w-full h-full object-cover transition-all duration-300 hover:scale-103"
@@ -587,28 +684,48 @@ export function CustomerProductDetail({
                   </div>
                 </div>
 
-                {/* Reservasi Sekarang Button */}
-                <button
-                  type="button"
-                  onClick={handleReservasi}
-                  className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-sm font-bold flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer"
-                  id="btn-reservasi-sekarang"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="21" r="1" />
-                    <circle cx="20" cy="21" r="1" />
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                  </svg>
-                  <span>Reservasi Sekarang</span>
-                </button>
+                {/* Action Buttons: +Keranjang (30% on left) & Reservasi Sekarang (70% on right) */}
+                <div className="flex items-center gap-2.5 sm:gap-3 w-full mt-2">
+                  {/* 30% Width: + Keranjang Button */}
+                  <button
+                    ref={addToCartBtnRef}
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="w-[30%] py-3.5 px-2 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
+                    id="btn-tambah-keranjang"
+                    title="Tambah ke Keranjang"
+                    aria-label="Tambah ke Keranjang"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                      <Plus className="w-3 h-3 text-emerald-600 group-hover:text-emerald-300 stroke-[3] absolute -top-1 -right-1.5" />
+                    </div>
+                    <span className="font-bold text-xs sm:text-sm hidden xs:inline sm:inline">
+                      +Keranjang
+                    </span>
+                  </button>
+
+                  {/* 70% Width: Reservasi Sekarang Button */}
+                  <button
+                    type="button"
+                    onClick={handleReservasi}
+                    className="w-[70%] py-3.5 px-3 sm:px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
+                    id="btn-reservasi-sekarang"
+                    title="Reservasi Sekarang"
+                  >
+                    <ShoppingCart className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                    <span>Reservasi Sekarang</span>
+                  </button>
+                </div>
               </article>
             </div>
           </div>
         </main>
       </div>
 
-      {/* Floating Cart Button (consistent with CustomerMarketplace) */}
-      <button
+      {/* Floating Cart Button (consistent with CustomerMarketplace) with Bounce Animation */}
+      <motion.button
+        ref={cartButtonRef}
         type="button"
         onClick={() => {
           if (onNavigateCart) {
@@ -617,19 +734,78 @@ export function CustomerProductDetail({
             window.location.hash = '#keranjang';
           }
         }}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-[#3c6a00] shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+        animate={
+          isCartBouncing && !shouldReduceMotion
+            ? {
+                scale: [1, 1.28, 0.88, 1.15, 0.96, 1],
+                rotate: [0, -10, 8, -5, 2, 0],
+              }
+            : { scale: 1, rotate: 0 }
+        }
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        onAnimationComplete={() => setIsCartBouncing(false)}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-[#3c6a00] shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
         title="Keranjang Pesanan"
         aria-label="Buka Keranjang Pesanan"
+        id="floating-cart-button"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3c6a00" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+        <ShoppingCart className="w-6 h-6 text-[#3c6a00]" strokeWidth={2.2} />
+        <motion.span
+          key={cartCount}
+          initial={isCartBouncing && !shouldReduceMotion ? { scale: 1.8 } : false}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs"
+          id="cart-badge-count"
+        >
           {cartCount}
-        </span>
-      </button>
+        </motion.span>
+      </motion.button>
+
+      {/* Fly-to-Cart Animation Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden" aria-hidden="true">
+        <AnimatePresence>
+          {flyingItems.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{
+                position: 'fixed',
+                left: item.startX,
+                top: item.startY,
+                width: item.startWidth,
+                height: item.startHeight,
+                opacity: 1,
+                scale: 1,
+                borderRadius: '24px',
+                zIndex: 9999,
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.35)',
+              }}
+              animate={{
+                left: item.targetX,
+                top: item.targetY,
+                width: 48,
+                height: 48,
+                opacity: [1, 1, 0.85, 0],
+                scale: [1, 0.8, 0.4, 0.15],
+                borderRadius: '50%',
+                rotate: [0, -8, 12, -4],
+              }}
+              transition={{
+                duration: 0.75,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              onAnimationComplete={() => handleFlyComplete(item.id, item.quantity)}
+              className="overflow-hidden border-2 border-white shadow-2xl bg-[#1e2420]"
+            >
+              <img
+                src={item.src}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* 3. Customer Footer */}
       <CustomerFooter

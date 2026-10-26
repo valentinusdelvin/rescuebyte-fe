@@ -1,35 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
+import { CartItem, StoreCartGroup } from '../types';
+import {
+  getStoredCart,
+  saveCart,
+  removeCartItem,
+  removeCartStore,
+  clearCart,
+  subscribeToCart,
+} from '../services/cartService';
 
-// Existing local assets as sample images (optional, fallback used if missing)
-import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import cardTousLesJours from '../assets/customer/card-tous-les-jours.jpg';
-import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
-import cardSaladstop from '../assets/customer/card-saladstop.jpg';
-
-export interface CartItem {
-  id: string;
-  name: string;
-  categoryTags: string[];
-  originalPrice: number;
-  rescuePrice: number;
-  discountPercent: number;
-  quantity: number;
-  imageSrc?: string;
-}
-
-export interface StoreCartGroup {
-  storeId: string;
-  storeName: string;
-  storeAvatar: string;
-  rating: number;
-  reviewCount: number;
-  distanceText: string;
-  pickupTime: string;
-  availablePickupTimes: string[];
-  items: CartItem[];
-}
+export type { CartItem, StoreCartGroup };
 
 export interface CustomerCartProps {
   onNavigateHome?: () => void;
@@ -45,87 +27,7 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/**
- * Initial Mock Cart Data matching Figma screenshot verbatim
- */
-const INITIAL_CART_STORES: StoreCartGroup[] = [
-  {
-    storeId: 'store-terasa',
-    storeName: 'TerasRasa Bakery',
-    storeAvatar: 'erasRas',
-    rating: 4.8,
-    reviewCount: 320,
-    distanceText: '1.2 km',
-    pickupTime: '15.00 – 18.00 WIB',
-    availablePickupTimes: ['15.00 – 18.00 WIB', '18.00 – 20.00 WIB'],
-    items: [
-      {
-        id: 'item-bakery-box',
-        name: 'Mystery Bakery Box',
-        categoryTags: ['Roti & Pastry', '✓ Halal', 'Tanpa Babi'],
-        originalPrice: 40000,
-        rescuePrice: 20000,
-        discountPercent: 50,
-        quantity: 2,
-        imageSrc: cardMonsieurSpoon,
-      },
-      {
-        id: 'item-pastry-box',
-        name: 'Mystery Pastry Box',
-        categoryTags: ['Pastry', 'Kue', '✓ Halal'],
-        originalPrice: 36000,
-        rescuePrice: 18000,
-        discountPercent: 50,
-        quantity: 1,
-        imageSrc: cardTousLesJours,
-      },
-    ],
-  },
-  {
-    storeId: 'store-greenbowl',
-    storeName: 'GreenBowl',
-    storeAvatar: 'reenBo',
-    rating: 4.7,
-    reviewCount: 210,
-    distanceText: '3.5 km',
-    pickupTime: '12.00 – 15.00 WIB',
-    availablePickupTimes: ['12.00 – 15.00 WIB', '15.00 – 18.00 WIB'],
-    items: [
-      {
-        id: 'item-meal-box',
-        name: 'Mystery Meal Box',
-        categoryTags: ['Makanan Berat', 'Lauk', '✓ Halal'],
-        originalPrice: 50000,
-        rescuePrice: 25000,
-        discountPercent: 50,
-        quantity: 1,
-        imageSrc: cardSateSenayan,
-      },
-    ],
-  },
-  {
-    storeId: 'store-sayurkita',
-    storeName: 'SayurKita',
-    storeAvatar: 'ayurKit',
-    rating: 4.6,
-    reviewCount: 180,
-    distanceText: '4.1 km',
-    pickupTime: '17.00 – 20.00 WIB',
-    availablePickupTimes: ['17.00 – 20.00 WIB', '20.00 – 22.00 WIB'],
-    items: [
-      {
-        id: 'item-fresh-box',
-        name: 'Mystery Fresh Box',
-        categoryTags: ['Sayur & Buah', 'Organik', '✓ Halal'],
-        originalPrice: 30000,
-        rescuePrice: 15000,
-        discountPercent: 50,
-        quantity: 1,
-        imageSrc: cardSaladstop,
-      },
-    ],
-  },
-];
+
 
 export function CustomerCart({
   onNavigateHome,
@@ -133,9 +35,18 @@ export function CustomerCart({
   onNavigateSeller,
   onShowToast,
 }: CustomerCartProps) {
-  const [cartStores, setCartStores] = useState<StoreCartGroup[]>(INITIAL_CART_STORES);
+  const [cartStores, setCartStores] = useState<StoreCartGroup[]>(getStoredCart);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+
+  // Synchronize cartStores with cartService updates
+  useEffect(() => {
+    const unsubscribe = subscribeToCart((_, stores) => {
+      setCartStores(stores);
+    });
+    return unsubscribe;
+  }, []);
 
   // Calculate totals matching the design
   const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal } = useMemo(() => {
@@ -165,27 +76,27 @@ export function CustomerCart({
 
   // Stepper handlers
   const handleIncrease = (storeId: string, itemId: string) => {
-    setCartStores((prev) =>
-      prev.map((store) => {
-        if (store.storeId !== storeId) return store;
-        return {
-          ...store,
-          items: store.items.map((item) => {
-            if (item.id !== itemId) return item;
-            if (item.quantity >= 5) {
-              if (onShowToast) onShowToast('Maksimal 5 box per item.');
-              return item;
-            }
-            return { ...item, quantity: item.quantity + 1 };
-          }),
-        };
-      })
-    );
+    const updated = cartStores.map((store) => {
+      if (store.storeId !== storeId) return store;
+      return {
+        ...store,
+        items: store.items.map((item) => {
+          if (item.id !== itemId) return item;
+          if (item.quantity >= 5) {
+            if (onShowToast) onShowToast('Maksimal 5 box per item.');
+            return item;
+          }
+          return { ...item, quantity: item.quantity + 1 };
+        }),
+      };
+    });
+    setCartStores(updated);
+    saveCart(updated);
   };
 
   const handleDecrease = (storeId: string, itemId: string) => {
-    setCartStores((prev) =>
-      prev.map((store) => {
+    const updated = cartStores
+      .map((store) => {
         if (store.storeId !== storeId) return store;
         return {
           ...store,
@@ -196,34 +107,29 @@ export function CustomerCart({
             })
             .filter((item) => item.quantity > 0),
         };
-      }).filter((store) => store.items.length > 0)
-    );
+      })
+      .filter((store) => store.items.length > 0);
+
+    setCartStores(updated);
+    saveCart(updated);
   };
 
   const handleRemoveItem = (storeId: string, itemId: string) => {
-    setCartStores((prev) =>
-      prev
-        .map((store) => {
-          if (store.storeId !== storeId) return store;
-          return {
-            ...store,
-            items: store.items.filter((item) => item.id !== itemId),
-          };
-        })
-        .filter((store) => store.items.length > 0)
-    );
+    removeCartItem(storeId, itemId);
     if (onShowToast) onShowToast('Item dihapus dari keranjang.');
   };
 
   const handleRemoveStore = (storeId: string, storeName: string) => {
-    setCartStores((prev) => prev.filter((store) => store.storeId !== storeId));
+    removeCartStore(storeId);
     if (onShowToast) onShowToast(`Semua pesanan dari ${storeName} dihapus.`);
   };
 
   const handlePickupTimeChange = (storeId: string, newTime: string) => {
-    setCartStores((prev) =>
-      prev.map((store) => (store.storeId === storeId ? { ...store, pickupTime: newTime } : store))
+    const updated = cartStores.map((store) =>
+      store.storeId === storeId ? { ...store, pickupTime: newTime } : store
     );
+    setCartStores(updated);
+    saveCart(updated);
   };
 
   const handleCheckout = () => {
@@ -234,11 +140,26 @@ export function CustomerCart({
     setIsCheckingOut(true);
     setTimeout(() => {
       setIsCheckingOut(false);
+      clearCart();
       if (onShowToast) {
-        onShowToast(`🎉 Pesanan ${totalBoxes} box berhasil dibuat! Siapkan kode pengambilan saat tiba di toko.`);
+        onShowToast('Pesanan berhasil dibuat!');
       }
-      setCartStores([]);
-    }, 1200);
+    }, 1000);
+  };
+
+  const handlePayNow = () => {
+    if (totalBoxes === 0) {
+      if (onShowToast) onShowToast('Keranjangmu masih kosong.');
+      return;
+    }
+    setIsPaying(true);
+    setTimeout(() => {
+      setIsPaying(false);
+      clearCart();
+      if (onShowToast) {
+        onShowToast('Pembayaran berhasil!');
+      }
+    }, 1000);
   };
 
   const handleHeaderTab = (tab: 'beranda' | 'marketplace' | 'kontak') => {
@@ -612,20 +533,38 @@ export function CustomerCart({
                     </span>
                   </div>
 
-                  {/* Checkout Button */}
-                  <button
-                    type="button"
-                    onClick={handleCheckout}
-                    disabled={isCheckingOut || totalBoxes === 0}
-                    className="w-full mt-1 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed"
-                    id="btn-lanjut-checkout"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    <span>{isCheckingOut ? 'Memproses Pesanan...' : 'Lanjut ke Checkout →'}</span>
-                  </button>
+                  {/* Checkout & Instant Payment Buttons */}
+                  <div className="flex flex-col gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={handleCheckout}
+                      disabled={isCheckingOut || isPaying || totalBoxes === 0}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
+                      id="btn-lanjut-checkout"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <span>{isCheckingOut ? 'Memproses Pesanan...' : 'Lanjut ke Checkout (Bayar di Toko) →'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handlePayNow}
+                      disabled={isCheckingOut || isPaying || totalBoxes === 0}
+                      className="w-full py-2.5 px-4 rounded-xl border border-[#3c6a00] bg-white hover:bg-[#3c6a00]/5 text-[#3c6a00] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none"
+                      id="btn-bayar-sekarang"
+                      title="Bayar langsung dengan QRIS / E-Wallet"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <path d="M16 10H9.5a2.5 2.5 0 0 0 0 5H14a2.5 2.5 0 0 1 0 5H8" />
+                      </svg>
+                      <span>{isPaying ? 'Memproses Pembayaran...' : 'Bayar Sekarang (QRIS / E-Wallet)'}</span>
+                    </button>
+                  </div>
                 </article>
               </div>
             </div>
