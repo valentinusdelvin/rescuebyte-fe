@@ -76,6 +76,8 @@ export interface CustomerMysteryBox {
   id: string;
   storeName: string;
   category: string;
+  categoryBadge?: string;
+  portionText?: string;
   distanceText: string;
   remainingBoxesText: string;
   discountPercent: number;
@@ -85,7 +87,7 @@ export interface CustomerMysteryBox {
   description: string;
   tags: string[];
   rating?: number;
-  reviewCount?: number;
+  reviewCount?: number | string;
   imageSrc: string;
   isRadiusItem?: boolean;
 }

@@ -14,8 +14,45 @@ function formatRupiah(amount: number): string {
 }
 
 /**
+ * Render pickup schedule block with clean stopwatch icon and formatted timing
+ */
+function renderPickupSchedule(pickupTimeStr: string) {
+  // Strip redundant "Jadwal Ambil:" or "Ambil:" prefix
+  let cleanTime = pickupTimeStr.replace(/^(Jadwal Ambil:\s*|Ambil:\s*)/gi, '').trim();
+  // Strip parenthetical remaining time like (45 mnt lagi)
+  cleanTime = cleanTime.replace(/\s*\(.*?\)\s*$/, '').trim();
+
+  return (
+    <div className="w-full bg-[#F4F3F0] rounded-xl py-2.5 px-3.5 flex items-center gap-2 mt-auto">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-[#d94a38] shrink-0"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9v4l2.5 2.5" />
+        <path d="M5 3 2 6" />
+        <path d="m22 6-3-3" />
+        <path d="M10 2h4" />
+      </svg>
+      <div className="text-xs text-[#434844] truncate">
+        <span className="font-normal text-[#5a625d]">Ambil: </span>
+        <span className="font-bold text-[#1b1c1c]">{cleanTime}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Reusable Mystery Box Card for Customer Landing Page
- * Styled with Tailwind CSS classes.
+ * Pixel-accurate implementation aligned with Design.md and Figma design.
  */
 export function MysteryBoxCard({
   item,
@@ -24,13 +61,26 @@ export function MysteryBoxCard({
 }: MysteryBoxCardProps) {
   const isPopular = variant === 'popular';
 
+  // Check stock quantity from text (e.g. "Sisa 4 Box" -> 4, "Sisa 2 Box!" -> 2, "Hanya 1 Box Tersisa!" -> 1)
+  const stockMatch = item.remainingBoxesText.match(/\d+/);
+  const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
+  const isAboveTwo = stockCount > 2;
+  const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
+  const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '');
+
+  // Calculate discount percentage mathematically if needed
+  const calculatedDiscount = item.originalPrice > 0
+    ? Math.round(((item.originalPrice - item.rescuePrice) / item.originalPrice) * 100)
+    : item.discountPercent;
+  const displayDiscount = item.discountPercent || calculatedDiscount;
+
   return (
     <article
-      className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
+      className="bg-white rounded-2xl border border-[#e2e6df] shadow-[0_4px_16px_-2px_rgba(31,42,36,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(31,42,36,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
       id={`box-card-${item.id}`}
     >
-      {/* Card Visual Header with Badges */}
-      <div className="relative w-full h-48 overflow-hidden bg-gray-100">
+      {/* 1. Card Visual Header with Badges & Store Name Overlay */}
+      <div className="relative w-full h-52 sm:h-56 overflow-hidden bg-[#24201c]">
         <img
           src={item.imageSrc}
           alt={`Mystery Box ${item.storeName}`}
@@ -38,112 +88,229 @@ export function MysteryBoxCard({
           loading="lazy"
         />
 
-        {/* Top Badges Overlay */}
-        <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none">
+        {/* Top Badges Overlay (Stock, Distance / Rating, Discount) */}
+        <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-10">
           <div className="flex items-center gap-1.5">
             {isPopular ? (
               <>
-                <span className="px-2.5 py-1 rounded-full bg-red-600/90 backdrop-blur-xs text-white text-[10px] font-black tracking-wide shadow-xs">
-                  {item.remainingBoxesText.toUpperCase()}
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold">
+                {/* Stock Badge: Merah Muda jika > 2, Merah Tebal jika <= 2 */}
+                {isAboveTwo ? (
+                  <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <polyline points="12 6 12 12 15 14" />
+                    </svg>
+                    <span>{cleanStockText}</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
+                    {isSingleLast ? (
+                      <span className="font-black text-[12px] leading-none" aria-hidden="true">!</span>
+                    ) : (
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="shrink-0"
+                        aria-hidden="true"
+                      >
+                        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                      </svg>
+                    )}
+                    <span>{cleanStockText}</span>
+                  </span>
+                )}
+
+                {/* Popular Distance Pill */}
+                <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs">
                   {item.distanceText}
                 </span>
               </>
             ) : (
-              <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold">
-                ⭐ {item.rating?.toFixed(1) || '4.9'} ({item.reviewCount || 100}+)
+              /* Radius Variant Location Pill with Green Pin */
+              <span className="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs flex items-center gap-1">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#3c6a00] shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>{item.distanceText}</span>
               </span>
             )}
           </div>
 
+          {/* Discount Ratio Pill (Green for Both Popular and Radius) */}
           <div>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-xs">
-              -{item.discountPercent}%
+            <span className="px-2.5 py-1 text-[11px] font-black shadow-xs rounded-full bg-[#3c6a00] text-white">
+              -{displayDiscount}%
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Card Content Body */}
-      <div className="p-5 flex flex-col flex-1">
-        {/* Category & Store Name */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-          <span className="font-semibold text-emerald-800">{item.category}</span>
-          {!isPopular && (
-            <span className="text-gray-400">{item.distanceText}</span>
-          )}
-        </div>
-
-        <h3 className="text-base font-bold text-gray-900 font-display truncate">{item.storeName}</h3>
-
-        <p className="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed">{item.description}</p>
-
-        {/* Tags */}
-        <div className="flex items-center gap-1.5 flex-wrap my-3">
-          {item.tags.map((tag, idx) => (
-            <span
-              key={`${tag}-${idx}`}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${idx === 0
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-100'
-                  : 'bg-gray-100 text-gray-600'
-                }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Pickup Time */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <span>{item.pickupTime}</span>
-        </div>
-      </div>
-
-      {/* Card Footer with Price and Action */}
-      <div className="p-5 pt-0 flex items-center justify-between gap-3 border-t border-gray-50 mt-2">
-        <div className="flex flex-col">
-          <span className="text-xs text-gray-400 line-through">
-            Rp {formatRupiah(item.originalPrice)}
-          </span>
-          <span className="text-base font-black text-emerald-700 font-display">
-            Rp {formatRupiah(item.rescuePrice)}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
-          id={`btn-order-${item.id}`}
-          onClick={() => onOrderClick(item)}
-          aria-label={`Ambil Mystery Box dari ${item.storeName}`}
-        >
+        {/* Bottom Dark Gradient with Overlay Information */}
+        <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
           {isPopular ? (
-            <>
-              <span>Ambil Sekarang</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            /* Popular Variant: Category Badge */
+            <div className="flex items-center gap-1.5 text-[#a3e635] text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-xs">
+              {item.categoryBadge || item.category}
+            </div>
+          ) : (
+            /* Radius Variant: Star Rating & Review Count */
+            <div className="flex items-center gap-1 text-white/90 text-xs font-semibold drop-shadow-xs">
+              <span className="text-amber-400">★</span>
+              <span>{item.rating?.toFixed(1) || '4.9'}</span>
+              <span className="text-white/70 font-normal">({item.reviewCount || '1.2k'} ulasan)</span>
+            </div>
+          )}
+
+          {/* Store Name */}
+          <h3 className="text-white font-bold text-base sm:text-lg font-display leading-tight truncate mt-0.5 drop-shadow-sm">
+            {item.storeName}
+          </h3>
+        </div>
+      </div>
+
+      {/* 2. Card Content Body */}
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        {/* Description */}
+        <p className="text-xs sm:text-[13px] text-[#434844] leading-relaxed line-clamp-2">
+          {item.description}
+        </p>
+
+        {/* Badges / Dietary & Certification Tags (Vibrant Lime Green Halal / Plant-Based) */}
+        <div className="flex items-center gap-2 flex-wrap my-3.5">
+          {item.tags.map((tag, idx) => {
+            const lowerTag = tag.toLowerCase();
+            const isHalal = lowerTag.includes('halal') || idx === 0 && !lowerTag.includes('porsi');
+            const isPlantBased = lowerTag.includes('plant') || lowerTag.includes('organik');
+
+            if (isHalal) {
+              return (
+                <span
+                  key={`${tag}-${idx}`}
+                  className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  <span>{tag.replace(/^[✓\s]+/, '')}</span>
+                </span>
+              );
+            }
+
+            if (isPlantBased) {
+              return (
+                <span
+                  key={`${tag}-${idx}`}
+                  className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                    aria-hidden="true"
+                  >
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                  </svg>
+                  <span>{tag}</span>
+                </span>
+              );
+            }
+
+            return (
+              <span
+                key={`${tag}-${idx}`}
+                className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#F1F3F5] text-[#434844] font-medium"
+              >
+                {tag}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* Pickup Schedule: Gray Box with Stopwatch matching Mystery Box Populer */}
+        {renderPickupSchedule(item.pickupTime)}
+
+        {/* Bottom Row (Price & Action) */}
+        <div className="border-t border-[#f0eded] pt-3.5 mt-3.5 flex items-center justify-between gap-3">
+          {/* Price Stack */}
+          <div className="flex flex-col">
+            <span className="text-xs text-[#737874] line-through font-medium">
+              Rp {formatRupiah(item.originalPrice)}
+            </span>
+            <span className="text-xl sm:text-[22px] font-bold text-[#1b1c1c] font-display tracking-tight leading-none mt-0.5">
+              Rp {formatRupiah(item.rescuePrice)}
+            </span>
+          </div>
+
+          {/* Action Button: 'Ambil Sekarang →' for Popular, 'Pesan Box' for Radius */}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+            id={`btn-order-${item.id}`}
+            onClick={() => onOrderClick(item)}
+            aria-label={`${isPopular ? 'Ambil' : 'Pesan'} Mystery Box dari ${item.storeName}`}
+          >
+            <span>{isPopular ? 'Ambil Sekarang' : 'Pesan Box'}</span>
+            {isPopular && (
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
-            </>
-          ) : (
-            <span>Pesan Box</span>
-          )}
-        </button>
+            )}
+          </button>
+        </div>
       </div>
     </article>
   );

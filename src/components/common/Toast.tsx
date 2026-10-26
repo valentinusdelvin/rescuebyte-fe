@@ -1,3 +1,4 @@
+// Toast notification component with motion/react
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Check, ShoppingBag, CheckCircle2 } from 'lucide-react';
 
