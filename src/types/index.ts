@@ -65,6 +65,29 @@ export interface CustomerMysteryBox {
   isRadiusItem?: boolean;
 }
 
+export interface CartItem {
+  id: string;
+  name: string;
+  categoryTags: string[];
+  originalPrice: number;
+  rescuePrice: number;
+  discountPercent: number;
+  quantity: number;
+  imageSrc?: string;
+}
+
+export interface StoreCartGroup {
+  storeId: string;
+  storeName: string;
+  storeAvatar: string;
+  rating: number;
+  reviewCount: number;
+  distanceText: string;
+  pickupTime: string;
+  availablePickupTimes: string[];
+  items: CartItem[];
+}
+
 export interface TestimonialItem {
   id: string;
   name: string;

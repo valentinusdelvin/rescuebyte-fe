@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerMysteryBox } from '../types';
+import { getCartCount, subscribeToCart } from '../services/cartService';
 
 // Optional existing assets (can be replaced/augmented anytime from assets)
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
@@ -260,7 +261,15 @@ export function CustomerMarketplace({
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartCount, setCartCount] = useState<number>(getCartCount);
+
+  // Synchronize cart count across views
+  useEffect(() => {
+    const unsubscribe = subscribeToCart((count) => {
+      setCartCount(count);
+    });
+    return unsubscribe;
+  }, []);
 
   // Filtered & Sorted products list
   const filteredProducts = useMemo(() => {
@@ -328,10 +337,9 @@ export function CustomerMarketplace({
     }
   };
 
-  const handleConfirmOrder = (box: CustomerMysteryBox, quantity: number) => {
-    setCartCount((prev) => prev + quantity);
+  const handleConfirmOrder = (_box: CustomerMysteryBox, _quantity: number) => {
     if (onShowToast) {
-      onShowToast(`🎉 Berhasil memesan ${quantity}x ${box.storeName}! Silakan ambil sesuai jadwal.`);
+      onShowToast('Pesanan berhasil dibuat!');
     }
   };
 
