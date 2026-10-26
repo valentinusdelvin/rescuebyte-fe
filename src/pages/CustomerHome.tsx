@@ -13,7 +13,6 @@ import bgShapeCircle from '../assets/customer/bg-shape-circle.svg';
 import bgShapeBottomLeft from '../assets/customer/bg-shape-bottom-left.svg';
 import bgShapeBottom from '../assets/customer/bg-shape-bottom.svg';
 import bgShapeAccent from '../assets/customer/bg-shape-accent.svg';
-import glowingBoxImg from '../assets/customer/glowing-box.jpg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
 import cardSaladStop from '../assets/customer/card-saladstop.jpg';
@@ -26,6 +25,7 @@ import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
   onNavigateMarketplace?: () => void;
+  onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onShowToast?: (message: string) => void;
 }
@@ -229,6 +229,7 @@ const MARQUEE_CARDS = [...HALF_TRACK, ...HALF_TRACK];
 export function CustomerHome({
   onNavigateSeller,
   onNavigateMarketplace,
+  onNavigateAuth,
   onNavigateDetail,
   onShowToast,
 }: CustomerHomeProps) {
@@ -264,7 +265,15 @@ export function CustomerHome({
       <CustomerHeader
         activeTab="beranda"
         onNavigateSeller={onNavigateSeller}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onNavigateAuth={onNavigateAuth}
+        onShowToast={onShowToast}
+        onOpenAuthModal={() => {
+          if (onNavigateAuth) {
+            onNavigateAuth();
+          } else {
+            setIsAuthModalOpen(true);
+          }
+        }}
         onSelectTab={(tab) => {
           if (tab === 'marketplace') {
             if (onNavigateMarketplace) {

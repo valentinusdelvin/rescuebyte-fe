@@ -3,6 +3,7 @@ import { CustomerHome } from './pages/CustomerHome';
 import { CustomerMarketplace } from './pages/CustomerMarketplace';
 import { CustomerProductDetail } from './pages/CustomerProductDetail';
 import { CustomerCart } from './pages/CustomerCart';
+import { CustomerAuth } from './pages/CustomerAuth';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './pages/Dashboard';
@@ -11,10 +12,11 @@ import { OrderHistory } from './pages/OrderHistory';
 import { BuatDagangan } from './pages/BuatDagangan';
 import { Daganganku } from './pages/Daganganku';
 import { PlaceholderPage } from './pages/PlaceholderPage';
-import { Toast } from './components/common/Toast';
+import { Toast, ToastType } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
 import { ActiveViewId, OrderStatusTab, CustomerMysteryBox } from './types';
+import { handleGoogleCallback, extractApiErrorMessage } from './services/authService';
 
 /**
  * Root Application Component
@@ -35,6 +37,7 @@ export function App() {
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) return 'view-customer-product-detail';
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'view-customer-cart';
     if (hash.startsWith('#marketplace')) return 'view-customer-marketplace';
+    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'view-customer-auth';
     // Default to Customer Landing Page
     return 'view-customer-home';
   });
@@ -62,6 +65,7 @@ export function App() {
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail')) return 'Detail Produk';
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'Keranjang Saya';
     if (hash.startsWith('#marketplace')) return 'Marketplace';
+    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'Masuk / Daftar';
     return 'Beranda Pelanggan';
   });
 
@@ -76,16 +80,60 @@ export function App() {
 
   // Toast state
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastType, setToastType] = useState<ToastType>('success');
   const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
 
-  const showToast = useCallback((message: string, duration: number = 3000) => {
-    setToastMessage(message);
-    setIsToastVisible(true);
-    const timer = setTimeout(() => {
-      setIsToastVisible(false);
-    }, duration);
-    return () => clearTimeout(timer);
-  }, []);
+  const showToast = useCallback(
+    (message: string, typeOrDuration?: ToastType | number, maybeDuration?: number) => {
+      let type: ToastType = 'success';
+      let duration = 3000;
+
+      if (typeof typeOrDuration === 'string') {
+        type = typeOrDuration;
+        if (typeof maybeDuration === 'number') duration = maybeDuration;
+      } else if (typeof typeOrDuration === 'number') {
+        duration = typeOrDuration;
+      }
+
+      if (
+        type === 'success' &&
+        /(minimal|tidak cocok|gagal|harus|salah|belum|wajib|silakan isi|error|batal)/i.test(message)
+      ) {
+        type = 'error';
+      }
+
+      setToastMessage(message);
+      setToastType(type);
+      setIsToastVisible(true);
+      const timer = setTimeout(() => {
+        setIsToastVisible(false);
+      }, duration);
+      return () => clearTimeout(timer);
+    },
+    []
+  );
+
+  // Handle Google OAuth2 callback query parameters if redirected back
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+
+    if (code && state) {
+      handleGoogleCallback(code, state)
+        .then((payload) => {
+          showToast(`Berhasil masuk dengan akun Google (${payload.user.name})!`, 'success');
+          // Clean query params
+          const cleanUrl = window.location.pathname + '#beranda-customer';
+          window.history.replaceState(null, '', cleanUrl);
+          setActiveView('view-customer-home');
+          setActiveLabel('Beranda Pelanggan');
+        })
+        .catch((err) => {
+          showToast(extractApiErrorMessage(err, 'Gagal menyelesaikan otentikasi Google.'), 'error');
+        });
+    }
+  }, [showToast]);
 
   // Sync hash on navigation
   const handleNavigate = (viewId: string, label: string = '', tab?: OrderStatusTab) => {
@@ -102,6 +150,8 @@ export function App() {
       window.history.replaceState(null, '', '#detail-produk');
     } else if (viewId === 'view-customer-cart') {
       window.history.replaceState(null, '', '#keranjang');
+    } else if (viewId === 'view-customer-auth') {
+      window.history.replaceState(null, '', '#masuk');
     } else if (viewId === 'view-beranda') {
       window.history.replaceState(null, '', '#beranda-seller');
     } else if (viewId === 'view-profil') {
@@ -149,6 +199,9 @@ export function App() {
       } else if (hash.startsWith('#marketplace')) {
         setActiveView('view-customer-marketplace');
         setActiveLabel('Marketplace');
+      } else if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) {
+        setActiveView('view-customer-auth');
+        setActiveLabel('Masuk / Daftar');
       } else {
         // Customer view for #beranda-customer, #customer, or empty hash
         setActiveView('view-customer-home');
@@ -167,6 +220,7 @@ export function App() {
         <CustomerHome
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
           onNavigateDetail={(item) => {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
@@ -177,6 +231,7 @@ export function App() {
         <CustomerMarketplace
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
           onNavigateDetail={(item) => {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
@@ -192,6 +247,7 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-cart' ? (
@@ -199,6 +255,19 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-auth' ? (
+        <CustomerAuth
+          initialMode={
+            typeof window !== 'undefined' &&
+            (window.location.hash.toLowerCase().includes('daftar') ||
+              window.location.hash.toLowerCase().includes('register'))
+              ? 'register'
+              : 'login'
+          }
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onShowToast={showToast}
         />
       ) : (
@@ -272,7 +341,7 @@ export function App() {
       )}
 
       {/* Global Toast & Loading Overlay */}
-      <Toast message={toastMessage} isVisible={isToastVisible} />
+      <Toast message={toastMessage} isVisible={isToastVisible} type={toastType} />
       <BrandLoadingOverlay
         isVisible={isLoading}
         title={loadingTitle}

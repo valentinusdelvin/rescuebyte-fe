@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import rescueBiteLogo from '../../assets/logo.svg';
+import { logoutUser } from '../../services/authService';
 
 export interface HeaderProps {
   storeName?: string;
@@ -48,9 +49,16 @@ export function Header({
     if (onShowToast) onShowToast('Fitur Ubah PIN akan segera hadir.');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
-    if (onShowToast) onShowToast('Sesi Anda tetap aktif dalam mode demo.');
+    try {
+      await logoutUser();
+      if (onShowToast) onShowToast('Berhasil keluar dari akun.');
+      if (onNavigate) onNavigate('view-customer-home');
+    } catch {
+      if (onShowToast) onShowToast('Berhasil keluar.');
+      if (onNavigate) onNavigate('view-customer-home');
+    }
   };
 
   return (

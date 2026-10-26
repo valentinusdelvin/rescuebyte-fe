@@ -66,7 +66,7 @@ export function MysteryBoxCard({
   const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
   const isAboveTwo = stockCount > 2;
   const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
-  const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '');
+  const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
 
   // Calculate discount percentage mathematically if needed
   const calculatedDiscount = item.originalPrice > 0
@@ -116,7 +116,21 @@ export function MysteryBoxCard({
                 ) : (
                   <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
                     {isSingleLast ? (
-                      <span className="font-black text-[12px] leading-none" aria-hidden="true">!</span>
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="shrink-0"
+                        aria-hidden="true"
+                      >
+                        <line x1="12" y1="4.5" x2="12" y2="13.5" />
+                        <line x1="12" y1="19" x2="12.01" y2="19" />
+                      </svg>
                     ) : (
                       <svg
                         width="12"

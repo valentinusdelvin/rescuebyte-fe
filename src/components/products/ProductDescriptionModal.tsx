@@ -174,18 +174,16 @@ export function ProductDescriptionModal({
           <div className="flex items-center gap-1 bg-gray-200/60 p-0.5 rounded-xl">
             <button
               type="button"
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                activeTab === 'editor' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === 'editor' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                }`}
               onClick={() => setActiveTab('editor')}
             >
               Editor
             </button>
             <button
               type="button"
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                activeTab === 'preview' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === 'preview' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                }`}
               onClick={() => setActiveTab('preview')}
             >
               Pratinjau

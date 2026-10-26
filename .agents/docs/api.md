@@ -1,39 +1,51 @@
 # API Integration
 
-This guide applies only if the React application communicates with a backend.
+This guide applies for connecting the RescueBite React application with the backend API.
+
+## Base URL & Documentation
+- Default Backend API: `https://dolpin-fourthree.bccdev.id/`
+- Swagger UI: `https://dolpin-fourthree.bccdev.id/swagger/index.html`
+- OpenAPI Schema: `https://dolpin-fourthree.bccdev.id/swagger/doc.json`
+- Environment variable: `VITE_API_BASE_URL` (with fallback to default URL).
+
+## Auth Endpoints (/api/v1/auth)
+- `POST /api/v1/auth/register` (body: `{ name, email, password }`): Creates new account, returns payload with `user`, `access_token`, `refresh_token`.
+- `POST /api/v1/auth/login` (body: `{ email, password }`): Logs in, returns payload with `user`, `access_token`, `refresh_token`.
+- `POST /api/v1/auth/logout` (body: `{ refresh_token }`): Invalidates session token.
+- `GET /api/v1/auth/me` (header: `Bearer <token>`): Returns currently authenticated user details.
+- `POST /api/v1/auth/refresh` (body: `{ refresh_token }`): Generates a new access token.
+- `GET /api/v1/auth/google`: Retrieves Google OAuth authorization URL.
+- `GET /api/v1/auth/google/callback`: Handles OAuth redirect and issues tokens.
 
 ## Rules
-- Follow the existing API client/service pattern. If none exists, create a small shared API utility only when multiple calls need it.
-- Avoid duplicating request logic across components.
+- Use `axios` as the standard HTTP client for all API communication.
+- Centralize the Axios instance in `src/services/api.ts` with request and response interceptors.
+- Automatically attach `Authorization: Bearer <access_token>` from `localStorage` in the request interceptor.
+- Extract descriptive error messages from `err.response.data.payload.error.message` for toast notifications.
+- Avoid duplicating request logic across components; place API calls in `src/services/`.
 - Keep API response handling separate from presentation where practical.
 - Handle loading, success, empty, and error states in the UI.
-- Check HTTP status codes and handle network failures.
-- Do not hardcode environment-specific API base URLs.
-- Never put private backend credentials in client-side code.
-- Type API request and response data explicitly.
-- Do not invent endpoint paths or response fields; follow the documented backend contract.
-- Use the HTTP library already installed. Do not add dependencies without a clear reason.
+- Type API request and response data explicitly using TypeScript interfaces.
 
-## Example: Typed Fetching
+## Example: Axios Client Pattern
 
 ```ts
-interface Item {
-  id: string;
-  name: string;
-}
+import axios from 'axios';
 
-export async function getItems(): Promise<Item[]> {
-  const response = await fetch("/api/items");
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://dolpin-fourthree.bccdev.id/',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+});
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch items");
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-
-  return (await response.json()) as Item[];
-}
+  return config;
+});
 ```
 
-- Place API functions in the existing service/API location when the project has one.
-- This is a generic example only. Replace `/api/items` with a real documented endpoint.
-- Validate external data at runtime when its shape cannot be trusted.
-- If the project has no backend integration, do not create API files or abstractions pre-emptively.
