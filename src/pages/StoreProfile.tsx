@@ -16,14 +16,20 @@ export interface StoreProfileProps {
   storeName: string;
   onStoreNameChange?: (name: string) => void;
   onShowToast?: (message: string) => void;
+  onTriggerLoading?: (title?: string, subtitle?: string, durationMs?: number) => Promise<void>;
 }
 
 /**
  * StoreProfile Page View
  * Composes StoreInfoForm on the left, and OperationalCard + StoreLocationMap on the right.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
+ * Styled with Tailwind CSS classes.
  */
-export function StoreProfile({ storeName, onStoreNameChange, onShowToast }: StoreProfileProps) {
+export function StoreProfile({
+  storeName,
+  onStoreNameChange,
+  onShowToast,
+  onTriggerLoading,
+}: StoreProfileProps) {
   const [coordinates, setCoordinates] = useState<Coordinates>(() => {
     try {
       const savedCoords = localStorage.getItem('rescuebyte_store_coordinates');
@@ -66,10 +72,10 @@ export function StoreProfile({ storeName, onStoreNameChange, onShowToast }: Stor
   };
 
   return (
-    <section className="page-view active" id="view-profil" aria-labelledby="heading-profil">
-      <h1 className="visually-hidden" id="heading-profil">Pengaturan Profil {storeName}</h1>
+    <section className="flex flex-col gap-6" id="view-profil" aria-labelledby="heading-profil">
+      <h1 className="sr-only" id="heading-profil">Pengaturan Profil {storeName}</h1>
 
-      <div className="profile-layout-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column: Informasi Toko Form */}
         <StoreInfoForm
           initialName={storeName}
@@ -83,10 +89,11 @@ export function StoreProfile({ storeName, onStoreNameChange, onShowToast }: Stor
           onCoordinatesChange={handleCoordinatesChange}
           onStoreNameChange={onStoreNameChange}
           onShowToast={onShowToast}
+          onTriggerLoading={onTriggerLoading}
         />
 
         {/* Right Column: Operasional & Peta Lokasi Toko */}
-        <div className="profile-right-column">
+        <div className="flex flex-col gap-6">
           <OperationalCard onShowToast={onShowToast} />
 
           <StoreLocationMap

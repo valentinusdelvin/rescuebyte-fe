@@ -33,7 +33,7 @@ const FILTER_SUMMARY: Record<PerformanceFilterKey, FilterSummaryItem> = {
 /**
  * PerformanceChart Component
  * Displays store analytics with interactive SVG lines, data points, dynamic tooltips, and time range filter.
- * Complies with .agents/docs/architecture.md, .agents/docs/typescript.md, and .agents/docs/styling.md.
+ * Styled with Tailwind CSS classes.
  */
 export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
   const [filterRange, setFilterRange] = useState<PerformanceFilterKey>('bulan-ini');
@@ -82,20 +82,22 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
   const activeData = FILTER_SUMMARY[filterRange] || FILTER_SUMMARY['bulan-ini'];
 
   return (
-    <section className="dashboard-section" aria-labelledby="section-title-performa">
-      <h2 className="section-title" id="section-title-performa">Performa Toko</h2>
-      <div className="performance-grid">
+    <section className="mb-9" aria-labelledby="section-title-performa">
+      <h2 className="text-[1.45rem] font-bold text-[#111827] tracking-[-0.015em] mb-[18px]" id="section-title-performa">
+        Performa Toko
+      </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-[2.15fr_1fr] gap-6 items-stretch">
         {/* Left Chart Card */}
-        <div className="performance-chart-card">
-          <div className="chart-header">
-            <div className="chart-summary">
-              <span className="chart-label">Total Pembelian</span>
-              <span className="chart-value">{activeData.total}</span>
-              <span className="chart-subtitle">{activeData.orders}</span>
+        <div className="bg-white rounded-2xl p-[24px_28px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
+              <span className="text-[0.95rem] font-bold text-[#111827]">Total Pembelian</span>
+              <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">{activeData.total}</span>
+              <span className="text-[0.88rem] font-semibold text-[#6b7280] mt-0.5">{activeData.orders}</span>
             </div>
-            <div className="chart-filter-wrapper">
+            <div className="relative inline-flex items-center">
               <select
-                className="chart-filter-select"
+                className="appearance-none bg-transparent border-0 shadow-none py-1 pl-0 pr-[22px] font-sans text-[0.95rem] font-semibold text-[#111827] outline-none cursor-pointer hover:opacity-80 transition-opacity duration-150"
                 id="chart-filter"
                 aria-label="Pilih Rentang Waktu"
                 value={filterRange}
@@ -106,15 +108,13 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
                 <option value="tahun-ini">Tahun ini</option>
               </select>
               <svg
-                className="chart-filter-arrow"
-                width="14"
-                height="14"
+                className="absolute right-0 pointer-events-none text-[#111827] flex items-center justify-center"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                strokeWidth="2"
                 aria-hidden="true"
               >
                 <polyline points="6 9 12 15 18 9" />
@@ -123,9 +123,11 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
           </div>
 
           {/* Chart Interactive SVG Canvas */}
-          <div className="chart-canvas-container" ref={chartContainerRef}>
+          <div className="relative w-full pt-2" ref={chartContainerRef}>
             <div
-              className={`chart-tooltip ${tooltip.visible ? 'visible' : ''}`}
+              className={`absolute pointer-events-none bg-[#111827] text-white py-1.5 px-3 rounded-lg text-[0.8rem] font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.2)] -translate-x-1/2 -translate-y-[120%] transition-[opacity,transform] duration-150 z-20 whitespace-nowrap ${
+                tooltip.visible ? 'opacity-100' : 'opacity-0'
+              }`}
               id="chart-tooltip"
               aria-hidden={!tooltip.visible}
               style={{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }}
@@ -134,7 +136,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
             </div>
 
             <svg
-              className="performance-svg-chart"
+              className="w-full h-[260px] block"
               id="performance-chart"
               viewBox="0 0 620 280"
               preserveAspectRatio="none"
@@ -168,46 +170,43 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
               {/* Data Series 1: Green Line (Kunjungan) */}
               <path
-                className="chart-line-green"
                 d="M 85 150 C 125 152, 145 156, 185 156 C 225 156, 245 142, 285 138 C 325 130, 345 50, 385 48 C 425 46, 445 74, 485 76 C 525 80, 545 140, 585 142"
                 fill="none"
                 stroke="#65a30d"
-                strokeWidth="2.2"
+                strokeWidth="2.8"
                 strokeLinecap="round"
               />
 
               {/* Data Series 2: Yellow Line (Produk Dilihat) */}
               <path
-                className="chart-line-yellow"
                 d="M 85 174 C 125 162, 145 146, 185 142 C 225 138, 245 125, 285 122 C 325 116, 345 98, 385 98 C 425 98, 445 98, 485 98 C 525 98, 545 32, 585 30"
                 fill="none"
                 stroke="#eab308"
-                strokeWidth="2.2"
+                strokeWidth="2.8"
                 strokeLinecap="round"
               />
 
               {/* Data Series 3: Red Line (Pesanan Selesai) */}
               <path
-                className="chart-line-red"
                 d="M 85 190 C 125 178, 145 168, 185 166 C 225 162, 245 156, 285 154 C 325 150, 345 148, 385 146 C 425 142, 445 140, 485 138 C 525 134, 545 130, 585 128"
                 fill="none"
                 stroke="#ef4444"
-                strokeWidth="2.2"
+                strokeWidth="2.8"
                 strokeLinecap="round"
               />
 
               {/* Interactive Data Points (Green - Kunjungan) */}
-              <g className="chart-points-green">
+              <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 <circle cx="85" cy="150" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Jan', '30')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="185" cy="156" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Feb', '28')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="285" cy="138" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Mar', '34')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="385" cy="48" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Apr', '55')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="485" cy="76" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Mai', '48')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="585" cy="142" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Jun', '33')} onMouseLeave={handlePointMouseLeave} />
+                <circle cx="385" cy="48" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Apr', '56')} onMouseLeave={handlePointMouseLeave} />
+                <circle cx="485" cy="76" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Mai', '49')} onMouseLeave={handlePointMouseLeave} />
+                <circle cx="585" cy="142" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Jun', '32')} onMouseLeave={handlePointMouseLeave} />
               </g>
 
               {/* Interactive Data Points (Yellow - Produk Dilihat) */}
-              <g className="chart-points-yellow">
+              <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 <circle cx="85" cy="174" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Jan', '24')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="185" cy="142" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Feb', '32')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="285" cy="122" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Mar', '38')} onMouseLeave={handlePointMouseLeave} />
@@ -217,7 +216,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               </g>
 
               {/* Interactive Data Points (Red - Pesanan Selesai) */}
-              <g className="chart-points-red">
+              <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 <circle cx="85" cy="190" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Jan', '20')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="185" cy="166" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Feb', '26')} onMouseLeave={handlePointMouseLeave} />
                 <circle cx="285" cy="154" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Mar', '29')} onMouseLeave={handlePointMouseLeave} />
@@ -240,20 +239,29 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
         </div>
 
         {/* Right Stat Cards Stack */}
-        <div className="performance-stats-stack">
-          <div className="stat-card perf-card" tabIndex={0}>
-            <span className="perf-label">Jumlah Pembeli</span>
-            <span className="perf-number">60</span>
+        <div className="flex flex-col justify-between gap-4 h-full">
+          <div
+            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
+            tabIndex={0}
+          >
+            <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Jumlah Pembeli</span>
+            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">60</span>
           </div>
 
-          <div className="stat-card perf-card" tabIndex={0}>
-            <span className="perf-label">Pesanan Selesai</span>
-            <span className="perf-number">48</span>
+          <div
+            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
+            tabIndex={0}
+          >
+            <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Selesai</span>
+            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">48</span>
           </div>
 
-          <div className="stat-card perf-card" tabIndex={0}>
-            <span className="perf-label">Pesanan Dibatalkan</span>
-            <span className="perf-number">12</span>
+          <div
+            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
+            tabIndex={0}
+          >
+            <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Dibatalkan</span>
+            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">12</span>
           </div>
         </div>
       </div>

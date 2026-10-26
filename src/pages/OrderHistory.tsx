@@ -18,9 +18,8 @@ const ORDER_TABS: OrderTabItem[] = [
 
 /**
  * OrderHistory Page Component
- * Displays store order history segmented by operational tabs (Perlu Diproses, Menunggu Konfirmasi, etc.).
- * Includes searching by order number, filter by type, and date sorting with an empty state illustration.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
+ * Displays store order history segmented by operational tabs.
+ * Styled with Tailwind CSS classes.
  */
 export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHistoryProps) {
   const [activeTab, setActiveTab] = useState<OrderStatusTab>(initialTab);
@@ -33,13 +32,13 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
   };
 
   return (
-    <section className="page-view active" id="view-riwayat" aria-labelledby="heading-riwayat">
-      <h2 className="section-title" id="heading-riwayat">Riwayat Pesanan</h2>
+    <section className="flex flex-col gap-6" id="view-riwayat" aria-labelledby="heading-riwayat">
+      <h2 className="text-xl font-bold text-gray-900 tracking-tight" id="heading-riwayat">Riwayat Pesanan</h2>
 
-      <div className="order-history-card">
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs flex flex-col overflow-hidden">
         {/* Horizontal Navigation Tabs */}
-        <div className="order-tabs-wrapper">
-          <nav className="order-tabs-list" role="tablist" aria-label="Kategori Riwayat Pesanan">
+        <div className="border-b border-gray-200/80 overflow-x-auto">
+          <nav className="flex items-center min-w-max px-4" role="tablist" aria-label="Kategori Riwayat Pesanan">
             {ORDER_TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -50,7 +49,9 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
                   id={`tab-${tab.id}`}
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
-                  className={`order-tab-btn ${isActive ? 'active' : ''}`}
+                  className={`px-5 py-4 text-xs font-bold border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
+                    isActive ? 'border-[#15803d] text-[#15803d]' : 'border-transparent text-gray-500 hover:text-[#15803d]'
+                  }`}
                   onClick={() => handleTabChange(tab.id)}
                 >
                   {tab.label}
@@ -61,11 +62,11 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="order-filters-row">
+        <div className="p-4 md:p-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-b border-gray-100">
           {/* Search Box */}
-          <div className="order-search-box">
+          <div className="relative flex-1 flex items-center">
             <svg
-              className="order-search-icon"
+              className="absolute left-3.5 text-gray-400 pointer-events-none"
               width="18"
               height="18"
               viewBox="0 0 24 24"
@@ -81,7 +82,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
             </svg>
             <input
               type="text"
-              className="order-search-input"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-black bg-white"
               placeholder="Cari Nomor Pesanan"
               aria-label="Cari Nomor Pesanan"
               value={searchQuery}
@@ -90,9 +91,9 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           </div>
 
           {/* Filter Dropdown */}
-          <div className="order-filter-dropdown">
+          <div className="relative flex items-center min-w-[150px]">
             <select
-              className="order-filter-select"
+              className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-gray-300 focus:outline-black cursor-pointer"
               aria-label="Pilih Filter Kategori"
               value={filterType}
               onChange={(e) => {
@@ -106,7 +107,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
               <option value="mystery-box">Mystery Box</option>
             </select>
             <svg
-              className="order-filter-chevron"
+              className="absolute right-3 pointer-events-none text-gray-400"
               width="15"
               height="15"
               viewBox="0 0 24 24"
@@ -122,9 +123,9 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           </div>
 
           {/* Sort Dropdown */}
-          <div className="order-filter-dropdown order-sort-dropdown">
+          <div className="relative flex items-center min-w-[160px]">
             <select
-              className="order-filter-select"
+              className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-gray-300 focus:outline-black cursor-pointer"
               aria-label="Urutkan Tanggal Pesanan"
               value={sortOrder}
               onChange={(e) => {
@@ -138,7 +139,7 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
               <option value="nominal-rendah">Nominal Terendah</option>
             </select>
             <svg
-              className="order-filter-chevron"
+              className="absolute right-3 pointer-events-none text-gray-400"
               width="15"
               height="15"
               viewBox="0 0 24 24"
@@ -159,21 +160,19 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           role="tabpanel"
           id={`panel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
-          className="order-content-area"
+          className="p-8 md:p-14 flex flex-col items-center text-center justify-center min-h-[360px]"
         >
-          <div className="order-empty-state">
-            <img
-              src={emptyOrdersIllustration}
-              alt="Ilustrasi mystery box belum ada pesanan"
-              className="order-empty-illustration"
-            />
-            <h3 className="order-empty-title">
-              Kamu belum memiliki <span className="order-empty-highlight">pesanan</span>
-            </h3>
-            <p className="order-empty-desc">
-              Yuk jelajahi berbagai mystery box makanan dari restoran favorit di sekitarmu dan lakukan reservasi sekarang!
-            </p>
-          </div>
+          <img
+            src={emptyOrdersIllustration}
+            alt="Ilustrasi mystery box belum ada pesanan"
+            className="w-48 sm:w-60 h-auto mb-6 object-contain"
+          />
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+            Belum Ada Pesanan Masuk
+          </h3>
+          <p className="text-xs md:text-sm text-gray-500 max-w-md leading-relaxed">
+            Belum ada pesanan pada status ini. Pesanan baru dari pelanggan akan otomatis ditampilkan di sini.
+          </p>
         </div>
       </div>
     </section>

@@ -5,4 +5,10 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  server: {
+    allowedHosts: [
+      'charts-advocate-block-selection.trycloudflare.com',
+      'decimal-rewards-cruises-generate.trycloudflare.com'
+    ]
+  }
 });
