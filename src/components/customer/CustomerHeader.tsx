@@ -1,39 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { User } from 'lucide-react';
 import rescueBiteLogo from '../../assets/logo.svg';
 import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
 import { UserPayload } from '../../types';
+import { CustomerProfileDropdown } from './CustomerProfileDropdown';
+import { CustomerMobileDrawer, PillTabType, NavTabItem } from './CustomerMobileDrawer';
+
+type TabType = PillTabType | 'profile' | 'none';
+type IndicatorKey = 'logo' | PillTabType | 'auth';
 
 export interface CustomerHeaderProps {
-  activeTab?: 'beranda' | 'marketplace' | 'kontak';
+  activeTab?: TabType;
   onNavigateSeller?: () => void;
   onNavigateProfile?: () => void;
   onNavigateOrders?: () => void;
   onOpenAuthModal?: () => void;
   onNavigateAuth?: () => void;
-  onSelectTab?: (tab: 'beranda' | 'marketplace' | 'kontak') => void;
+  onSelectTab?: (tab: PillTabType) => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-// =========================================================================
-// ⚙️ PENGATURAN UKURAN MEMBESAR SAAT HOVER (HOVER SCALE)
-// Sesuaikan nilai di bawah ini untuk mengatur seberapa besar blok membesar saat kursor diarahkan:
-// - 1.05 = membesar 5%  (halus / subtle)
-// - 1.08 = membesar 8%  (proporsional & elegan - Rekomendasi)
-// - 1.10 = membesar 10% (jelas & tegas)
-// - 1.15 = membesar 15% (besar & menonjol)
-// =========================================================================
-export const HOVER_SCALE_LOGO = 1.2; // 👈 Atur ukuran membesar Logo di sini
-export const HOVER_SCALE_AUTH = 1.2; // 👈 Atur ukuran membesar tombol Daftar/Masuk di sini
-
-type TabType = 'beranda' | 'marketplace' | 'kontak';
-type IndicatorKey = 'logo' | 'beranda' | 'marketplace' | 'kontak' | 'auth';
-
-interface NavTabItem {
-  id: TabType;
-  label: string;
-  href: string;
-}
+export const HOVER_SCALE_LOGO = 1.2;
+export const HOVER_SCALE_AUTH = 1.2;
 
 // Semua tab di dalam kapsul tengah memiliki ukuran panjang yang sama persis (uniform)
 const NAV_TABS: NavTabItem[] = [
@@ -170,8 +157,10 @@ export function CustomerHeader({
 
   const isAutoScrollingRef = useRef(false);
 
-  // Target indicator is hovered element if hovered, otherwise active/selected page tab
-  const activeIndicatorKey: IndicatorKey = hoveredTab ?? selectedTab;
+  // Target indicator is hovered element if hovered, otherwise active/selected page tab (null if on profile/none)
+  const activeIndicatorKey: IndicatorKey | null =
+    hoveredTab ??
+    (selectedTab === 'profile' || selectedTab === 'none' ? null : (selectedTab as IndicatorKey));
 
   // Scale for indicator: blooms when on logo or auth button
   const currentScale =
@@ -192,10 +181,19 @@ export function CustomerHeader({
 
   // Update sliding indicator bounding box relative to headerContainerRef
   const updateIndicatorPosition = useCallback(() => {
-    const currentKey: IndicatorKey = hoveredTab ?? selectedTab;
+    const currentKey: IndicatorKey | null =
+      hoveredTab ??
+      (selectedTab === 'profile' || selectedTab === 'none' ? null : (selectedTab as IndicatorKey));
+    if (!currentKey) {
+      setIndicatorStyle((prev) => ({ ...prev, ready: false }));
+      return;
+    }
     const currentEl = itemRefs.current[currentKey];
     const containerEl = headerContainerRef.current;
-    if (!currentEl || !containerEl) return;
+    if (!currentEl || !containerEl) {
+      setIndicatorStyle((prev) => ({ ...prev, ready: false }));
+      return;
+    }
 
     // Use unscaled layout dimensions
     const width = currentEl.offsetWidth;
@@ -239,10 +237,6 @@ export function CustomerHeader({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateIndicatorPosition]);
 
-  // Keep active tab indicator locked to the activeTab (Beranda on home page) without scrollspy switching
-  useEffect(() => {
-    setSelectedTab(activeTab);
-  }, [activeTab]);
 
   const scrollToSection = (id: string) => {
     setIsMobileMenuOpen(false);
@@ -252,7 +246,7 @@ export function CustomerHeader({
     }
   };
 
-  const handleSelectTab = (tab: TabType) => {
+  const handleSelectTab = (tab: PillTabType) => {
     // Guard: Redirect unauthenticated user to login when clicking marketplace
     if (tab === 'marketplace') {
       const user = getCurrentUser();
@@ -304,7 +298,7 @@ export function CustomerHeader({
   };
 
   return (
-    <header className="fixed top-5 left-0 right-0 z-50 px-4 flex justify-center pointer-events-none" id="customer-header">
+    <header className="fixed top-5 left-[calc(50%+24px)] -translate-x-1/2 z-50 px-4 flex items-center justify-center w-max max-w-full pointer-events-none" id="customer-header">
       <div
         ref={headerContainerRef}
         className="pointer-events-auto relative flex items-center justify-center gap-3 sm:gap-4 md:gap-5"
@@ -312,8 +306,9 @@ export function CustomerHeader({
       >
         {/* Animated Flying Indicator - crosses over Logo, Nav tabs, and Daftar/Masuk */}
         <div
-          className={`hidden md:block absolute rounded-full bg-[#1e2420] pointer-events-none shadow-xs ease-[cubic-bezier(0.25,1,0.5,1)] z-10 ${indicatorStyle.ready ? 'opacity-100 transition-all duration-300' : 'opacity-0'
-            }`}
+          className={`hidden md:block absolute rounded-full bg-[#1F4D36] pointer-events-none shadow-xs ease-[cubic-bezier(0.25,1,0.5,1)] z-10 ${
+            indicatorStyle.ready && activeIndicatorKey ? 'opacity-100 transition-all duration-300' : 'opacity-0'
+          }`}
           style={{
             left: `${indicatorStyle.left}px`,
             top: `${indicatorStyle.top}px`,
@@ -404,113 +399,26 @@ export function CustomerHeader({
         </div>
 
         {/* 3. Standalone User Avatar Circle with Dropdown (Logged In) OR Daftar/Masuk Pill (Logged Out) */}
+        {/* 3. Standalone User Avatar Circle with Dropdown (Logged In) OR Daftar/Masuk Pill (Logged Out) */}
         {currentUser ? (
-          <div className="relative z-30 shrink-0" ref={profileDropdownRef}>
-            {/* Avatar Circle toggling Profile Dropdown */}
-            <button
-              ref={(el) => {
-                itemRefs.current['auth'] = el;
-              }}
-              type="button"
-              onMouseEnter={() => setHoveredTab('auth')}
-              onFocus={() => setHoveredTab('auth')}
-              onBlur={() => setHoveredTab(null)}
-              className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
-                activeIndicatorKey === 'auth' || isProfileDropdownOpen ? 'bg-[#121613]' : 'bg-[#1e2420] hover:bg-[#161a17]'
-              }`}
-              style={{
-                transform: (activeIndicatorKey === 'auth' || isProfileDropdownOpen) ? `scale(${HOVER_SCALE_LOGO})` : 'scale(1)',
-                transformOrigin: 'center center',
-              }}
-              id="btn-customer-avatar"
-              onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
-              aria-expanded={isProfileDropdownOpen}
-              aria-haspopup="menu"
-              title={`Menu Akun: ${currentUser.name}`}
-              aria-label={`Menu Akun ${currentUser.name}`}
-            >
-              <User className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
-            </button>
-
-            {/* Dropdown Menu (Clean layout with precise arrow alignment and comfortable tap targets) */}
-            {isProfileDropdownOpen && (
-              <div
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="btn-customer-avatar"
-                className="absolute right-0 top-full mt-4 w-52 sm:w-56 bg-white rounded-2xl border-2 border-black shadow-xl py-1.5 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
-              >
-                {/* Pointer triangle arrow pointing up to the avatar center */}
-                <div
-                  className="absolute -top-[9px] right-[18px] md:right-[24px] w-4 h-4 bg-white border-t-2 border-l-2 border-black rotate-45 pointer-events-none z-10"
-                  aria-hidden="true"
-                />
-                {/* Mask to ensure seamless merge with the popover top border */}
-                <div
-                  className="absolute top-0 right-[15px] md:right-[21px] w-5 h-1.5 bg-white pointer-events-none z-10"
-                  aria-hidden="true"
-                />
-
-                {/* Compact User Header */}
-                <div className="px-4 pt-2.5 pb-2 border-b border-[#f0eded] mb-1">
-                  <p className="text-xs font-bold text-[#1b1c1c] truncate">
-                    {currentUser.name}
-                  </p>
-                  <p className="text-[11px] text-[#525252] truncate font-medium">
-                    {currentUser.email}
-                  </p>
-                </div>
-
-                {/* Dropdown Action Items - Clean text without emojis, comfortable tap targets */}
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleProfileClick}
-                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
-                    id="btn-dropdown-profile"
-                  >
-                    Akun Saya
-                  </button>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleOrdersClick}
-                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
-                    id="btn-dropdown-orders"
-                  >
-                    Pesanan Saya
-                  </button>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleSellerClick}
-                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
-                    id="btn-dropdown-seller-dashboard"
-                  >
-                    Dashboard Restoran
-                  </button>
-
-                  <div className="h-px bg-[#f0eded] my-1 mx-2" />
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={async () => {
-                      setIsProfileDropdownOpen(false);
-                      await handleLogout();
-                    }}
-                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    id="btn-customer-logout"
-                  >
-                    Log Out
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <CustomerProfileDropdown
+            currentUser={currentUser}
+            isOpen={isProfileDropdownOpen}
+            onToggle={() => setIsProfileDropdownOpen((prev) => !prev)}
+            onClose={() => setIsProfileDropdownOpen(false)}
+            onProfileClick={handleProfileClick}
+            onOrdersClick={handleOrdersClick}
+            onSellerClick={handleSellerClick}
+            onLogout={handleLogout}
+            onMouseEnter={() => setHoveredTab('auth')}
+            onFocus={() => setHoveredTab('auth')}
+            onBlur={() => setHoveredTab(null)}
+            isActiveOrHovered={activeIndicatorKey === 'auth'}
+            buttonRef={(el) => {
+              itemRefs.current['auth'] = el;
+            }}
+            containerRef={profileDropdownRef}
+          />
         ) : (
           <button
             ref={(el) => {
@@ -520,9 +428,8 @@ export function CustomerHeader({
             onMouseEnter={() => setHoveredTab('auth')}
             onFocus={() => setHoveredTab('auth')}
             onBlur={() => setHoveredTab(null)}
-            className={`relative z-20 px-10 md:px-10 py-2.5 md:py-3.5 rounded-full border-2 border-black text-base font-bold shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black ${
-              activeIndicatorKey === 'auth' ? 'bg-transparent' : 'bg-white hover:bg-gray-50'
-            }`}
+            className={`relative z-20 px-10 md:px-10 py-2.5 md:py-3.5 rounded-full border-2 border-black text-base font-bold shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black ${activeIndicatorKey === 'auth' ? 'bg-transparent' : 'bg-white hover:bg-gray-50'
+              }`}
             style={{
               transform: activeIndicatorKey === 'auth' ? `scale(${HOVER_SCALE_AUTH})` : 'scale(1)',
               transformOrigin: 'center center',
@@ -532,9 +439,8 @@ export function CustomerHeader({
             title="Masuk atau Daftar Akun"
           >
             <span
-              className={`relative z-30 transition-colors duration-200 select-none ${
-                activeIndicatorKey === 'auth' ? 'text-white' : 'text-[#1b1c1c]'
-              }`}
+              className={`relative z-30 transition-colors duration-200 select-none ${activeIndicatorKey === 'auth' ? 'text-white' : 'text-[#1b1c1c]'
+                }`}
             >
               Daftar/Masuk
             </span>
@@ -543,83 +449,15 @@ export function CustomerHeader({
       </div>
 
       {/* Mobile Drawer Navigation */}
-      {isMobileMenuOpen && (
-        <div className="pointer-events-auto absolute top-full left-4 right-4 mt-3 p-4 bg-white/98 backdrop-blur-md rounded-2xl border-[1.5px] border-black shadow-2xl flex flex-col gap-2 md:hidden" id="customer-mobile-menu">
-          <nav className="flex flex-col gap-1.5">
-            {NAV_TABS.map((tab) => (
-              <a
-                key={tab.id}
-                href={tab.href}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${selectedTab === tab.id ? 'bg-[#1e2420] text-white' : 'text-[#1b1c1c] hover:bg-gray-100'
-                  }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsMobileMenuOpen(false);
-                  handleSelectTab(tab.id);
-                }}
-              >
-                {tab.label}
-              </a>
-            ))}
-            {currentUser ? (
-              <div className="flex flex-col gap-1.5 mt-2">
-                <button
-                  type="button"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#F4F3F0] text-[#1b1c1c] text-xs font-semibold text-left flex items-center justify-between cursor-pointer"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleProfileClick();
-                  }}
-                >
-                  <span>Akun Saya</span>
-                  <span className="text-[11px] text-[#737874]">{currentUser.name}</span>
-                </button>
-                <button
-                  type="button"
-                  className="w-full py-2.5 px-4 rounded-xl text-[#1b1c1c] hover:bg-[#F4F3F0] text-xs font-semibold text-left cursor-pointer"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleOrdersClick();
-                  }}
-                >
-                  Pesanan Saya
-                </button>
-                <button
-                  type="button"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#1e2420] text-white text-xs font-semibold text-left cursor-pointer"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleSellerClick();
-                  }}
-                >
-                  Dashboard Restoran
-                </button>
-                <button
-                  type="button"
-                  className="w-full py-2 px-4 rounded-xl border border-red-300 bg-red-50 text-red-600 text-xs font-semibold text-center cursor-pointer hover:bg-red-100"
-                  onClick={async () => {
-                    setIsMobileMenuOpen(false);
-                    await handleLogout();
-                  }}
-                >
-                  Log Out
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="w-full mt-2 py-2 px-4 rounded-xl bg-black text-white text-xs font-bold text-center cursor-pointer"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleAuthClick();
-                }}
-              >
-                Daftar / Masuk
-              </button>
-            )}
-          </nav>
-        </div>
-      )}
+      <CustomerMobileDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        navTabs={NAV_TABS}
+        selectedTab={selectedTab}
+        onSelectTab={handleSelectTab}
+        currentUser={currentUser}
+        onAuthClick={handleAuthClick}
+      />
     </header>
   );
 }

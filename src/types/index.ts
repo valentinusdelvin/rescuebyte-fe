@@ -148,9 +148,13 @@ export type PerformanceFilterKey = 'bulan-ini' | 'minggu-ini' | 'tahun-ini';
 export interface UserPayload {
   avatar_url: string;
   created_at: string;
+  date_of_birth?: string;
   email: string;
+  gender?: number;
+  gender_name?: string;
   id: string;
   name: string;
+  phone_number?: string;
   provider: 'LOCAL' | 'GOOGLE' | string;
   role: string;
   role_id: number;
