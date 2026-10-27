@@ -11,7 +11,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
   {
     storeId: 'store-terasa',
     storeName: 'TerasRasa Bakery',
-    storeAvatar: 'erasRas',
+    storeAvatar: 'TR',
     rating: 4.8,
     reviewCount: 320,
     distanceText: '1.2 km',
@@ -43,7 +43,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
   {
     storeId: 'store-greenbowl',
     storeName: 'GreenBowl',
-    storeAvatar: 'reenBo',
+    storeAvatar: 'GB',
     rating: 4.7,
     reviewCount: 210,
     distanceText: '3.5 km',
@@ -65,7 +65,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
   {
     storeId: 'store-sayurkita',
     storeName: 'SayurKita',
-    storeAvatar: 'ayurKit',
+    storeAvatar: 'SK',
     rating: 4.6,
     reviewCount: 180,
     distanceText: '4.1 km',
@@ -143,6 +143,19 @@ export function getCartCount(): number {
 }
 
 /**
+ * Helper to get 2-letter uppercase initials for a store name.
+ */
+export function getStoreInitials(name: string): string {
+  if (!name) return 'TR';
+  const clean = name.trim();
+  const words = clean.split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+/**
  * Add a mystery box product to the cart with specified quantity.
  * If the item already exists in the store group, its quantity is increased (max 5).
  * Returns the updated total cart item count.
@@ -200,13 +213,13 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
 
   // If store doesn't exist yet, create a new StoreCartGroup
   if (!storeFound) {
-    const avatar = box.storeName.replace(/\s+/g, '').slice(0, 7);
+    const avatar = getStoreInitials(box.storeName);
     const newStoreGroup: StoreCartGroup = {
       storeId: targetStoreId,
       storeName: box.storeName,
-      storeAvatar: avatar || 'Toko',
+      storeAvatar: avatar,
       rating: box.rating ?? 4.8,
-      reviewCount: box.reviewCount ?? 100,
+      reviewCount: typeof box.reviewCount === 'number' ? box.reviewCount : Number(box.reviewCount) || 100,
       distanceText: box.distanceText || '1.0 km',
       pickupTime: box.pickupTime || '15.00 – 18.00 WIB',
       availablePickupTimes: [box.pickupTime || '15.00 – 18.00 WIB', '18.00 – 20.00 WIB'],

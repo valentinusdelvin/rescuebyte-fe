@@ -96,7 +96,7 @@ export function ProductDescriptionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
+    <div className="fixed inset-0 z-1050 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
       <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-200 overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
@@ -192,11 +192,11 @@ export function ProductDescriptionModal({
         </div>
 
         {/* Editor Body */}
-        <div className="p-4 flex-1 min-h-[220px]">
+        <div className="p-4 flex-1 min-h-55">
           {activeTab === 'editor' ? (
             <textarea
               ref={textareaRef}
-              className="w-full h-full min-h-[200px] p-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors resize-none leading-relaxed"
+              className="w-full h-full min-h-50 p-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors resize-none leading-relaxed"
               placeholder="Tuliskan deskripsi produk, variasi menu, atau catatan pengambilan di sini..."
               value={text}
               maxLength={1200}
@@ -204,7 +204,7 @@ export function ProductDescriptionModal({
               rows={8}
             />
           ) : (
-            <div className="w-full min-h-[200px] p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800 space-y-2">
+            <div className="w-full min-h-50 p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800 space-y-2">
               {text.trim() ? (
                 <div>
                   {text.split('\n').map((line, idx) => (
@@ -234,7 +234,7 @@ export function ProductDescriptionModal({
             </button>
             <button
               type="button"
-              className="px-5 py-2.5 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
               onClick={handleSave}
             >
               Terapkan Deskripsi

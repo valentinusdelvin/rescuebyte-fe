@@ -39,6 +39,9 @@ export type ActiveViewId =
   | 'view-customer-marketplace'
   | 'view-customer-product-detail'
   | 'view-customer-cart'
+  | 'view-customer-checkout'
+  | 'view-customer-payment'
+  | 'view-customer-order-detail'
   | 'view-customer-profile'
   | 'view-beranda'
   | 'view-profil'
@@ -47,6 +50,55 @@ export type ActiveViewId =
   | 'view-daganganku'
   | 'view-ulasan'
   | string;
+
+export interface CheckoutItem {
+  id: string;
+  name: string;
+  storeId?: string;
+  storeName: string;
+  storeAvatar?: string;
+  storeAddress?: string;
+  rating?: number;
+  reviewCount?: number | string;
+  distanceText?: string;
+  categoryTags: string[];
+  originalPrice: number;
+  rescuePrice: number;
+  discountPercent: number;
+  quantity: number;
+  imageSrc?: string;
+  pickupTime?: string;
+}
+
+export interface CheckoutPayload {
+  source: 'direct' | 'cart';
+  items: CheckoutItem[];
+}
+
+export interface PaymentOrderData {
+  orderId: string;
+  items: CheckoutItem[];
+  primaryStore: {
+    storeName: string;
+    storeAvatar?: string;
+    storeAddress?: string;
+    rating?: number;
+    reviewCount?: number | string;
+  };
+  pickupDate: string;
+  pickupTimeSlot: string;
+  customerInfo: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  totalBoxes: number;
+  subtotal: number;
+  discountTotal: number;
+  serviceFee: number;
+  grandTotal: number;
+  source?: 'direct' | 'cart';
+}
 
 export interface CustomerMysteryBox {
   id: string;

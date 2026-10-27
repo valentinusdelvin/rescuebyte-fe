@@ -29,7 +29,7 @@ export function CustomerFooter({
               <span className="text-xl font-extrabold font-display text-[#1b1c1c] tracking-tight">RescueBite</span>
             </div>
 
-            <p className="text-xs sm:text-[13px] font-bold text-[#3c6a00] mb-2 tracking-normal">
+            <p className="text-xs sm:text-[13px] font-bold text-brand-green mb-2 tracking-normal">
               Good Food. Brighter Tomorrow.
             </p>
 

@@ -3,7 +3,6 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ShoppingCart, Plus } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
 
@@ -17,8 +16,10 @@ export interface CustomerProductDetailProps {
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateCart?: () => void;
+  onNavigateCheckout?: (product: CustomerMysteryBox, quantity: number) => void;
   onNavigateSeller?: () => void;
   onNavigateAuth?: () => void;
+  onNavigateStore?: (storeName: string) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -47,8 +48,10 @@ export function CustomerProductDetail({
   onNavigateHome,
   onNavigateMarketplace,
   onNavigateCart,
+  onNavigateCheckout,
   onNavigateSeller,
   onNavigateAuth,
+  onNavigateStore,
   onShowToast,
 }: CustomerProductDetailProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -81,11 +84,11 @@ export function CustomerProductDetail({
   const maxQuantity = 5;
 
   // Modals & Cart State
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [cartCount, setCartCount] = useState<number>(getCartCount);
   const [isCartBouncing, setIsCartBouncing] = useState(false);
   const [flyingItems, setFlyingItems] = useState<FlyingCartItem[]>([]);
+  const [localToast, setLocalToast] = useState<string | null>(null);
 
   // DOM Refs for animation positioning
   const heroImageRef = useRef<HTMLImageElement>(null);
@@ -117,14 +120,25 @@ export function CustomerProductDetail({
   };
 
   const handleReservasi = () => {
-    // Open the confirmation reservation modal
-    setIsOrderModalOpen(true);
+    // Navigate directly to checkout page
+    if (onNavigateCheckout) {
+      onNavigateCheckout(activeBoxItem, quantity);
+    } else {
+      window.location.assign('#checkout');
+    }
   };
 
-  const handleConfirmOrder = (_box: CustomerMysteryBox, _qty: number) => {
-    // Reservation order confirmed via checkout modal
-    if (onShowToast) {
-      onShowToast('Pesanan berhasil dibuat!');
+  const handleStoreClick = () => {
+    if (onNavigateStore) {
+      onNavigateStore(storeName);
+    } else {
+      const msg = `Halaman toko "${storeName}" sedang dalam tahap perancangan desain.`;
+      if (onShowToast) {
+        onShowToast(msg);
+      } else {
+        setLocalToast(msg);
+        setTimeout(() => setLocalToast(null), 3500);
+      }
     }
   };
 
@@ -222,7 +236,7 @@ export function CustomerProductDetail({
     rescuePrice,
     pickupTime,
     description,
-    tags: ['✓ Halal', 'Sisa Stok Harian'],
+    tags: ['Sisa Stok Harian'],
     rating,
     reviewCount,
     imageSrc: galleryImages[selectedImageIndex] || '',
@@ -249,11 +263,11 @@ export function CustomerProductDetail({
         {/* 2. Main Content Grid */}
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
           {/* Breadcrumb / Back Navigation */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between gap-4">
             <button
               type="button"
               onClick={onNavigateMarketplace || onNavigateBack || (() => { window.location.hash = '#marketplace'; })}
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-600 hover:text-[#1b1c1c] transition-colors cursor-pointer group"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-600 hover:text-[#1b1c1c] transition-colors cursor-pointer group shrink-0"
             >
               <span className="w-7 h-7 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:bg-gray-100 transition-colors shadow-2xs">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -263,9 +277,29 @@ export function CustomerProductDetail({
               <span>Kembali ke Marketplace</span>
             </button>
 
-            <span className="text-xs text-gray-400 font-medium hidden sm:inline-block">
-              Marketplace &gt; {storeName} &gt; {title}
-            </span>
+            <nav aria-label="Breadcrumb" className="text-xs font-medium hidden sm:flex items-center gap-1.5 text-gray-400 min-w-0">
+              <button
+                type="button"
+                onClick={onNavigateMarketplace || onNavigateBack || (() => { window.location.hash = '#marketplace'; })}
+                className="hover:text-brand-green hover:underline transition-colors cursor-pointer text-gray-500 font-medium"
+                title="Kembali ke Marketplace"
+              >
+                Marketplace
+              </button>
+              <span className="text-gray-300 select-none">&gt;</span>
+              <button
+                type="button"
+                onClick={handleStoreClick}
+                className="hover:text-brand-green hover:underline transition-colors cursor-pointer text-gray-500 font-medium truncate max-w-[150px] lg:max-w-[220px]"
+                title={`Kunjungi toko ${storeName}`}
+              >
+                {storeName}
+              </button>
+              <span className="text-gray-300 select-none">&gt;</span>
+              <span className="text-gray-700 font-semibold truncate max-w-[180px] lg:max-w-[280px]" aria-current="page" title={title}>
+                {title}
+              </span>
+            </nav>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -279,7 +313,7 @@ export function CustomerProductDetail({
                   <button
                     type="button"
                     onClick={() => setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 hidden sm:flex items-center justify-center shadow-2xs transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
                     title="Foto sebelumnya"
                     aria-label="Foto sebelumnya"
                   >
@@ -296,7 +330,7 @@ export function CustomerProductDetail({
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer relative bg-[#24201c] ${
                         selectedImageIndex === idx
-                          ? 'border-[#3c6a00] ring-2 ring-[#3c6a00]/30 scale-102'
+                          ? 'border-brand-green ring-2 ring-brand-green/30 scale-102'
                           : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'
                       }`}
                       aria-label={`Pilih foto ${idx + 1}`}
@@ -322,7 +356,7 @@ export function CustomerProductDetail({
                   <button
                     type="button"
                     onClick={() => setSelectedImageIndex((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 hidden sm:flex items-center justify-center shadow-2xs transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
                     title="Foto selanjutnya"
                     aria-label="Foto selanjutnya"
                   >
@@ -335,7 +369,7 @@ export function CustomerProductDetail({
                 {/* Main Large Hero Image */}
                 <div
                   ref={heroImageContainerRef}
-                  className="flex-1 aspect-[4/3] sm:aspect-square rounded-3xl overflow-hidden relative shadow-sm border border-black/10 bg-[#231f1c]"
+                  className="flex-1 aspect-4/3 sm:aspect-square rounded-3xl overflow-hidden relative shadow-sm border border-black/10 bg-[#231f1c]"
                 >
                   {galleryImages[selectedImageIndex] ? (
                     <img
@@ -345,7 +379,7 @@ export function CustomerProductDetail({
                       className="w-full h-full object-cover transition-all duration-300 hover:scale-103"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative p-8">
+                    <div className="w-full h-full bg-linear-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative p-8">
                       <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-200 border border-white/10 mb-3 shadow-sm">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -359,76 +393,6 @@ export function CustomerProductDetail({
                   )}
                 </div>
               </div>
-
-              {/* Card: Tentang Produk */}
-              <article className="bg-white rounded-3xl p-6 sm:p-7 border border-black/10 shadow-xs">
-                <h2 className="font-display font-extrabold text-lg sm:text-xl text-[#1b1c1c]">
-                  Tentang Produk
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mt-2.5">
-                  Mystery Bakery Box berisi aneka roti, pastry, dan kue pilihan dari stok harian {storeName}. Cocok untuk sarapan, camilan, atau dinikmati bersama keluarga. Semua produk masih layak konsumsi, tetap enak, dan membantu mengurangi food waste.
-                </p>
-
-                {/* 4 Feature Highlights */}
-                <div className="bg-[#f2f8f2] border border-[#e2efe2] rounded-2xl p-4 mt-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    {/* 1. Masih Layak Konsumsi */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center text-[#16a34a] shrink-0">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                          <polyline points="9 12 11 14 15 10" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-bold text-[#1b1c1c] leading-tight">
-                        Masih Layak Konsumsi
-                      </span>
-                    </div>
-
-                    {/* 2. Harga Lebih Terjangkau */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center text-[#16a34a] shrink-0">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="8" x2="12" y2="16" />
-                          <path d="M16 10H9.5a2.5 2.5 0 0 0 0 5H14a2.5 2.5 0 0 1 0 5H8" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-bold text-[#1b1c1c] leading-tight">
-                        Harga Lebih Terjangkau
-                      </span>
-                    </div>
-
-                    {/* 3. Bantu Kurangi Food Waste */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center text-[#16a34a] shrink-0">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="23 4 23 10 17 10" />
-                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-bold text-[#1b1c1c] leading-tight">
-                        Bantu Kurangi Food Waste
-                      </span>
-                    </div>
-
-                    {/* 4. Rasa Tetap Lezat */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center text-[#16a34a] shrink-0">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                          <line x1="9" y1="9" x2="9.01" y2="9" />
-                          <line x1="15" y1="9" x2="15.01" y2="9" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-bold text-[#1b1c1c] leading-tight">
-                        Rasa Tetap Lezat
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </article>
             </div>
 
             {/* RIGHT COLUMN: Product Info & Order Action */}
@@ -436,17 +400,26 @@ export function CustomerProductDetail({
               {/* Card 1: Main Product Info */}
               <article className="bg-white rounded-3xl p-6 sm:p-7 border border-black/10 shadow-xs flex flex-col gap-5">
                 {/* Store Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-                    Teras
+                <div
+                  onClick={handleStoreClick}
+                  className="flex items-center gap-3 cursor-pointer group w-fit"
+                  title={`Lihat toko ${storeName}`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStoreClick();
+                    }
+                  }}
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    {storeName.slice(0, 4)}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
+                      <span className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate group-hover:text-brand-green group-hover:underline transition-colors">
                         {storeName}
-                      </span>
-                      <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0">
-                        ✓ Terverifikasi
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mt-0.5">
@@ -470,13 +443,6 @@ export function CustomerProductDetail({
                   <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed mt-2">
                     {description}
                   </p>
-                </div>
-
-                {/* Tag Pill */}
-                <div>
-                  <span className="bg-[#eef8ee] text-[#2d6a2e] border border-[#d2edd2] text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
-                    ✓ Halal
-                  </span>
                 </div>
 
                 {/* Pricing Box */}
@@ -505,98 +471,6 @@ export function CustomerProductDetail({
                     </span>
                     <span className="text-[10px] font-bold block mt-0.5 whitespace-nowrap">
                       Lebih Hemat
-                    </span>
-                  </div>
-                </div>
-
-                {/* Section: Estimasi Isi */}
-                <div>
-                  <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2.5">
-                    Estimasi Isi
-                  </h3>
-                  <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-                    {/* Roti */}
-                    <div className="bg-[#f8f8f6] border border-gray-150 rounded-2xl p-2.5 sm:p-3 text-center flex flex-col items-center justify-center">
-                      <div className="text-gray-700">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-                          <path d="M6 6h10" />
-                          <path d="M6 10h10" />
-                        </svg>
-                      </div>
-                      <span className="font-bold text-xs text-[#1b1c1c] mt-1.5 block">
-                        Roti
-                      </span>
-                      <span className="text-[10px] text-gray-500 block">
-                        (1–2 pcs)
-                      </span>
-                    </div>
-
-                    {/* Pastry */}
-                    <div className="bg-[#f8f8f6] border border-gray-150 rounded-2xl p-2.5 sm:p-3 text-center flex flex-col items-center justify-center">
-                      <div className="text-gray-700">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m18 8 4 4-4 4" />
-                          <path d="m6 16-4-4 4-4" />
-                          <path d="M2 12h20" />
-                          <path d="M12 2a10 10 0 0 1 10 10" />
-                        </svg>
-                      </div>
-                      <span className="font-bold text-xs text-[#1b1c1c] mt-1.5 block">
-                        Pastry
-                      </span>
-                      <span className="text-[10px] text-gray-500 block">
-                        (1–2 pcs)
-                      </span>
-                    </div>
-
-                    {/* Kue */}
-                    <div className="bg-[#f8f8f6] border border-gray-150 rounded-2xl p-2.5 sm:p-3 text-center flex flex-col items-center justify-center">
-                      <div className="text-gray-700">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
-                          <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
-                          <path d="M2 21h20" />
-                          <path d="M7 8v2" />
-                          <path d="M12 8v2" />
-                          <path d="M17 8v2" />
-                        </svg>
-                      </div>
-                      <span className="font-bold text-xs text-[#1b1c1c] mt-1.5 block">
-                        Kue
-                      </span>
-                      <span className="text-[10px] text-gray-500 block">
-                        (1–2 pcs)
-                      </span>
-                    </div>
-
-                    {/* Kue Kering */}
-                    <div className="bg-[#f8f8f6] border border-gray-150 rounded-2xl p-2.5 sm:p-3 text-center flex flex-col items-center justify-center">
-                      <div className="text-gray-700">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="5" y="6" width="14" height="15" rx="3" />
-                          <line x1="8" y1="2" x2="16" y2="2" />
-                          <line x1="8" y1="6" x2="16" y2="6" />
-                        </svg>
-                      </div>
-                      <span className="font-bold text-xs text-[#1b1c1c] mt-1.5 block">
-                        Kue Kering
-                      </span>
-                      <span className="text-[10px] text-gray-500 block">
-                        (Opsional)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Disclaimer banner */}
-                  <div className="bg-[#f0f7f0] border border-[#d6ebd6] text-[#24521e] rounded-xl p-3 flex items-start gap-2.5 text-xs font-medium mt-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <span>
-                      Isi adalah kejutan dan menyesuaikan stok harian toko. Gambar hanya ilustrasi.
                     </span>
                   </div>
                 </div>
@@ -654,81 +528,76 @@ export function CustomerProductDetail({
                     Jumlah Box
                   </span>
 
-                  <div className="flex items-center gap-3">
-                    {/* Stepper buttons */}
-                    <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-3 border border-gray-200">
-                      <button
-                        type="button"
-                        onClick={handleDecreaseQuantity}
-                        disabled={quantity <= 1}
-                        className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                        title="Kurangi box"
-                        aria-label="Kurangi box"
-                      >
-                        –
-                      </button>
-                      <span className="font-bold text-sm text-[#1b1c1c] min-w-[20px] text-center select-none">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleIncreaseQuantity}
-                        disabled={quantity >= maxQuantity}
-                        className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                        title="Tambah box"
-                        aria-label="Tambah box"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {/* Max note badge */}
-                    <div className="bg-[#f8f8f6] border border-gray-200 text-gray-500 text-[11px] font-medium px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      <span>Maksimal {maxQuantity} box per transaksi</span>
-                    </div>
+                  {/* Stepper buttons */}
+                  <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-3 border border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handleDecreaseQuantity}
+                      disabled={quantity <= 1}
+                      className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      title="Kurangi box"
+                      aria-label="Kurangi box"
+                    >
+                      –
+                    </button>
+                    <span className="font-bold text-sm text-[#1b1c1c] min-w-5 text-center select-none">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleIncreaseQuantity}
+                      disabled={quantity >= maxQuantity}
+                      className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      title="Tambah box"
+                      aria-label="Tambah box"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
-                {/* Action Buttons: +Keranjang (30% on left) & Reservasi Sekarang (70% on right) */}
+                {/* Action Buttons: Keranjang (left) & Reservasi Sekarang (right) */}
                 <div className="flex items-center gap-2.5 sm:gap-3 w-full mt-2">
-                  {/* 30% Width: + Keranjang Button */}
+                  {/* Keranjang Button (Icon Only) */}
                   <button
                     ref={addToCartBtnRef}
                     type="button"
                     onClick={handleAddToCart}
-                    className="w-[30%] py-3.5 px-2 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
+                    className="w-14 sm:w-16 py-3.5 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white flex items-center justify-center shrink-0 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
                     id="btn-tambah-keranjang"
                     title="Tambah ke Keranjang"
                     aria-label="Tambah ke Keranjang"
                   >
                     <div className="relative flex items-center justify-center">
-                      <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-                      <Plus className="w-3 h-3 text-emerald-600 group-hover:text-emerald-300 stroke-[3] absolute -top-1 -right-1.5" />
+                      <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" />
+                      <Plus className="w-3.5 h-3.5 text-emerald-600 group-hover:text-emerald-300 stroke-3 absolute -top-1 -right-1.5" />
                     </div>
-                    <span className="font-bold text-xs sm:text-sm hidden xs:inline sm:inline">
-                      +Keranjang
-                    </span>
                   </button>
 
-                  {/* 70% Width: Reservasi Sekarang Button */}
+                  {/* Reservasi Sekarang Button */}
                   <button
                     type="button"
                     onClick={handleReservasi}
-                    className="w-[70%] py-3.5 px-3 sm:px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
                     id="btn-reservasi-sekarang"
                     title="Reservasi Sekarang"
                   >
-                    <ShoppingCart className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                     <span>Reservasi Sekarang</span>
                   </button>
                 </div>
               </article>
             </div>
           </div>
+
+          {/* Full-Width Card: Tentang Produk */}
+          <article className="bg-white rounded-3xl p-6 sm:p-7 border border-black/10 shadow-xs mt-6 sm:mt-8">
+            <h2 className="font-display font-extrabold text-base sm:text-lg text-[#1b1c1c]">
+              Tentang Produk
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mt-2.5">
+              Mystery Bakery Box berisi aneka roti, pastry, dan kue pilihan dari stok harian {storeName}. Cocok untuk sarapan, camilan, atau dinikmati bersama keluarga. Semua produk masih layak konsumsi, tetap enak, dan membantu mengurangi food waste.
+            </p>
+          </article>
         </main>
       </div>
 
@@ -753,12 +622,12 @@ export function CustomerProductDetail({
         }
         transition={{ duration: 0.5, ease: 'easeOut' }}
         onAnimationComplete={() => setIsCartBouncing(false)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-[#3c6a00] shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
         title="Keranjang Pesanan"
         aria-label="Buka Keranjang Pesanan"
         id="floating-cart-button"
       >
-        <ShoppingCart className="w-6 h-6 text-[#3c6a00]" strokeWidth={2.2} />
+        <ShoppingCart className="w-6 h-6 text-brand-green" strokeWidth={2.2} />
         <motion.span
           key={cartCount}
           initial={isCartBouncing && !shouldReduceMotion ? { scale: 1.8 } : false}
@@ -772,7 +641,7 @@ export function CustomerProductDetail({
       </motion.button>
 
       {/* Fly-to-Cart Animation Overlay */}
-      <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden" aria-hidden="true">
+      <div className="fixed inset-0 pointer-events-none z-9998 overflow-hidden" aria-hidden="true">
         <AnimatePresence>
           {flyingItems.map((item) => (
             <motion.div
@@ -824,14 +693,6 @@ export function CustomerProductDetail({
         }}
       />
 
-      {/* 4. Customer Order Modal */}
-      <CustomerOrderModal
-        item={activeBoxItem}
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        onConfirmOrder={handleConfirmOrder}
-      />
-
       {/* 5. Quick Auth Modal */}
       {isAuthModalOpen && (
         <div
@@ -840,7 +701,7 @@ export function CustomerProductDetail({
           aria-modal="true"
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-[#3c6a00]/10 flex items-center justify-center text-[#3c6a00]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
@@ -872,6 +733,21 @@ export function CustomerProductDetail({
           </div>
         </div>
       )}
+
+      {/* Fallback Local Toast */}
+      <AnimatePresence>
+        {localToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1b1c1c] text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full shadow-lg border border-white/10 flex items-center gap-2"
+          >
+            <span>ℹ️</span>
+            <span>{localToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

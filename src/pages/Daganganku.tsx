@@ -133,7 +133,7 @@ export function Daganganku({
                   id={`tab-product-${tab.id}`}
                   aria-selected={isActive}
                   className={`px-5 py-4 text-xs font-bold border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-                    isActive ? 'border-[#15803d] text-[#15803d]' : 'border-transparent text-gray-500 hover:text-[#15803d]'
+                    isActive ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-primary'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
@@ -174,7 +174,7 @@ export function Daganganku({
           </div>
 
           {/* Filter Dropdown */}
-          <div className="relative flex items-center min-w-[150px]">
+          <div className="relative flex items-center min-w-37.5">
             <select
               className="w-full appearance-none bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-black focus:outline-black cursor-pointer"
               aria-label="Pilih Filter Kategori"
@@ -191,7 +191,7 @@ export function Daganganku({
           </div>
 
           {/* Sort Dropdown */}
-          <div className="relative flex items-center min-w-[160px]">
+          <div className="relative flex items-center min-w-40">
             <select
               className="w-full appearance-none bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-gray-700 hover:border-black focus:outline-black cursor-pointer"
               aria-label="Urutan Tanggal"
@@ -229,7 +229,7 @@ export function Daganganku({
               {onNavigateToCreate && (
                 <button
                   type="button"
-                  className="mt-4 px-5 py-2.5 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                   onClick={onNavigateToCreate}
                 >
                   Buat Dagangan Sekarang
@@ -260,7 +260,7 @@ export function Daganganku({
                   </div>
 
                   {/* Metrics Col 1: Stok */}
-                  <div className="flex flex-col items-start sm:items-center min-w-[70px]">
+                  <div className="flex flex-col items-start sm:items-center min-w-17.5">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stok</span>
                     <div className="mt-0.5">
                       <span className="text-sm font-bold text-gray-900">{item.stock}</span>
@@ -269,7 +269,7 @@ export function Daganganku({
                   </div>
 
                   {/* Metrics Col 2: Harga */}
-                  <div className="flex flex-col items-start sm:items-end min-w-[110px]">
+                  <div className="flex flex-col items-start sm:items-end min-w-27.5">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Harga</span>
                     <div className="flex flex-col items-start sm:items-end mt-0.5">
                       <span className="text-sm font-extrabold text-gray-900">{formatRupiah(item.rescuePrice)}</span>
@@ -284,7 +284,7 @@ export function Daganganku({
                       type="button"
                       className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all hover:scale-105 cursor-pointer select-none ${
                         isAktif
-                          ? 'bg-[#dcfce7] text-[#15803d]'
+                          ? 'bg-[#dcfce7] text-primary'
                           : isSegeraHabis
                           ? 'bg-[#fef3c7] text-[#b45309]'
                           : 'bg-[#f3f4f6] text-[#6b7280]'

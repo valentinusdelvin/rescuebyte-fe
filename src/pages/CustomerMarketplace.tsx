@@ -32,6 +32,23 @@ function formatRupiah(amount: number): string {
 }
 
 /**
+ * Format input string into thousands dot separated string (e.g. "10000" -> "10.000")
+ */
+function formatPriceInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  return parseInt(digits, 10).toLocaleString('id-ID');
+}
+
+/**
+ * Parse thousands dot separated string back to number
+ */
+function parsePriceInput(val: string): number | null {
+  const digits = val.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : null;
+}
+
+/**
  * 12 Marketplace Mock Products matching the Figma design verbatim.
  * Designed with a clean placeholder slot when imageSrc is not present.
  */
@@ -244,34 +261,69 @@ const MARKETPLACE_PRODUCTS: MarketplaceBoxItem[] = [
 
 const CITIES = ['Malang', 'Jakarta Selatan', 'Surabaya', 'Bandung', 'Yogyakarta', 'Semua Kota'];
 
-const PRICE_OPTIONS = [
-  { value: 'semua', label: 'Semua Harga' },
-  { value: '<10k', label: 'di bawah Rp 10.000' },
-  { value: '<20k', label: 'di bawah Rp 20.000' },
-  { value: '<30k', label: 'di bawah Rp 30.000' },
-  { value: '<50k', label: 'di bawah Rp 50.000' },
-];
-
-const CATEGORY_OPTIONS = [
-  { value: 'semua', label: 'Semua Kategori' },
-  { value: 'halal', label: 'Halal' },
-  { value: 'non-halal', label: 'Non Halal' },
-];
-
 const DISTANCE_OPTIONS = [
   { value: 'semua', label: 'Semua Jarak' },
-  { value: '<5km', label: 'Dalam 5 Km' },
-  { value: '<10km', label: 'Dalam 10 Km' },
-  { value: '<20km', label: 'Dalam 20 Km' },
-  { value: '<30km', label: 'Dalam 30 Km' },
-  { value: '<50km', label: 'Dalam 50 Km' },
+  { value: '<1km', label: 'Kurang dari 1km' },
+  { value: '<5km', label: 'Kurang dari 5km' },
+  { value: '<10km', label: 'Kurang dari 10km' },
 ];
 
-const SORT_OPTIONS = [
-  { value: 'relevan', label: 'Paling Relevan' },
-  { value: 'terdekat', label: 'Terdekat' },
-  { value: 'terfavorit', label: 'Ter favorit' },
+export type SortField = 'jam_ambil' | 'lokasi' | 'ulasan';
+export type SortOrder = 'asc' | 'desc';
+
+interface SortConfig {
+  id: SortField;
+  label: string;
+  defaultOrder: SortOrder;
+  ascLabel: string;
+  descLabel: string;
+}
+
+const SORT_OPTIONS: SortConfig[] = [
+  {
+    id: 'jam_ambil',
+    label: 'Jam Ambil',
+    defaultOrder: 'asc',
+    ascLabel: 'Paling Awal Pagi / Sore',
+    descLabel: 'Paling Akhir Malam',
+  },
+  {
+    id: 'lokasi',
+    label: 'Lokasi',
+    defaultOrder: 'asc',
+    ascLabel: 'Jarak Terdekat mulai 0 km',
+    descLabel: 'Jarak Terjauh',
+  },
+  {
+    id: 'ulasan',
+    label: 'Ulasan',
+    defaultOrder: 'desc',
+    ascLabel: 'Rating Terendah',
+    descLabel: 'Rating Tertinggi 5.0',
+  },
 ];
+
+/**
+ * Parse start minutes from pickup schedule string (e.g. "19:45 - 21:00" -> 1185)
+ */
+function parsePickupMinutes(pickupTimeStr?: string): number {
+  if (!pickupTimeStr) return 9999;
+  const match = pickupTimeStr.match(/(\d{1,2})[:.](\d{2})/);
+  if (!match) return 9999;
+  return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+}
+
+/**
+ * Strip emoji and icon characters from product name, returning clean text
+ */
+function cleanProductName(raw?: string): string {
+  if (!raw) return 'SURPRISE BOX';
+  return raw
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, '')
+    .replace(/^[^\w\s]+/, '')
+    .trim()
+    .toUpperCase();
+}
 
 export function CustomerMarketplace({
   onNavigateHome,
@@ -286,11 +338,14 @@ export function CustomerMarketplace({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('Lokasi Saat Ini');
   const [isLoadingLoc, setIsLoadingLoc] = useState(false);
-  const [priceFilter, setPriceFilter] = useState('semua');
-  const [categoryFilter, setCategoryFilter] = useState('semua');
+  const [appliedMinPrice, setAppliedMinPrice] = useState<number | null>(null);
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | null>(null);
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
   const [distanceFilter, setDistanceFilter] = useState('semua');
-  const [sortFilter, setSortFilter] = useState('relevan');
-  const [openDropdown, setOpenDropdown] = useState<'harga' | 'kategori' | 'jarak' | 'urutkan' | 'kota' | null>(null);
+  const [sortField, setSortField] = useState<SortField>('jam_ambil');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [openDropdown, setOpenDropdown] = useState<'harga' | 'jarak' | 'urutkan' | 'kota' | null>(null);
 
   // Request browser live location
   const handleRequestLiveLocation = useCallback(() => {
@@ -387,46 +442,38 @@ export function CustomerMarketplace({
         if (item.city !== selectedCity) return false;
       }
 
-      // Price filter
-      if (priceFilter === '<10k' && item.rescuePrice >= 10000) return false;
-      if (priceFilter === '<20k' && item.rescuePrice >= 20000) return false;
-      if (priceFilter === '<30k' && item.rescuePrice >= 30000) return false;
-      if (priceFilter === '<50k' && item.rescuePrice >= 50000) return false;
-
-      // Category filter (Halal vs Non Halal)
-      if (categoryFilter === 'halal') {
-        const isHalal = item.tags.some((t) => t.toLowerCase().includes('halal')) || item.category.toLowerCase().includes('halal');
-        if (!isHalal) return false;
-      } else if (categoryFilter === 'non-halal') {
-        const isNonHalal = item.tags.some((t) => t.toLowerCase().includes('non halal') || t.toLowerCase().includes('non-halal') || t.toLowerCase().includes('bacon'));
-        const isHalal = item.tags.some((t) => t.toLowerCase().includes('halal'));
-        if (!isNonHalal && isHalal) return false;
-      }
+      // Price filter (Min - Max Range)
+      if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
+      if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
 
       // Distance filter
       if (distanceFilter !== 'semua') {
-        const dist = parseFloat(item.distanceText);
-        if (distanceFilter === '<5km' && dist > 5.0) return false;
-        if (distanceFilter === '<10km' && dist > 10.0) return false;
-        if (distanceFilter === '<20km' && dist > 20.0) return false;
-        if (distanceFilter === '<30km' && dist > 30.0) return false;
-        if (distanceFilter === '<50km' && dist > 50.0) return false;
+        const dist = parseFloat(item.distanceText) || 0;
+        if (distanceFilter === '<1km' && dist >= 1.0) return false;
+        if (distanceFilter === '<5km' && dist >= 5.0) return false;
+        if (distanceFilter === '<10km' && dist >= 10.0) return false;
       }
 
       return true;
     }).sort((a, b) => {
-      if (sortFilter === 'terdekat') {
-        return parseFloat(a.distanceText) - parseFloat(b.distanceText);
+      if (sortField === 'jam_ambil') {
+        const timeA = parsePickupMinutes(a.pickupTime);
+        const timeB = parsePickupMinutes(b.pickupTime);
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
       }
-      if (sortFilter === 'terfavorit') {
+      if (sortField === 'lokasi') {
+        const distA = parseFloat(a.distanceText) || 0;
+        const distB = parseFloat(b.distanceText) || 0;
+        return sortOrder === 'asc' ? distA - distB : distB - distA;
+      }
+      if (sortField === 'ulasan') {
         const ratingA = a.rating || 4.8;
         const ratingB = b.rating || 4.8;
-        if (ratingB !== ratingA) return ratingB - ratingA;
-        return b.discountPercent - a.discountPercent;
+        return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
       }
-      return 0; // Paling Relevan
+      return 0;
     });
-  }, [searchQuery, selectedCity, priceFilter, categoryFilter, distanceFilter, sortFilter]);
+  }, [searchQuery, selectedCity, appliedMinPrice, appliedMaxPrice, distanceFilter, sortField, sortOrder]);
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
     if (onNavigateDetail) {
@@ -491,7 +538,7 @@ export function CustomerMarketplace({
               <div className="flex items-center gap-2">
                 <h1 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight flex items-center">
                   <span>Jelajahi </span>
-                  <span className="text-[#3c6a00] ml-1.5">Mystery Box</span>
+                  <span className="text-brand-green ml-1.5">Mystery Box</span>
                 </h1>
                 {/* 4 Diagonal Footprints (Jejak Kaki Hitam 100% Persis Gambar Referensi) */}
                 <svg
@@ -549,7 +596,7 @@ export function CustomerMarketplace({
               </div>
 
               {/* City Dropdown Selector with Live Location */}
-              <div className="relative filter-dropdown-container min-w-[155px] sm:min-w-[175px]">
+              <div className="relative filter-dropdown-container min-w-38.75 sm:min-w-43.75">
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(openDropdown === 'kota' ? null : 'kota')}
@@ -590,7 +637,7 @@ export function CustomerMarketplace({
                 </button>
 
                 {openDropdown === 'kota' && (
-                  <div className="absolute top-full right-0 mt-1.5 w-full min-w-[200px] bg-white border border-black/15 rounded-xl shadow-lg z-40 py-1.5 overflow-hidden">
+                  <div className="absolute top-full right-0 mt-1.5 w-full min-w-50 bg-white border border-black/15 rounded-xl shadow-lg z-40 py-1.5 overflow-hidden">
                     {/* Live Location option */}
                     <button
                       type="button"
@@ -649,21 +696,30 @@ export function CustomerMarketplace({
             </div>
           </div>
 
-          {/* Filter Dropdowns Row (Harga, Kategori, Jarak, Urutkan) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-8">
+          {/* Filter Dropdowns Row (Harga, Jarak, Urutkan) */}
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-8">
             {/* 1. Filter Harga */}
             <div className="relative filter-dropdown-container">
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'harga' ? null : 'harga')}
-                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'harga'
-                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
-                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                  }`}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
+                  openDropdown === 'harga'
+                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    : appliedMinPrice !== null || appliedMaxPrice !== null
+                    ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                }`}
                 aria-expanded={openDropdown === 'harga'}
               >
                 <span className="truncate">
-                  {priceFilter === 'semua' ? 'Harga' : PRICE_OPTIONS.find((o) => o.value === priceFilter)?.label}
+                  {appliedMinPrice !== null && appliedMaxPrice !== null
+                    ? `Rp ${formatRupiah(appliedMinPrice)} - ${formatRupiah(appliedMaxPrice)}`
+                    : appliedMinPrice !== null
+                    ? `≥ Rp ${formatRupiah(appliedMinPrice)}`
+                    : appliedMaxPrice !== null
+                    ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
+                    : 'Harga'}
                 </span>
                 <svg
                   width="14"
@@ -681,97 +737,103 @@ export function CustomerMarketplace({
               </button>
 
               {openDropdown === 'harga' && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
-                  {PRICE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        setPriceFilter(opt.value);
-                        setOpenDropdown(null);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${priceFilter === opt.value
+                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-4 animate-in fade-in zoom-in-95 duration-150 min-w-[280px] sm:min-w-full">
+                  {/* 1. Semua Harga */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedMinPrice(null);
+                      setAppliedMaxPrice(null);
+                      setMinPriceInput('');
+                      setMaxPriceInput('');
+                      setOpenDropdown(null);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-between cursor-pointer mb-1 ${
+                      appliedMinPrice === null && appliedMaxPrice === null
                         ? 'bg-gray-100 text-[#1b1c1c] font-bold'
                         : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
-                        }`}
+                    }`}
+                  >
+                    <span>Semua Harga</span>
+                    {appliedMinPrice === null && appliedMaxPrice === null && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <div className="border-t border-gray-100 my-2" />
+
+                  {/* 2. Rentang min x - max y */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                      Rentang Harga (Rp)
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 items-center">
+                      <div>
+                        <label className="text-[10px] text-gray-400 block mb-0.5">Min</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={minPriceInput}
+                            onChange={(e) => setMinPriceInput(formatPriceInput(e.target.value))}
+                            className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-400 block mb-0.5">Max</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="50.000"
+                            value={maxPriceInput}
+                            onChange={(e) => setMaxPriceInput(formatPriceInput(e.target.value))}
+                            className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Box Terapkan */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const min = parsePriceInput(minPriceInput);
+                        const max = parsePriceInput(maxPriceInput);
+                        setAppliedMinPrice(min);
+                        setAppliedMaxPrice(max);
+                        setOpenDropdown(null);
+                        if (onShowToast) {
+                          onShowToast('Rentang harga diterapkan');
+                        }
+                      }}
+                      className="w-full mt-3 py-2.5 bg-[#1e2420] hover:bg-black text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-98"
                     >
-                      <span>{opt.label}</span>
-                      {priceFilter === opt.value && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      Terapkan
                     </button>
-                  ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 2. Filter Kategori */}
-            <div className="relative filter-dropdown-container">
-              <button
-                type="button"
-                onClick={() => setOpenDropdown(openDropdown === 'kategori' ? null : 'kategori')}
-                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'kategori'
-                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
-                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                  }`}
-                aria-expanded={openDropdown === 'kategori'}
-              >
-                <span className="truncate">
-                  {categoryFilter === 'semua' ? 'Kategori' : CATEGORY_OPTIONS.find((o) => o.value === categoryFilter)?.label}
-                </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'kategori' ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-
-              {openDropdown === 'kategori' && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
-                  {CATEGORY_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        setCategoryFilter(opt.value);
-                        setOpenDropdown(null);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${categoryFilter === opt.value
-                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
-                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
-                        }`}
-                    >
-                      <span>{opt.label}</span>
-                      {categoryFilter === opt.value && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 3. Filter Jarak */}
+            {/* 2. Filter Jarak */}
             <div className="relative filter-dropdown-container">
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'jarak' ? null : 'jarak')}
-                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'jarak'
-                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
-                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                  }`}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
+                  openDropdown === 'jarak'
+                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    : distanceFilter !== 'semua'
+                    ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                }`}
                 aria-expanded={openDropdown === 'jarak'}
               >
                 <span className="truncate">
@@ -793,7 +855,7 @@ export function CustomerMarketplace({
               </button>
 
               {openDropdown === 'jarak' && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-1.5 overflow-hidden min-w-[200px] sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
                   {DISTANCE_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
@@ -802,10 +864,11 @@ export function CustomerMarketplace({
                         setDistanceFilter(opt.value);
                         setOpenDropdown(null);
                       }}
-                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${distanceFilter === opt.value
-                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
-                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
-                        }`}
+                      className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                        distanceFilter === opt.value
+                          ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                          : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                      }`}
                     >
                       <span>{opt.label}</span>
                       {distanceFilter === opt.value && (
@@ -819,20 +882,30 @@ export function CustomerMarketplace({
               )}
             </div>
 
-            {/* 4. Filter Urutkan */}
+            {/* 3. Filter Urutkan (dengan fitur panah Asc / Desc) */}
             <div className="relative filter-dropdown-container">
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'urutkan' ? null : 'urutkan')}
-                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'urutkan'
-                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
-                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                  }`}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
+                  openDropdown === 'urutkan'
+                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                }`}
                 aria-expanded={openDropdown === 'urutkan'}
               >
-                <span className="truncate">
-                  {sortFilter === 'relevan' ? 'Urutkan' : SORT_OPTIONS.find((o) => o.value === sortFilter)?.label}
-                </span>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="truncate">
+                    {sortField === 'jam_ambil'
+                      ? 'Jam Ambil'
+                      : sortField === 'lokasi'
+                      ? 'Lokasi'
+                      : 'Ulasan'}
+                  </span>
+                  <span className="text-xs font-black text-brand-green">
+                    {sortOrder === 'asc' ? '↑' : '↓'}
+                  </span>
+                </div>
                 <svg
                   width="14"
                   height="14"
@@ -849,28 +922,84 @@ export function CustomerMarketplace({
               </button>
 
               {openDropdown === 'urutkan' && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
-                  {SORT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        setSortFilter(opt.value);
-                        setOpenDropdown(null);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${sortFilter === opt.value
-                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
-                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                <div className="absolute top-full right-0 sm:left-0 sm:right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-2 overflow-hidden min-w-[280px] sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                    Pilih Urutan &amp; Arah
+                  </div>
+                  {SORT_OPTIONS.map((opt) => {
+                    const isSelected = sortField === opt.id;
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+                          } else {
+                            setSortField(opt.id);
+                            setSortOrder(opt.defaultOrder);
+                          }
+                        }}
+                        className={`w-full px-3.5 py-2.5 transition-colors flex items-center justify-between cursor-pointer group ${
+                          isSelected
+                            ? 'bg-[#f0f7f0] text-[#1b1c1c]'
+                            : 'text-[#1b1c1c] hover:bg-gray-50'
                         }`}
-                    >
-                      <span>{opt.label}</span>
-                      {sortFilter === opt.value && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
+                      >
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className={`text-xs sm:text-sm ${isSelected ? 'font-bold text-[#1b1c1c]' : 'font-medium'}`}>
+                            {opt.label}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-normal mt-0.5">
+                            {isSelected
+                              ? sortOrder === 'asc'
+                                ? opt.ascLabel
+                                : opt.descLabel
+                              : 'Klik untuk memilih'}
+                          </span>
+                        </div>
+
+                        {/* Interactive Asc/Desc toggle button (Arrow Only) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isSelected) {
+                              setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+                            } else {
+                              setSortField(opt.id);
+                              setSortOrder(opt.defaultOrder);
+                            }
+                          }}
+                          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                            isSelected
+                              ? 'bg-brand-green text-white border-brand-green shadow-xs hover:bg-[#165022]'
+                              : 'bg-white text-gray-400 border-gray-200 group-hover:border-gray-300 group-hover:text-gray-600'
+                          }`}
+                          title={isSelected ? (sortOrder === 'asc' ? 'Urutkan Menurun' : 'Urutkan Menaik') : 'Pilih pengurutan'}
+                          aria-label={isSelected ? (sortOrder === 'asc' ? 'Arah naik' : 'Arah turun') : 'Pilih arah'}
+                        >
+                          {isSelected ? (
+                            sortOrder === 'asc' ? (
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5" />
+                                <polyline points="5 12 12 5 19 12" />
+                              </svg>
+                            ) : (
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <polyline points="19 12 12 19 5 12" />
+                              </svg>
+                            )
+                          ) : (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m7 15 5 5 5-5" />
+                              <path d="m7 9 5-5 5 5" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -896,7 +1025,7 @@ export function CustomerMarketplace({
                       />
                     ) : (
                       /* Clean visual placeholder slot when image is not yet in assets */
-                      <div className="w-full h-full bg-gradient-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                      <div className="w-full h-full bg-linear-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
                         <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-200/90 mb-1 border border-white/10 shadow-xs">
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -978,18 +1107,18 @@ export function CustomerMarketplace({
                       </div>
 
                       <div>
-                        <span className="px-2.5 py-1 rounded-full bg-[#3c6a00] text-white text-[11px] font-black shadow-xs">
+                        <span className="px-2.5 py-1 rounded-full bg-brand-green text-white text-[11px] font-black shadow-xs">
                           -{item.discountPercent}%
                         </span>
                       </div>
                     </div>
 
-                    {/* Bottom Dark Gradient with Category & Store Name Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
-                      <span className="text-[11px] sm:text-xs font-black text-[#a3e635] tracking-wider uppercase drop-shadow-xs">
-                        {item.categoryBadge}
+                    {/* Bottom Dark Gradient with Store Name Overlay */}
+                    <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
+                      <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
+                        {cleanProductName(item.categoryBadge || item.category)}
                       </span>
-                      <h2 className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm mt-0.5 truncate">
+                      <h2 className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate">
                         {item.storeName}
                       </h2>
                     </div>
@@ -998,79 +1127,9 @@ export function CustomerMarketplace({
                   {/* Card Body Content */}
                   <div className="p-4 sm:p-5 flex flex-col flex-1">
                     {/* Description */}
-                    <p className="text-xs sm:text-[13px] text-[#434844] line-clamp-2 leading-relaxed">
+                    <p className="text-xs sm:text-[13px] text-[#434844] line-clamp-2 leading-relaxed mb-3.5">
                       {item.description}
                     </p>
-
-                    {/* Tag Pills */}
-                    <div className="flex items-center gap-2 flex-wrap my-3.5">
-                      {item.tags.map((tag, idx) => {
-                        const lowerTag = tag.toLowerCase();
-                        const isHalal = lowerTag.includes('halal') || idx === 0 && !lowerTag.includes('porsi');
-                        const isPlantBased = lowerTag.includes('plant') || lowerTag.includes('organik');
-
-                        if (isHalal) {
-                          return (
-                            <span
-                              key={`${tag}-${idx}`}
-                              className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
-                            >
-                              <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="shrink-0"
-                                aria-hidden="true"
-                              >
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="m9 12 2 2 4-4" />
-                              </svg>
-                              <span>{tag.replace(/^[✓\s]+/, '')}</span>
-                            </span>
-                          );
-                        }
-
-                        if (isPlantBased) {
-                          return (
-                            <span
-                              key={`${tag}-${idx}`}
-                              className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
-                            >
-                              <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="shrink-0"
-                                aria-hidden="true"
-                              >
-                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-                              </svg>
-                              <span>{tag}</span>
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <span
-                            key={`${tag}-${idx}`}
-                            className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#F1F3F5] text-[#434844] font-medium"
-                          >
-                            {tag}
-                          </span>
-                        );
-                      })}
-                    </div>
 
                     {/* Pickup Time Bar */}
                     <div className="w-full bg-[#F4F3F0] rounded-xl py-2.5 px-3.5 flex items-center gap-2 mt-auto">
@@ -1101,24 +1160,10 @@ export function CustomerMarketplace({
                       <button
                         type="button"
                         onClick={() => handleOpenOrder(item)}
-                        className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-[#1f2a24] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+                        className="inline-flex items-center justify-center px-4 sm:px-5 py-2.5 rounded-xl bg-[#1f2a24] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
                         id={`btn-ambil-${item.id}`}
                       >
-                        <span>Ambil Sekarang</span>
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
+                        <span>Pesan Sekarang</span>
                       </button>
                     </div>
                   </div>
@@ -1133,16 +1178,19 @@ export function CustomerMarketplace({
               </div>
               <h3 className="font-bold text-lg text-[#1b1c1c]">Tidak ada Mystery Box yang cocok</h3>
               <p className="text-xs sm:text-sm text-gray-500 max-w-md mt-1 mb-4">
-                Coba sesuaikan kata kunci pencarian atau ubah filter harga, kategori, dan jarak di atas.
+                Coba sesuaikan kata kunci pencarian atau ubah filter harga dan jarak di atas.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  setPriceFilter('semua');
-                  setCategoryFilter('semua');
+                  setAppliedMinPrice(null);
+                  setAppliedMaxPrice(null);
+                  setMinPriceInput('');
+                  setMaxPriceInput('');
                   setDistanceFilter('semua');
-                  setSortFilter('relevan');
+                  setSortField('jam_ambil');
+                  setSortOrder('asc');
                 }}
                 className="px-5 py-2 bg-[#1e2420] text-white text-xs font-bold rounded-full hover:bg-black transition-all cursor-pointer"
               >
@@ -1163,7 +1211,7 @@ export function CustomerMarketplace({
             window.location.hash = '#keranjang';
           }
         }}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-[#3c6a00] shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
         title="Keranjang Pesanan"
         aria-label="Buka Keranjang Pesanan"
       >
@@ -1202,7 +1250,7 @@ export function CustomerMarketplace({
           aria-modal="true"
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-[#3c6a00]/10 flex items-center justify-center text-[#3c6a00]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />

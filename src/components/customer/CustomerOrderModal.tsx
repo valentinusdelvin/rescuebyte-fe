@@ -76,7 +76,7 @@ export function CustomerOrderModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#3c6a00] bg-[#3c6a00]/10 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-semibold uppercase tracking-wider text-brand-green bg-brand-green/10 px-2.5 py-1 rounded-full">
               Penyelamatan Pangan
             </span>
             <h2 id="order-modal-title" className="text-xl font-bold text-[#1b1c1c] mt-1.5">
@@ -103,7 +103,7 @@ export function CustomerOrderModal({
             <img
               src={item.imageSrc}
               alt={item.storeName}
-              className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+              className="w-20 h-20 object-cover rounded-lg shrink-0"
             />
             <div className="flex-1 min-w-0">
               <span className="text-xs text-gray-500 font-medium block truncate">
@@ -175,7 +175,7 @@ export function CustomerOrderModal({
                 required
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] outline-none"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
               />
             </div>
             <div>
@@ -187,7 +187,7 @@ export function CustomerOrderModal({
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] outline-none"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
               />
             </div>
           </div>
@@ -202,7 +202,7 @@ export function CustomerOrderModal({
               placeholder="Contoh: Tidak pakai sambal, atau ada alergi kacang"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] outline-none"
+              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-brand-green focus:ring-1 focus:ring-brand-green outline-none"
             />
           </div>
 
@@ -218,7 +218,7 @@ export function CustomerOrderModal({
             </div>
             <div className="flex justify-between text-sm font-bold text-[#1b1c1c] pt-2 border-t border-emerald-200/50">
               <span>Total Bayar di Tempat</span>
-              <span className="text-[#3c6a00] text-base">
+              <span className="text-brand-green text-base">
                 Rp {formatRupiah(subtotal)}
               </span>
             </div>
@@ -237,7 +237,7 @@ export function CustomerOrderModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-[2] py-3 px-4 rounded-xl bg-[#0b1510] hover:bg-[#202a24] text-white font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-2 py-3 px-4 rounded-xl bg-[#0b1510] hover:bg-[#202a24] text-white font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

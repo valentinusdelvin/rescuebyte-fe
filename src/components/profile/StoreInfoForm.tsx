@@ -230,7 +230,7 @@ export function StoreInfoForm({
           <div className="flex flex-col items-center gap-2.5 shrink-0">
             <label
               htmlFor="store-logo-file"
-              className="group/avatar relative w-[82px] h-[82px] rounded-full border border-gray-300 flex items-center justify-center bg-[#bef264] cursor-pointer transition-transform hover:scale-[1.03] shrink-0"
+              className="group/avatar relative w-20.5 h-20.5 rounded-full border border-gray-300 flex items-center justify-center bg-brand-lime cursor-pointer transition-transform hover:scale-[1.03] shrink-0"
               id="store-avatar-preview"
               tabIndex={0}
               role="button"
@@ -519,7 +519,7 @@ export function StoreInfoForm({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-3.5 px-6 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+            className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
             id="btn-save-profile"
           >
             Simpan Perubahan

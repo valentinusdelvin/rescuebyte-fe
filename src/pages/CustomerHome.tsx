@@ -318,7 +318,7 @@ export function CustomerHome({
 
       {/* 2. Hero Section */}
       {/* 2A. Desktop Version: Full Panoramic Cafe Banner with 3D Glowing Mystery Box on right (matches Figma verbatim) */}
-      <section className="relative min-h-[440px] lg:min-h-[480px] xl:min-h-[520px] pt-32 md:pt-36 pb-12 sm:pb-16 px-6 sm:px-12 hidden lg:flex items-center overflow-hidden border-b border-black/5" id="hero-section">
+      <section className="relative min-h-110 lg:min-h-120 xl:min-h-130 pt-32 md:pt-36 pb-12 sm:pb-16 px-6 sm:px-12 hidden lg:flex items-center overflow-hidden border-b border-black/5" id="hero-section">
         {/* Full-width panoramic banner background */}
         <div className="absolute inset-0 z-0">
           <img
@@ -331,19 +331,19 @@ export function CustomerHome({
         <div className="relative z-10 w-full max-w-7xl mx-auto">
           <div className="grid grid-cols-2 items-center">
             {/* Left Headline & Description matching Figma typography, shifted slightly right away from corner leaves */}
-            <div className="max-w-[440px] ml-10 lg:ml-14">
+            <div className="max-w-110 ml-10 lg:ml-14">
               <h1 className="font-display text-[28px] lg:text-[32px] font-extrabold leading-[1.2] text-[#1b1c1c] tracking-tight mb-3">
                 Selamatkan Makanan Lezat, <br />
                 Hemat Hingga 70% Setiap Malam
               </h1>
 
-              <p className="text-[13px] md:text-sm leading-relaxed text-[#1b1c1c] font-medium max-w-[400px]">
+              <p className="text-[13px] md:text-sm leading-relaxed text-[#1b1c1c] font-medium max-w-100">
                 Beli Mystery Box berisi makanan berlebih berkualitas prima dari kafe, bakery, dan restoran favoritmu sebelum jam tutup. Tetap higienis, halal, lezat, dan berdampak nyata bagi bumi.
               </p>
             </div>
 
             {/* Right half is intentionally open to showcase the integrated 3D Glowing Mystery Box in the banner photo */}
-            <div className="min-h-[300px]" aria-hidden="true" />
+            <div className="min-h-75" aria-hidden="true" />
           </div>
         </div>
       </section>
@@ -364,14 +364,14 @@ export function CustomerHome({
 
         {/* Bottom: The Cardboard Mystery Box sitting at the bottom without overlapping text */}
         <div className="w-full mt-4 -mb-1 relative overflow-hidden flex justify-center items-end">
-          <div className="w-full h-[220px] sm:h-[260px] relative">
+          <div className="w-full h-55 sm:h-65 relative">
             <img
               src={heroFullBanner}
               alt="RescueBite Mystery Box"
               className="w-full h-full object-cover object-[78%_center]"
             />
             {/* Subtle top gradient fade into clean page background */}
-            <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#fcf9f8] to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-8 bg-linear-to-b from-[#fcf9f8] to-transparent pointer-events-none" />
           </div>
         </div>
       </section>
@@ -380,35 +380,11 @@ export function CustomerHome({
       <section className="px-6 py-10 lg:py-12" id="marketplace-section">
         <div className="w-full max-w-7xl mx-auto">
           {/* Section Header */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] flex-shrink-0" aria-hidden="true" />
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
-                Mystery Box Populer
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#434844]">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-[#d94a38] shrink-0"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="13" r="8" />
-                <path d="M12 9v4l2.5 2.5" />
-                <path d="M5 3 2 6" />
-                <path d="m22 6-3-3" />
-                <path d="M10 2h4" />
-              </svg>
-              <span>Stok kritis • Otomatis dialihkan donasi jika lewat batas waktu</span>
-            </div>
+          <div className="flex items-center gap-2.5 mb-6">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] shrink-0" aria-hidden="true" />
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
+              Mystery Box Populer
+            </h2>
           </div>
 
           {/* Popular Cards Grid (3 Columns) */}
@@ -452,19 +428,19 @@ export function CustomerHome({
       {/* 5. Section: About Us (Matching Figma verbatim with organic backdrop & new SVG artwork) */}
       <section className="relative px-6 py-16 sm:py-24 bg-white overflow-hidden" id="about-us-section">
         {/* Organic Lime Fluid Backdrop Blobs matching Figma visual */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden -z-0" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
           {/* Top-Right Organic Shape (Rectangle 16 (1).svg) behind Row 1 photo */}
           <img
             src={bgShapeTopRight}
             alt=""
-            className="absolute -right-20 lg:-right-8 -top-8 w-[560px] sm:w-[640px] lg:w-[700px] h-auto select-none pointer-events-none -z-10"
+            className="absolute -right-20 lg:-right-8 -top-8 w-140 sm:w-160 lg:w-175 h-auto select-none pointer-events-none -z-10"
           />
 
           {/* Left-Side Accent Organic Shape (Rectangle 18.svg) */}
           <img
             src={bgShapeAccent}
             alt=""
-            className="absolute -left-16 sm:-left-8 top-16 w-[200px] sm:w-[260px] lg:w-[280px] h-auto select-none pointer-events-none -z-10"
+            className="absolute -left-16 sm:-left-8 top-16 w-50 sm:w-65 lg:w-70 h-auto select-none pointer-events-none -z-10"
           />
 
           {/* Center Floating Organic Pebble (Ellipse 1116.svg) */}
@@ -478,14 +454,14 @@ export function CustomerHome({
           <img
             src={bgShapeBottomLeft}
             alt=""
-            className="absolute -left-20 sm:-left-10 bottom-6 sm:bottom-12 w-[480px] sm:w-[560px] lg:w-[610px] h-auto select-none pointer-events-none -z-10"
+            className="absolute -left-20 sm:-left-10 bottom-6 sm:bottom-12 w-120 sm:w-140 lg:w-152.5 h-auto select-none pointer-events-none -z-10"
           />
 
           {/* Bottom Organic Wave / Hill (Rectangle 20.svg) */}
           <img
             src={bgShapeBottom}
             alt=""
-            className="absolute right-0 bottom-0 w-[600px] sm:w-[780px] lg:w-[930px] h-auto select-none pointer-events-none -z-10"
+            className="absolute right-0 bottom-0 w-150 sm:w-195 lg:w-232.5 h-auto select-none pointer-events-none -z-10"
           />
         </div>
 
@@ -494,12 +470,12 @@ export function CustomerHome({
           <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-14">
             {/* Left Column: Text */}
             <div className="max-w-xl">
-              <span className="text-[#3c6a00] font-bold text-sm sm:text-base tracking-wide block mb-2.5">
+              <span className="text-brand-green font-bold text-sm sm:text-base tracking-wide block mb-2.5">
                 About Us
               </span>
               <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.15] text-[#1b1c1c] tracking-tight mb-4">
                 Lebih dari Sekadar <br />
-                <span className="text-[#3c6a00]">Makanan Murah</span>
+                <span className="text-brand-green">Makanan Murah</span>
               </h2>
               <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
                 Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
@@ -508,7 +484,7 @@ export function CustomerHome({
 
             {/* Right Column: Organic SVG Photo 1 */}
             <div className="flex justify-center lg:justify-end items-center">
-              <div className="relative w-full max-w-[460px] sm:max-w-[500px] lg:max-w-[530px]">
+              <div className="relative w-full max-w-115 sm:max-w-125 lg:max-w-132.5">
                 <img
                   src={aboutUsTopImg}
                   alt="Lebih dari Sekadar Makanan Murah - RescueBite"
@@ -522,7 +498,7 @@ export function CustomerHome({
           <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-14">
             {/* Left Column: Organic SVG Photo 2 (Mobile Order 2, Desktop Order 1) */}
             <div className="flex justify-center lg:justify-start items-center order-2 lg:order-1">
-              <div className="relative w-full max-w-[420px] sm:max-w-[450px] lg:max-w-[480px]">
+              <div className="relative w-full max-w-105 sm:max-w-112.5 lg:max-w-120">
                 <img
                   src={aboutUsBottomImg}
                   alt="Good Food Deserve A Second Chance - RescueBite"
@@ -536,7 +512,7 @@ export function CustomerHome({
               <div className="max-w-xl">
                 <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.15] text-[#1b1c1c] tracking-tight mb-4 lg:text-right">
                   Good Food Deserve A <br />
-                  <span className="text-[#3c6a00]">Second Chance</span>
+                  <span className="text-brand-green">Second Chance</span>
                 </h2>
                 <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
                   Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
@@ -550,27 +526,27 @@ export function CustomerHome({
       {/* 6. Section: Apa Kata Mereka (Continuous Infinite Marquee using Tailwind CSS) */}
       <section className="py-16 sm:py-20 overflow-hidden" id="testimoni-section">
         <div className="w-full max-w-7xl mx-auto px-6 mb-8 text-left">
-          <span className="inline-block text-xs sm:text-sm font-bold text-[#3c6a00] uppercase tracking-wider mb-2">
+          <span className="inline-block text-xs sm:text-sm font-bold text-brand-green uppercase tracking-wider mb-2">
             APA KATA MEREKA
           </span>
           <h2 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight">
-            Cerita Nyata dari <span className="text-[#3c6a00]">Pengguna</span>
+            Cerita Nyata dari <span className="text-brand-green">Pengguna</span>
           </h2>
         </div>
 
         <div className="relative w-full overflow-hidden group">
           {/* Left subtle fade */}
-          <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-linear-to-r from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
 
           {/* Right subtle fade */}
-          <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-linear-to-l from-[#fcf9f8] to-transparent z-10 pointer-events-none" />
 
           {/* Infinite Marquee Track: Seamless 50% continuous loop with 100% screen coverage */}
-          <div className="flex gap-6 w-max shrink-0 animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:[animation-play-state:paused] [will-change:transform] [transform:translate3d(0,0,0)] [backface-visibility:hidden]">
+          <div className="flex gap-6 w-max shrink-0 animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:[animation-play-state:paused] will-change-transform transform-[translate3d(0,0,0)] backface-hidden">
             {MARQUEE_CARDS.map((testi, idx) => (
               <div
                 key={`${testi.id}-${idx}`}
-                className="w-[300px] sm:w-[350px] md:w-[380px] shrink-0 bg-white border border-black/8 rounded-2xl sm:rounded-3xl p-6 shadow-xs flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:border-[#3c6a00]/40 hover:shadow-md select-none"
+                className="w-75 sm:w-87.5 md:w-95 shrink-0 bg-white border border-black/8 rounded-2xl sm:rounded-3xl p-6 shadow-xs flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:border-brand-green/40 hover:shadow-md select-none"
               >
                 <div>
                   {/* Header User Profile */}
@@ -578,7 +554,7 @@ export function CustomerHome({
                     <img
                       src={testi.avatarSrc}
                       alt={testi.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-[#3c6a00]/20 shadow-xs"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-brand-green/20 shadow-xs"
                     />
                     <div>
                       <h3 className="font-bold text-[#1b1c1c] text-sm">
@@ -626,7 +602,7 @@ export function CustomerHome({
           aria-modal="true"
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-[#3c6a00]/10 flex items-center justify-center text-[#3c6a00]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />

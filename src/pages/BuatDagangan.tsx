@@ -198,7 +198,7 @@ export function BuatDagangan({
               </label>
               <div
                 id="preview-deskripsi"
-                className="w-full min-h-[100px] p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-black cursor-pointer transition-colors text-sm text-gray-800 leading-relaxed"
+                className="w-full min-h-25 p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-black cursor-pointer transition-colors text-sm text-gray-800 leading-relaxed"
                 tabIndex={0}
                 role="button"
                 aria-label="Klik untuk mengedit Deskripsi Produk"
@@ -270,7 +270,7 @@ export function BuatDagangan({
             {/* Dynamic Discount & Savings Badge */}
             {discountPercent > 0 && (
               <div className="flex items-center gap-3 p-3.5 rounded-xl bg-green-50/80 border border-green-200/80 text-xs text-green-950 font-medium" aria-live="polite">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#15803d] text-white font-bold text-xs shrink-0 shadow-xs">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary text-white font-bold text-xs shrink-0 shadow-xs">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
@@ -333,7 +333,7 @@ export function BuatDagangan({
 
             {/* Interactive Upload Box */}
             <div
-              className={`relative rounded-2xl border-2 border-dashed border-gray-200 hover:border-black bg-gray-50/60 min-h-[260px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all overflow-hidden ${
+              className={`relative rounded-2xl border-2 border-dashed border-gray-200 hover:border-black bg-gray-50/60 min-h-65 flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all overflow-hidden ${
                 isDragging ? 'border-black bg-gray-100' : ''
               }`}
               onDragOver={handleDragOver}
@@ -355,7 +355,7 @@ export function BuatDagangan({
               }}
             >
               {photoPreview ? (
-                <div className="relative w-full h-[240px] rounded-xl overflow-hidden group">
+                <div className="relative w-full h-60 rounded-xl overflow-hidden group">
                   <img src={photoPreview} alt={productName || 'Preview Foto'} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                     <button
@@ -403,7 +403,7 @@ export function BuatDagangan({
           <div>
             <button
               type="submit"
-              className="w-full py-3.5 px-6 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+              className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
               id="btn-simpan-dagangan"
             >
               Simpan Perubahan
