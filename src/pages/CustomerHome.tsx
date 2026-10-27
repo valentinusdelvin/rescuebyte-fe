@@ -4,6 +4,7 @@ import { MysteryBoxCard } from '../components/customer/MysteryBoxCard';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../types';
+import { getCurrentUser } from '../services/authService';
 
 import heroFullBanner from '../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
 import aboutUsTopImg from '../assets/customer/about-us-top.svg';
@@ -24,10 +25,12 @@ import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
+  onNavigateProfile?: () => void;
+  onNavigateOrders?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
-  onShowToast?: (message: string) => void;
+  onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 /**
@@ -228,6 +231,8 @@ const MARQUEE_CARDS = [...HALF_TRACK, ...HALF_TRACK];
  */
 export function CustomerHome({
   onNavigateSeller,
+  onNavigateProfile,
+  onNavigateOrders,
   onNavigateMarketplace,
   onNavigateAuth,
   onNavigateDetail,
@@ -239,6 +244,19 @@ export function CustomerHome({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
+    const user = getCurrentUser();
+    if (!user) {
+      if (onShowToast) {
+        onShowToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
+      }
+      if (onNavigateAuth) {
+        onNavigateAuth();
+      } else {
+        window.location.hash = '#masuk';
+      }
+      return;
+    }
+
     if (onNavigateDetail) {
       onNavigateDetail(box);
     } else {
@@ -265,6 +283,8 @@ export function CustomerHome({
       <CustomerHeader
         activeTab="beranda"
         onNavigateSeller={onNavigateSeller}
+        onNavigateProfile={onNavigateProfile}
+        onNavigateOrders={onNavigateOrders}
         onNavigateAuth={onNavigateAuth}
         onShowToast={onShowToast}
         onOpenAuthModal={() => {
@@ -276,6 +296,17 @@ export function CustomerHome({
         }}
         onSelectTab={(tab) => {
           if (tab === 'marketplace') {
+            if (!getCurrentUser()) {
+              if (onShowToast) {
+                onShowToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
+              }
+              if (onNavigateAuth) {
+                onNavigateAuth();
+              } else {
+                window.location.hash = '#masuk';
+              }
+              return;
+            }
             if (onNavigateMarketplace) {
               onNavigateMarketplace();
             } else {
