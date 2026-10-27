@@ -16,7 +16,12 @@ import { Toast, ToastType } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
 import { ActiveViewId, OrderStatusTab, CustomerMysteryBox } from './types';
-import { handleGoogleCallback, extractApiErrorMessage } from './services/authService';
+import {
+  handleGoogleCallback,
+  extractApiErrorMessage,
+  getCurrentUser,
+  subscribeToAuth,
+} from './services/authService';
 
 /**
  * Root Application Component
@@ -34,9 +39,20 @@ export function App() {
     if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) return 'view-riwayat';
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'view-buat-dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
-    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) return 'view-customer-product-detail';
-    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'view-customer-cart';
-    if (hash.startsWith('#marketplace')) return 'view-customer-marketplace';
+    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+      if (!getCurrentUser()) return 'view-customer-auth';
+      return 'view-customer-product-detail';
+    }
+    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+      if (!getCurrentUser()) return 'view-customer-auth';
+      return 'view-customer-cart';
+    }
+    if (hash.startsWith('#marketplace')) {
+      if (!getCurrentUser()) {
+        return 'view-customer-auth';
+      }
+      return 'view-customer-marketplace';
+    }
     if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'view-customer-auth';
     // Default to Customer Landing Page
     return 'view-customer-home';
@@ -62,9 +78,18 @@ export function App() {
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'Buat Dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'Daganganku';
     if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
-    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail')) return 'Detail Produk';
-    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) return 'Keranjang Saya';
-    if (hash.startsWith('#marketplace')) return 'Marketplace';
+    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+      if (!getCurrentUser()) return 'Masuk / Daftar';
+      return 'Detail Produk';
+    }
+    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+      if (!getCurrentUser()) return 'Masuk / Daftar';
+      return 'Keranjang Saya';
+    }
+    if (hash.startsWith('#marketplace')) {
+      if (!getCurrentUser()) return 'Masuk / Daftar';
+      return 'Marketplace';
+    }
     if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'Masuk / Daftar';
     return 'Beranda Pelanggan';
   });
@@ -137,6 +162,27 @@ export function App() {
 
   // Sync hash on navigation
   const handleNavigate = (viewId: string, label: string = '', tab?: OrderStatusTab) => {
+    // Auth guard: Require login before accessing marketplace, product detail, or cart
+    if (
+      viewId === 'view-customer-marketplace' ||
+      viewId === 'view-customer-product-detail' ||
+      viewId === 'view-customer-cart'
+    ) {
+      const user = getCurrentUser();
+      if (!user) {
+        const message =
+          viewId === 'view-customer-marketplace'
+            ? 'Silakan masuk terlebih dahulu untuk mengakses Marketplace.'
+            : 'Silakan masuk terlebih dahulu untuk memesan Mystery Box.';
+        showToast(message, 'warning');
+        setActiveView('view-customer-auth');
+        setActiveLabel('Masuk / Daftar');
+        window.history.replaceState(null, '', '#masuk');
+        setIsMobileOpen(false);
+        return;
+      }
+    }
+
     setActiveView(viewId);
     if (label) setActiveLabel(label);
     if (tab) setOrderTab(tab);
@@ -191,12 +237,36 @@ export function App() {
         setActiveView('view-daganganku');
         setActiveLabel('Daganganku');
       } else if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+        const user = getCurrentUser();
+        if (!user) {
+          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
+          setActiveView('view-customer-auth');
+          setActiveLabel('Masuk / Daftar');
+          window.history.replaceState(null, '', '#masuk');
+          return;
+        }
         setActiveView('view-customer-product-detail');
         setActiveLabel('Detail Produk');
       } else if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+        const user = getCurrentUser();
+        if (!user) {
+          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
+          setActiveView('view-customer-auth');
+          setActiveLabel('Masuk / Daftar');
+          window.history.replaceState(null, '', '#masuk');
+          return;
+        }
         setActiveView('view-customer-cart');
         setActiveLabel('Keranjang Saya');
       } else if (hash.startsWith('#marketplace')) {
+        const user = getCurrentUser();
+        if (!user) {
+          showToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
+          setActiveView('view-customer-auth');
+          setActiveLabel('Masuk / Daftar');
+          window.history.replaceState(null, '', '#masuk');
+          return;
+        }
         setActiveView('view-customer-marketplace');
         setActiveLabel('Marketplace');
       } else if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) {
@@ -211,7 +281,27 @@ export function App() {
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [showToast]);
+
+  // If user logs out while on protected routes, automatically redirect to login
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((user) => {
+      const hash = window.location.hash.toLowerCase();
+      if (
+        !user &&
+        (hash.startsWith('#marketplace') ||
+          hash.startsWith('#detail-produk') ||
+          hash.startsWith('#detail') ||
+          hash.startsWith('#mystery-box-detail') ||
+          hash.startsWith('#keranjang') ||
+          hash.startsWith('#cart'))
+      ) {
+        showToast('Silakan masuk terlebih dahulu untuk melanjutkan.', 'warning');
+        handleNavigate('view-customer-auth', 'Masuk / Daftar');
+      }
+    });
+    return unsubscribe;
+  }, [showToast]);
 
   return (
     <>
@@ -219,9 +309,16 @@ export function App() {
       {activeView === 'view-customer-home' ? (
         <CustomerHome
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateProfile={() => handleNavigate('view-profil', 'Profil Toko')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
           onNavigateDetail={(item) => {
+            const user = getCurrentUser();
+            if (!user) {
+              showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
+              handleNavigate('view-customer-auth', 'Masuk / Daftar');
+              return;
+            }
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
           }}

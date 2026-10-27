@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Store } from 'lucide-react';
 import rescueBiteLogo from '../../assets/logo.svg';
 import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
 import { UserPayload } from '../../types';
@@ -7,6 +7,7 @@ import { UserPayload } from '../../types';
 export interface CustomerHeaderProps {
   activeTab?: 'beranda' | 'marketplace' | 'kontak';
   onNavigateSeller?: () => void;
+  onNavigateProfile?: () => void;
   onOpenAuthModal?: () => void;
   onNavigateAuth?: () => void;
   onSelectTab?: (tab: 'beranda' | 'marketplace' | 'kontak') => void;
@@ -48,6 +49,7 @@ const NAV_TABS: NavTabItem[] = [
 export function CustomerHeader({
   activeTab = 'beranda',
   onNavigateSeller,
+  onNavigateProfile,
   onOpenAuthModal,
   onNavigateAuth,
   onSelectTab,
@@ -57,8 +59,56 @@ export function CustomerHeader({
   const [selectedTab, setSelectedTab] = useState<TabType>(activeTab);
   const [hoveredTab, setHoveredTab] = useState<IndicatorKey | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isProfileDropdownOpen]);
+
+  const handleProfileClick = () => {
+    setIsProfileDropdownOpen(false);
+    if (onNavigateProfile) {
+      onNavigateProfile();
+    } else {
+      window.location.hash = '#profil-seller';
+    }
+  };
+
+  const handleSellerClick = () => {
+    setIsProfileDropdownOpen(false);
+    if (onNavigateSeller) {
+      onNavigateSeller();
+    } else {
+      window.location.hash = '#beranda-seller';
+    }
+  };
 
   const handleLogout = async () => {
+    setIsProfileDropdownOpen(false);
     try {
       await logoutUser();
       if (onShowToast) {
@@ -192,6 +242,22 @@ export function CustomerHeader({
   };
 
   const handleSelectTab = (tab: TabType) => {
+    // Guard: Redirect unauthenticated user to login when clicking marketplace
+    if (tab === 'marketplace') {
+      const user = getCurrentUser();
+      if (!user) {
+        if (onShowToast) {
+          onShowToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
+        }
+        if (onNavigateAuth) {
+          onNavigateAuth();
+        } else {
+          window.location.hash = '#masuk';
+        }
+        return;
+      }
+    }
+
     setSelectedTab(tab);
     isAutoScrollingRef.current = true;
     setTimeout(() => {
@@ -326,10 +392,10 @@ export function CustomerHeader({
           </button>
         </div>
 
-        {/* 3. Standalone User Avatar Circle (Logged In) OR Daftar/Masuk Pill (Logged Out) */}
+        {/* 3. Standalone User Avatar Circle with Dropdown (Logged In) OR Daftar/Masuk Pill (Logged Out) */}
         {currentUser ? (
-          <div className="flex items-center gap-2 sm:gap-2.5 relative z-20 shrink-0">
-            {/* Avatar Circle pointing to Restaurant Dashboard */}
+          <div className="relative z-30 shrink-0" ref={profileDropdownRef}>
+            {/* Avatar Circle toggling Profile Dropdown */}
             <button
               ref={(el) => {
                 itemRefs.current['auth'] = el;
@@ -339,37 +405,101 @@ export function CustomerHeader({
               onFocus={() => setHoveredTab('auth')}
               onBlur={() => setHoveredTab(null)}
               className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
-                activeIndicatorKey === 'auth' ? 'bg-[#121613]' : 'bg-[#1e2420] hover:bg-[#161a17]'
+                activeIndicatorKey === 'auth' || isProfileDropdownOpen ? 'bg-[#121613]' : 'bg-[#1e2420] hover:bg-[#161a17]'
               }`}
               style={{
-                transform: activeIndicatorKey === 'auth' ? `scale(${HOVER_SCALE_LOGO})` : 'scale(1)',
+                transform: (activeIndicatorKey === 'auth' || isProfileDropdownOpen) ? `scale(${HOVER_SCALE_LOGO})` : 'scale(1)',
                 transformOrigin: 'center center',
               }}
               id="btn-customer-avatar"
-              onClick={() => {
-                if (onNavigateSeller) {
-                  onNavigateSeller();
-                } else {
-                  window.location.hash = '#beranda-seller';
-                }
-              }}
-              title={`Profil: ${currentUser.name} (Klik untuk buka Dashboard Restoran)`}
-              aria-label={`Profil ${currentUser.name}, Beralih ke Dashboard Restoran`}
+              onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+              aria-expanded={isProfileDropdownOpen}
+              aria-haspopup="menu"
+              title={`Menu Akun: ${currentUser.name}`}
+              aria-label={`Menu Akun ${currentUser.name}`}
             >
               <User className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
             </button>
 
-            {/* Logout button for testing */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="px-3.5 py-2 md:px-4 md:py-2.5 rounded-full border-2 border-black bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs md:text-sm font-bold shadow-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black hover:scale-105 active:scale-95"
-              id="btn-customer-logout"
-              title="Keluar dari akun (Testing Logout)"
-            >
-              <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-600 stroke-[2.5]" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+            {/* Dropdown Menu */}
+            {isProfileDropdownOpen && (
+              <div
+                role="menu"
+                aria-orientation="vertical"
+                aria-labelledby="btn-customer-avatar"
+                className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl border-2 border-black shadow-2xl p-2.5 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
+              >
+                {/* User Summary Header */}
+                <div className="px-3.5 py-3 rounded-xl bg-[#F4F3F0] mb-2 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#1e2420] flex items-center justify-center text-white shrink-0">
+                    <User className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-[#1b1c1c] truncate">
+                      {currentUser.name}
+                    </p>
+                    <p className="text-xs text-[#5a625d] truncate">
+                      {currentUser.email}
+                    </p>
+                    {currentUser.role && (
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-[#3c6a00]/10 text-[#3c6a00]">
+                        {currentUser.role}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dropdown Action Buttons */}
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleProfileClick}
+                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] transition-colors cursor-pointer group"
+                    id="btn-dropdown-profile"
+                  >
+                    <User className="w-4 h-4 text-[#5a625d] group-hover:text-[#1b1c1c] stroke-[2]" />
+                    <div className="flex flex-col text-left">
+                      <span>Halaman Profil</span>
+                      <span className="text-[11px] text-[#737874] font-normal">Informasi & data toko</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleSellerClick}
+                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] transition-colors cursor-pointer group"
+                    id="btn-dropdown-seller-dashboard"
+                  >
+                    <Store className="w-4 h-4 text-[#5a625d] group-hover:text-[#1b1c1c] stroke-[2]" />
+                    <div className="flex flex-col text-left">
+                      <span>Dashboard Restoran</span>
+                      <span className="text-[11px] text-[#737874] font-normal">Kelola dagangan & pesanan</span>
+                    </div>
+                  </button>
+
+                  <div className="h-px bg-[#e5e7eb] my-1" />
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={async () => {
+                      setIsProfileDropdownOpen(false);
+                      await handleLogout();
+                    }}
+                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer group"
+                    id="btn-customer-logout"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-600 stroke-[2.2]" />
+                    <div className="flex flex-col text-left">
+                      <span>Logout</span>
+                      <span className="text-[11px] text-rose-400 font-normal">Keluar dari akun saat ini</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <button
@@ -425,18 +555,25 @@ export function CustomerHeader({
               <div className="flex flex-col gap-2 mt-2">
                 <button
                   type="button"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#F4F3F0] text-[#1b1c1c] text-xs font-bold text-left flex items-center gap-2 cursor-pointer"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleProfileClick();
+                  }}
+                >
+                  <User className="w-4 h-4 text-[#5a625d]" />
+                  <span>Halaman Profil ({currentUser.name})</span>
+                </button>
+                <button
+                  type="button"
                   className="w-full py-2.5 px-4 rounded-xl bg-[#1e2420] text-white text-xs font-bold text-center flex items-center justify-center gap-2 cursor-pointer"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    if (onNavigateSeller) {
-                      onNavigateSeller();
-                    } else {
-                      window.location.hash = '#beranda-seller';
-                    }
+                    handleSellerClick();
                   }}
                 >
-                  <User className="w-4 h-4" />
-                  <span>Dashboard Restoran ({currentUser.name})</span>
+                  <Store className="w-4 h-4" />
+                  <span>Dashboard Restoran</span>
                 </button>
                 <button
                   type="button"
