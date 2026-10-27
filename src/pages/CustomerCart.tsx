@@ -461,7 +461,7 @@ export function CustomerCart({
                                   loading="lazy"
                                 />
                               ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2a241e] to-[#1c1815] text-amber-200">
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-[#2a241e] to-[#1c1815] text-amber-200">
                                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                                   </svg>
@@ -519,7 +519,7 @@ export function CustomerCart({
                               >
                                 –
                               </button>
-                              <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-[16px] text-center select-none">
+                              <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-4 text-center select-none">
                                 {item.quantity}
                               </span>
                               <button
@@ -534,7 +534,7 @@ export function CustomerCart({
                             </div>
 
                             {/* Subtotal Item Price */}
-                            <div className="min-w-[85px] sm:min-w-[95px] text-right">
+                            <div className="min-w-21.25 sm:min-w-23.75 text-right">
                               <span className="font-bold text-sm sm:text-base text-[#1b1c1c]">
                                 Rp {formatRupiah(item.rescuePrice * item.quantity)}
                               </span>
@@ -721,7 +721,7 @@ export function CustomerCart({
           ) : (
             /* Empty State */
             <div className="w-full py-16 px-4 bg-white rounded-3xl border border-black/10 text-center flex flex-col items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#3c6a00] flex items-center justify-center text-3xl mb-3">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-brand-green flex items-center justify-center text-3xl mb-3">
                 🛒
               </div>
               <h3 className="font-bold text-lg text-[#1b1c1c]">Keranjangmu Kosong</h3>
@@ -756,7 +756,7 @@ export function CustomerCart({
           aria-modal="true"
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-[#3c6a00]/10 flex items-center justify-center text-[#3c6a00]">
+            <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />

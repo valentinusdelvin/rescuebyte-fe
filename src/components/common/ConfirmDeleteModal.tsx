@@ -52,7 +52,7 @@ export function ConfirmDeleteModal({
 
   return (
     <div
-      className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-1050 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onCancel}
       role="alertdialog"
       aria-modal="true"

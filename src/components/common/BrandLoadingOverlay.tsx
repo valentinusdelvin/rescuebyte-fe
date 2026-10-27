@@ -86,11 +86,11 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
       aria-live="polite"
       aria-busy="true"
     >
-      <div className={`relative w-[170px] h-[170px] flex items-center justify-center transition-transform duration-200 ${isExiting ? 'scale-95' : 'scale-100'
+      <div className={`relative w-42.5 h-42.5 flex items-center justify-center transition-transform duration-200 ${isExiting ? 'scale-95' : 'scale-100'
         }`}>
         {/* Radial tick spinner around the logo */}
         <svg
-          className="w-[170px] h-[170px]"
+          className="w-42.5 h-42.5"
           viewBox="0 0 170 170"
           width="170"
           height="170"
@@ -119,7 +119,7 @@ export function BrandLoadingOverlay({ isVisible }: BrandLoadingOverlayProps) {
           <img
             src={rescuebyteLogo}
             alt="RescueBite"
-            className="w-[86px] h-[78px] object-contain drop-shadow-sm"
+            className="w-21.5 h-19.5 object-contain drop-shadow-sm"
             width="86"
             height="78"
             loading="eager"

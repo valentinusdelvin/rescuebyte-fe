@@ -8,15 +8,13 @@ import {
   CreditCard,
   ChevronDown,
   Info,
-  CheckCircle2,
   Edit2,
   Trash2,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CheckoutItem, CheckoutPayload } from '../types';
+import { CheckoutItem, CheckoutPayload, PaymentOrderData } from '../types';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import { clearCart } from '../services/cartService';
 
 export interface CustomerCheckoutProps {
   payload?: CheckoutPayload | null;
@@ -25,6 +23,7 @@ export interface CustomerCheckoutProps {
   onNavigateCart?: () => void;
   onNavigateDetail?: () => void;
   onNavigateSeller?: () => void;
+  onNavigatePayment?: (orderData: PaymentOrderData) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -39,6 +38,7 @@ export function CustomerCheckout({
   onNavigateCart,
   onNavigateDetail,
   onNavigateSeller,
+  onNavigatePayment,
   onShowToast,
 }: CustomerCheckoutProps) {
   // Customer Info State
@@ -88,8 +88,6 @@ export function CustomerCheckout({
   // Payment Method: 'online' | 'cod'
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [orderCode, setOrderCode] = useState('');
 
   // Primary store info (taken from first item)
   const primaryStore = checkoutItems[0] || {
@@ -171,25 +169,41 @@ export function CustomerCheckout({
     }
 
     setIsSubmitting(true);
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(10000 + Math.random() * 90000).toString();
+    const generatedCode = `RB${todayStr}-${randomSuffix}`;
+
+    const orderData: PaymentOrderData = {
+      orderId: generatedCode,
+      items: checkoutItems,
+      primaryStore: {
+        storeName: primaryStore.storeName,
+        storeAvatar: primaryStore.storeAvatar,
+        storeAddress: primaryStore.storeAddress,
+        rating: primaryStore.rating,
+        reviewCount: primaryStore.reviewCount,
+      },
+      pickupDate: selectedDate,
+      pickupTimeSlot: selectedTimeSlot,
+      customerInfo: {
+        name: customerName,
+        phone: customerPhone,
+        email: customerEmail,
+      },
+      totalBoxes,
+      subtotal,
+      discountTotal,
+      serviceFee,
+      grandTotal,
+      source: payload?.source,
+    };
+
     setTimeout(() => {
       setIsSubmitting(false);
-      const generatedCode = `RB-${Math.floor(100000 + Math.random() * 900000)}`;
-      setOrderCode(generatedCode);
-      setIsSuccessModalOpen(true);
-
-      // If came from cart, clear cart
-      if (payload?.source === 'cart') {
-        clearCart();
+      if (onNavigatePayment) {
+        onNavigatePayment(orderData);
       }
-
-      if (onShowToast) {
-        onShowToast(
-          paymentMethod === 'online'
-            ? 'Pembayaran online berhasil dikonfirmasi!'
-            : 'Reservasi berhasil! Bayar saat ambil pesanan di toko.'
-        );
-      }
-    }, 1200);
+    }, 300);
   };
 
   const handleHeaderTab = (tab: string) => {
@@ -397,7 +411,7 @@ export function CustomerCheckout({
                           >
                             –
                           </button>
-                          <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-[16px] text-center select-none">
+                          <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-4 text-center select-none">
                             {item.quantity}
                           </span>
                           <button
@@ -754,7 +768,7 @@ export function CustomerCheckout({
                 type="button"
                 onClick={handlePayNow}
                 disabled={isSubmitting || totalBoxes === 0}
-                className="w-full sm:w-auto min-w-[220px] py-3.5 px-6 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
+                className="w-full sm:w-auto min-w-55 py-3.5 px-6 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
                 id="btn-bayar-sekarang"
               >
                 <ShoppingBag className="w-4 h-4" />
@@ -764,75 +778,6 @@ export function CustomerCheckout({
           </div>
         </main>
       </div>
-
-      {/* Success Modal */}
-      {isSuccessModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl text-center space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-full bg-[#dcfce7] text-[#16a34a] flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-
-            <div>
-              <h3 className="font-display font-extrabold text-xl text-[#1b1c1c]">
-                Pesanan Berhasil Dibuat!
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Kode Reservasi:{' '}
-                <span className="font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded-md font-mono">
-                  {orderCode}
-                </span>
-              </p>
-            </div>
-
-            <div className="bg-[#f8f8f6] border border-gray-200 rounded-2xl p-4 text-left text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Toko:</span>
-                <span className="font-bold text-gray-900">{primaryStore.storeName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Jadwal Pickup:</span>
-                <span className="font-bold text-gray-900">
-                  {selectedDate}, {selectedTimeSlot}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Metode Bayar:</span>
-                <span className="font-bold text-gray-900">
-                  {paymentMethod === 'online' ? 'Pembayaran Online (Lunas)' : 'Bayar di Tempat (Kasir)'}
-                </span>
-              </div>
-              <div className="flex justify-between border-t border-gray-200 pt-2">
-                <span className="text-gray-500">Total:</span>
-                <span className="font-black text-red-600 text-sm">
-                  Rp {formatRupiah(grandTotal)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                className="w-full py-3 px-4 bg-[#1f2620] hover:bg-black text-white rounded-xl font-bold text-sm transition-colors cursor-pointer"
-                onClick={() => {
-                  setIsSuccessModalOpen(false);
-                  if (onNavigateMarketplace) {
-                    onNavigateMarketplace();
-                  } else if (onNavigateHome) {
-                    onNavigateHome();
-                  }
-                }}
-              >
-                Kembali ke Marketplace
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 3. Footer */}
       <CustomerFooter
