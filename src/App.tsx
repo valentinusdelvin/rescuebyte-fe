@@ -310,6 +310,7 @@ export function App() {
         <CustomerHome
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateProfile={() => handleNavigate('view-profil', 'Profil Toko')}
+          onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
           onNavigateDetail={(item) => {

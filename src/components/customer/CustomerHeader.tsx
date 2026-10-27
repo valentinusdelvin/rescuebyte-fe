@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { User, LogOut, Store } from 'lucide-react';
+import { User } from 'lucide-react';
 import rescueBiteLogo from '../../assets/logo.svg';
 import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
 import { UserPayload } from '../../types';
@@ -8,6 +8,7 @@ export interface CustomerHeaderProps {
   activeTab?: 'beranda' | 'marketplace' | 'kontak';
   onNavigateSeller?: () => void;
   onNavigateProfile?: () => void;
+  onNavigateOrders?: () => void;
   onOpenAuthModal?: () => void;
   onNavigateAuth?: () => void;
   onSelectTab?: (tab: 'beranda' | 'marketplace' | 'kontak') => void;
@@ -50,6 +51,7 @@ export function CustomerHeader({
   activeTab = 'beranda',
   onNavigateSeller,
   onNavigateProfile,
+  onNavigateOrders,
   onOpenAuthModal,
   onNavigateAuth,
   onSelectTab,
@@ -95,6 +97,15 @@ export function CustomerHeader({
       onNavigateProfile();
     } else {
       window.location.hash = '#profil-seller';
+    }
+  };
+
+  const handleOrdersClick = () => {
+    setIsProfileDropdownOpen(false);
+    if (onNavigateOrders) {
+      onNavigateOrders();
+    } else {
+      window.location.hash = '#riwayat-seller';
     }
   };
 
@@ -421,65 +432,63 @@ export function CustomerHeader({
               <User className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown Menu (Shopee-style clean layout with RescueBite brand palette) */}
             {isProfileDropdownOpen && (
               <div
                 role="menu"
                 aria-orientation="vertical"
                 aria-labelledby="btn-customer-avatar"
-                className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl border-2 border-black shadow-2xl p-2.5 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
+                className="absolute right-0 top-full mt-3.5 w-52 sm:w-56 bg-white rounded-2xl border-2 border-black shadow-2xl py-2 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
               >
-                {/* User Summary Header */}
-                <div className="px-3.5 py-3 rounded-xl bg-[#F4F3F0] mb-2 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#1e2420] flex items-center justify-center text-white shrink-0">
-                    <User className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[#1b1c1c] truncate">
-                      {currentUser.name}
-                    </p>
-                    <p className="text-xs text-[#5a625d] truncate">
-                      {currentUser.email}
-                    </p>
-                    {currentUser.role && (
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-[#3c6a00]/10 text-[#3c6a00]">
-                        {currentUser.role}
-                      </span>
-                    )}
-                  </div>
+                {/* Pointer triangle arrow pointing up to the avatar center */}
+                <div
+                  className="absolute -top-2 right-5 md:right-6 w-3.5 h-3.5 bg-white border-t-2 border-l-2 border-black rotate-45 pointer-events-none"
+                  aria-hidden="true"
+                />
+
+                {/* Compact User Header */}
+                <div className="px-4 py-2 border-b border-[#f0eded] mb-1">
+                  <p className="text-xs font-bold text-[#1b1c1c] truncate">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-[11px] text-[#737874] truncate">
+                    {currentUser.email}
+                  </p>
                 </div>
 
-                {/* Dropdown Action Buttons */}
-                <div className="space-y-1">
+                {/* Dropdown Action Items - Simple single-line text like screenshot */}
+                <div className="flex flex-col">
                   <button
                     type="button"
                     role="menuitem"
                     onClick={handleProfileClick}
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] transition-colors cursor-pointer group"
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
                     id="btn-dropdown-profile"
                   >
-                    <User className="w-4 h-4 text-[#5a625d] group-hover:text-[#1b1c1c] stroke-[2]" />
-                    <div className="flex flex-col text-left">
-                      <span>Halaman Profil</span>
-                      <span className="text-[11px] text-[#737874] font-normal">Informasi & data toko</span>
-                    </div>
+                    Akun Saya
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleOrdersClick}
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
+                    id="btn-dropdown-orders"
+                  >
+                    Pesanan Saya
                   </button>
 
                   <button
                     type="button"
                     role="menuitem"
                     onClick={handleSellerClick}
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] transition-colors cursor-pointer group"
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
                     id="btn-dropdown-seller-dashboard"
                   >
-                    <Store className="w-4 h-4 text-[#5a625d] group-hover:text-[#1b1c1c] stroke-[2]" />
-                    <div className="flex flex-col text-left">
-                      <span>Dashboard Restoran</span>
-                      <span className="text-[11px] text-[#737874] font-normal">Kelola dagangan & pesanan</span>
-                    </div>
+                    Dashboard Restoran
                   </button>
 
-                  <div className="h-px bg-[#e5e7eb] my-1" />
+                  <div className="h-px bg-[#f0eded] my-1" />
 
                   <button
                     type="button"
@@ -488,14 +497,10 @@ export function CustomerHeader({
                       setIsProfileDropdownOpen(false);
                       await handleLogout();
                     }}
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer group"
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     id="btn-customer-logout"
                   >
-                    <LogOut className="w-4 h-4 text-rose-600 stroke-[2.2]" />
-                    <div className="flex flex-col text-left">
-                      <span>Logout</span>
-                      <span className="text-[11px] text-rose-400 font-normal">Keluar dari akun saat ini</span>
-                    </div>
+                    Log Out
                   </button>
                 </div>
               </div>
@@ -552,39 +557,47 @@ export function CustomerHeader({
               </a>
             ))}
             {currentUser ? (
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="flex flex-col gap-1.5 mt-2">
                 <button
                   type="button"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#F4F3F0] text-[#1b1c1c] text-xs font-bold text-left flex items-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#F4F3F0] text-[#1b1c1c] text-xs font-semibold text-left flex items-center justify-between cursor-pointer"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleProfileClick();
                   }}
                 >
-                  <User className="w-4 h-4 text-[#5a625d]" />
-                  <span>Halaman Profil ({currentUser.name})</span>
+                  <span>Akun Saya</span>
+                  <span className="text-[11px] text-[#737874]">{currentUser.name}</span>
                 </button>
                 <button
                   type="button"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#1e2420] text-white text-xs font-bold text-center flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl text-[#1b1c1c] hover:bg-[#F4F3F0] text-xs font-semibold text-left cursor-pointer"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleOrdersClick();
+                  }}
+                >
+                  Pesanan Saya
+                </button>
+                <button
+                  type="button"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1e2420] text-white text-xs font-semibold text-left cursor-pointer"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleSellerClick();
                   }}
                 >
-                  <Store className="w-4 h-4" />
-                  <span>Dashboard Restoran</span>
+                  Dashboard Restoran
                 </button>
                 <button
                   type="button"
-                  className="w-full py-2 px-4 rounded-xl border border-red-300 bg-red-50 text-red-600 text-xs font-bold text-center flex items-center justify-center gap-1.5 cursor-pointer hover:bg-red-100"
+                  className="w-full py-2 px-4 rounded-xl border border-red-300 bg-red-50 text-red-600 text-xs font-semibold text-center cursor-pointer hover:bg-red-100"
                   onClick={async () => {
                     setIsMobileMenuOpen(false);
                     await handleLogout();
                   }}
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Logout</span>
+                  Log Out
                 </button>
               </div>
             ) : (

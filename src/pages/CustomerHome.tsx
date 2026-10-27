@@ -26,6 +26,7 @@ import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;
   onNavigateProfile?: () => void;
+  onNavigateOrders?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
@@ -231,6 +232,7 @@ const MARQUEE_CARDS = [...HALF_TRACK, ...HALF_TRACK];
 export function CustomerHome({
   onNavigateSeller,
   onNavigateProfile,
+  onNavigateOrders,
   onNavigateMarketplace,
   onNavigateAuth,
   onNavigateDetail,
@@ -282,6 +284,7 @@ export function CustomerHome({
         activeTab="beranda"
         onNavigateSeller={onNavigateSeller}
         onNavigateProfile={onNavigateProfile}
+        onNavigateOrders={onNavigateOrders}
         onNavigateAuth={onNavigateAuth}
         onShowToast={onShowToast}
         onOpenAuthModal={() => {
