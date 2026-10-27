@@ -214,7 +214,7 @@ export function App() {
                   storeAvatar: 'TR',
                   storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
                   rating: product.rating || 4.8,
-                  reviewCount: product.reviewCount || 320,
+                  reviewCount: typeof product.reviewCount === 'number' ? product.reviewCount : Number(product.reviewCount) || 320,
                   distanceText: product.distanceText || '1.2 km',
                   categoryTags:
                     product.tags && product.tags.length > 0

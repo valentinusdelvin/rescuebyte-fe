@@ -13,7 +13,6 @@ import bgShapeCircle from '../assets/customer/bg-shape-circle.svg';
 import bgShapeBottomLeft from '../assets/customer/bg-shape-bottom-left.svg';
 import bgShapeBottom from '../assets/customer/bg-shape-bottom.svg';
 import bgShapeAccent from '../assets/customer/bg-shape-accent.svg';
-import glowingBoxImg from '../assets/customer/glowing-box.jpg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
 import cardSaladStop from '../assets/customer/card-saladstop.jpg';

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { CartItem, StoreCartGroup } from '../types';
 import {
   getStoredCart,
@@ -8,6 +9,7 @@ import {
   removeCartItem,
   removeCartStore,
   subscribeToCart,
+  getStoreInitials,
 } from '../services/cartService';
 
 export type { CartItem, StoreCartGroup };
@@ -18,6 +20,14 @@ export interface CustomerCartProps {
   onNavigateSeller?: () => void;
   onNavigateCheckout?: (items?: import('../types').CheckoutItem[]) => void;
   onShowToast?: (message: string) => void;
+}
+
+interface DeleteTarget {
+  type: 'store' | 'item';
+  storeId: string;
+  storeName: string;
+  itemId?: string;
+  itemName?: string;
 }
 
 /**
@@ -36,24 +46,82 @@ export function CustomerCart({
 }: CustomerCartProps) {
   const [cartStores, setCartStores] = useState<StoreCartGroup[]>(getStoredCart);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+  // Track checked/selected items in cart (default: all checked)
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(() => {
+    const initial = getStoredCart();
+    const set = new Set<string>();
+    initial.forEach((store) => store.items.forEach((item) => set.add(item.id)));
+    return set;
+  });
 
   // Synchronize cartStores with cartService updates
   useEffect(() => {
     const unsubscribe = subscribeToCart((_, stores) => {
       setCartStores(stores);
+      setSelectedItemIds((prev) => {
+        const next = new Set<string>();
+        const allIds: string[] = [];
+        stores.forEach((store) =>
+          store.items.forEach((item) => {
+            allIds.push(item.id);
+            if (prev.has(item.id)) {
+              next.add(item.id);
+            }
+          })
+        );
+        // Default select all if previously empty but new items arrived
+        if (next.size === 0 && allIds.length > 0 && prev.size === 0) {
+          allIds.forEach((id) => next.add(id));
+        }
+        return next;
+      });
     });
     return unsubscribe;
   }, []);
 
-  // Calculate totals matching the design
-  const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal } = useMemo(() => {
+  // Selection toggle handlers
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const isStoreAllSelected = (store: StoreCartGroup) =>
+    store.items.length > 0 && store.items.every((it) => selectedItemIds.has(it.id));
+
+  const toggleStoreSelection = (store: StoreCartGroup) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = store.items.every((it) => next.has(it.id));
+      if (allSelected) {
+        store.items.forEach((it) => next.delete(it.id));
+      } else {
+        store.items.forEach((it) => next.add(it.id));
+      }
+      return next;
+    });
+  };
+
+  // Calculate totals matching the design based on SELECTED items
+  const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal, selectedCount } = useMemo(() => {
     let boxes = 0;
     let sub = 0;
+    let count = 0;
     cartStores.forEach((store) => {
       store.items.forEach((item) => {
-        boxes += item.quantity;
-        // Subtotal calculated from original price or item base
-        sub += item.originalPrice * item.quantity;
+        if (selectedItemIds.has(item.id)) {
+          boxes += item.quantity;
+          sub += item.originalPrice * item.quantity;
+          count += 1;
+        }
       });
     });
 
@@ -68,8 +136,9 @@ export function CustomerCart({
       discountTotal: disc,
       serviceFee: fee,
       grandTotal: finalTotal,
+      selectedCount: count,
     };
-  }, [cartStores]);
+  }, [cartStores, selectedItemIds]);
 
   // Stepper handlers
   const handleIncrease = (storeId: string, itemId: string) => {
@@ -91,34 +160,78 @@ export function CustomerCart({
     saveCart(updated);
   };
 
-  const handleDecrease = (storeId: string, itemId: string) => {
+  // Decreasing when quantity is 1 triggers confirmation popup
+  const handleDecrease = (storeId: string, storeName: string, item: CartItem) => {
+    if (item.quantity <= 1) {
+      setDeleteTarget({
+        type: 'item',
+        storeId,
+        storeName,
+        itemId: item.id,
+        itemName: item.name,
+      });
+      return;
+    }
+
     const updated = cartStores
       .map((store) => {
         if (store.storeId !== storeId) return store;
         return {
           ...store,
-          items: store.items
-            .map((item) => {
-              if (item.id !== itemId) return item;
-              return { ...item, quantity: item.quantity - 1 };
-            })
-            .filter((item) => item.quantity > 0),
+          items: store.items.map((it) => {
+            if (it.id !== item.id) return it;
+            return { ...it, quantity: it.quantity - 1 };
+          }),
         };
-      })
-      .filter((store) => store.items.length > 0);
+      });
 
     setCartStores(updated);
     saveCart(updated);
   };
 
-  const handleRemoveItem = (storeId: string, itemId: string) => {
-    removeCartItem(storeId, itemId);
-    if (onShowToast) onShowToast('Item dihapus dari keranjang.');
+  const handlePromptRemoveItem = (storeId: string, storeName: string, item: CartItem) => {
+    setDeleteTarget({
+      type: 'item',
+      storeId,
+      storeName,
+      itemId: item.id,
+      itemName: item.name,
+    });
   };
 
-  const handleRemoveStore = (storeId: string, storeName: string) => {
-    removeCartStore(storeId);
-    if (onShowToast) onShowToast(`Semua pesanan dari ${storeName} dihapus.`);
+  const handlePromptRemoveStore = (storeId: string, storeName: string) => {
+    setDeleteTarget({
+      type: 'store',
+      storeId,
+      storeName,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'store') {
+      removeCartStore(deleteTarget.storeId);
+      setSelectedItemIds((prev) => {
+        const next = new Set(prev);
+        const targetStore = cartStores.find((s) => s.storeId === deleteTarget.storeId);
+        if (targetStore) {
+          targetStore.items.forEach((it) => next.delete(it.id));
+        }
+        return next;
+      });
+      if (onShowToast) onShowToast(`Semua pesanan dari ${deleteTarget.storeName} dihapus.`);
+    } else if (deleteTarget.type === 'item' && deleteTarget.itemId) {
+      removeCartItem(deleteTarget.storeId, deleteTarget.itemId);
+      setSelectedItemIds((prev) => {
+        const next = new Set(prev);
+        if (deleteTarget.itemId) next.delete(deleteTarget.itemId);
+        return next;
+      });
+      if (onShowToast) onShowToast(`"${deleteTarget.itemName}" dihapus dari keranjang.`);
+    }
+
+    setDeleteTarget(null);
   };
 
   const handlePickupTimeChange = (storeId: string, newTime: string) => {
@@ -130,29 +243,31 @@ export function CustomerCart({
   };
 
   const handleCheckout = () => {
-    if (totalBoxes === 0) {
-      if (onShowToast) onShowToast('Keranjangmu masih kosong.');
+    if (selectedCount === 0 || totalBoxes === 0) {
+      if (onShowToast) onShowToast('Pilih minimal 1 item untuk checkout.');
       return;
     }
     const flattenedItems = cartStores.flatMap((store) =>
-      store.items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        storeId: store.storeId,
-        storeName: store.storeName,
-        storeAvatar: store.storeAvatar,
-        storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-        rating: store.rating,
-        reviewCount: store.reviewCount,
-        distanceText: store.distanceText,
-        categoryTags: item.categoryTags,
-        originalPrice: item.originalPrice,
-        rescuePrice: item.rescuePrice,
-        discountPercent: item.discountPercent,
-        quantity: item.quantity,
-        imageSrc: item.imageSrc,
-        pickupTime: store.pickupTime,
-      }))
+      store.items
+        .filter((item) => selectedItemIds.has(item.id))
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          storeId: store.storeId,
+          storeName: store.storeName,
+          storeAvatar: store.storeAvatar,
+          storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
+          rating: store.rating,
+          reviewCount: store.reviewCount,
+          distanceText: store.distanceText,
+          categoryTags: item.categoryTags,
+          originalPrice: item.originalPrice,
+          rescuePrice: item.rescuePrice,
+          discountPercent: item.discountPercent,
+          quantity: item.quantity,
+          imageSrc: item.imageSrc,
+          pickupTime: store.pickupTime,
+        }))
     );
 
     if (onNavigateCheckout) {
@@ -211,21 +326,47 @@ export function CustomerCart({
                   >
                     {/* Store Header Row */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
-                      {/* Left: Avatar, Name, Rating, Distance */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#1e2a22] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
-                          {store.storeAvatar}
+                      {/* Left: Store Checkbox, Avatar, Name, Rating, Distance */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Store Selection Checkbox */}
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={isStoreAllSelected(store)}
+                          onClick={() => toggleStoreSelection(store)}
+                          className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
+                            isStoreAllSelected(store)
+                              ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
+                              : store.items.some((it) => selectedItemIds.has(it.id))
+                                ? 'bg-[#16a34a]/15 border-[#16a34a] text-[#16a34a]'
+                                : 'bg-white border-gray-300 hover:border-gray-400'
+                          }`}
+                          aria-label={`Pilih semua produk dari ${store.storeName}`}
+                        >
+                          {isStoreAllSelected(store) ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : store.items.some((it) => selectedItemIds.has(it.id)) ? (
+                            <span className="w-2.5 h-0.5 bg-[#16a34a] rounded-full" />
+                          ) : null}
+                        </button>
+
+                        <div className="w-10 h-10 rounded-full bg-[#1b261e] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs">
+                          {store.storeAvatar && store.storeAvatar.length <= 2
+                            ? store.storeAvatar
+                            : getStoreInitials(store.storeName)}
                         </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c]">
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c] whitespace-nowrap">
                               {store.storeName}
                             </h2>
-                            <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0 whitespace-nowrap select-none">
                               ✓ Terverifikasi
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 whitespace-nowrap">
                             <span className="text-amber-500 font-bold">★ {store.rating.toFixed(1)}</span>
                             <span className="text-gray-400">({store.reviewCount} ulasan)</span>
                             <span className="text-gray-300">•</span>
@@ -235,38 +376,43 @@ export function CustomerCart({
                       </div>
 
                       {/* Right: Pickup Time Pill & Hapus Semua */}
-                      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-center">
                         {/* Pickup Time Dropdown */}
-                        <div className="relative">
+                        <div className="relative inline-flex items-center bg-[#f8f8f6] hover:bg-[#f0f0ee] border border-gray-200/90 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 transition-colors">
                           <label htmlFor={`pickup-${store.storeId}`} className="sr-only">Waktu Pickup</label>
-                          <div className="flex items-center gap-1.5 bg-[#f8f8f6] border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-medium text-gray-700">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0">
-                              <circle cx="12" cy="12" r="10" />
-                              <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                            <select
-                              id={`pickup-${store.storeId}`}
-                              value={store.pickupTime}
-                              onChange={(e) => handlePickupTimeChange(store.storeId, e.target.value)}
-                              className="bg-transparent border-none text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer pr-1"
-                            >
-                              {store.availablePickupTimes.map((time) => (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0 mr-1.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          <span className="text-gray-500 whitespace-nowrap mr-1 text-[11px] sm:text-xs">Waktu Pickup</span>
+                          <select
+                            id={`pickup-${store.storeId}`}
+                            value={store.pickupTime}
+                            onChange={(e) => handlePickupTimeChange(store.storeId, e.target.value)}
+                            className="bg-transparent border-none text-xs font-bold text-gray-900 focus:outline-none cursor-pointer pr-1 appearance-none"
+                          >
+                            {store.availablePickupTimes.map((time) => {
+                              const cleanTime = time.replace(/^Waktu Pickup\s*/i, '').replace(/\s*\([^)]*\)/, '').trim();
+                              return (
                                 <option key={time} value={time}>
-                                  Waktu Pickup {time}
+                                  {cleanTime}
                                 </option>
-                              ))}
-                            </select>
-                          </div>
+                              );
+                            })}
+                          </select>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 pointer-events-none ml-0.5">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
                         </div>
 
                         {/* Hapus Semua Button */}
                         <button
                           type="button"
-                          onClick={() => handleRemoveStore(store.storeId, store.storeName)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                          onClick={() => handlePromptRemoveStore(store.storeId, store.storeName)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer transition-colors"
                           title="Hapus semua pesanan toko ini"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18" />
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -283,8 +429,28 @@ export function CustomerCart({
                           key={item.id}
                           className="pt-4 first:pt-0 pb-4 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                         >
-                          {/* Left: Thumbnail & Details */}
-                          <div className="flex items-center gap-3.5 min-w-0">
+                          {/* Left: Checkbox, Thumbnail & Details */}
+                          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                            {/* Item Checkbox */}
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={selectedItemIds.has(item.id)}
+                              onClick={() => toggleItemSelection(item.id)}
+                              className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
+                                selectedItemIds.has(item.id)
+                                  ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
+                                  : 'bg-white border-gray-300 hover:border-gray-400'
+                              }`}
+                              aria-label={`Pilih ${item.name}`}
+                            >
+                              {selectedItemIds.has(item.id) && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                            </button>
+
                             {/* Product Thumbnail */}
                             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#24201c] shrink-0 border border-black/10 relative">
                               {item.imageSrc ? (
@@ -340,16 +506,16 @@ export function CustomerCart({
                             </div>
                           </div>
 
-                          {/* Right: Quantity Stepper, Subtotal, Trash Button */}
-                          <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 sm:self-center">
+                          {/* Right: Quantity Stepper, Subtotal, Red Trash Button */}
+                          <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 sm:self-center">
                             {/* Stepper */}
-                            <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-2.5 border border-gray-200">
+                            <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-2.5 border border-gray-200/80">
                               <button
                                 type="button"
-                                onClick={() => handleDecrease(store.storeId, item.id)}
+                                onClick={() => handleDecrease(store.storeId, store.storeName, item)}
                                 className="w-7 h-7 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 cursor-pointer transition-colors"
-                                title="Kurangi box"
-                                aria-label="Kurangi box"
+                                title={item.quantity === 1 ? 'Hapus box' : 'Kurangi box'}
+                                aria-label={item.quantity === 1 ? 'Hapus box' : 'Kurangi box'}
                               >
                                 –
                               </button>
@@ -368,7 +534,7 @@ export function CustomerCart({
                             </div>
 
                             {/* Subtotal Item Price */}
-                            <div className="min-w-[90px] text-right">
+                            <div className="min-w-[85px] sm:min-w-[95px] text-right">
                               <span className="font-bold text-sm sm:text-base text-[#1b1c1c]">
                                 Rp {formatRupiah(item.rescuePrice * item.quantity)}
                               </span>
@@ -377,8 +543,8 @@ export function CustomerCart({
                             {/* Trash Button */}
                             <button
                               type="button"
-                              onClick={() => handleRemoveItem(store.storeId, item.id)}
-                              className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer p-1"
+                              onClick={() => handlePromptRemoveItem(store.storeId, store.storeName, item)}
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer p-1.5 rounded-lg"
                               title="Hapus produk ini"
                               aria-label="Hapus produk ini"
                             >
@@ -622,6 +788,22 @@ export function CustomerCart({
           </div>
         </div>
       )}
+
+      {/* 5. Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteTarget !== null}
+        title={deleteTarget?.type === 'store' ? 'Hapus Semua Pesanan?' : 'Hapus Item dari Keranjang?'}
+        itemName={deleteTarget?.type === 'store' ? deleteTarget.storeName : (deleteTarget?.itemName || '')}
+        message={
+          deleteTarget?.type === 'store'
+            ? `Apakah kamu yakin ingin menghapus semua pesanan dari "${deleteTarget.storeName}" dari keranjang?`
+            : `Apakah kamu yakin ingin menghapus "${deleteTarget?.itemName}" dari keranjang?`
+        }
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
