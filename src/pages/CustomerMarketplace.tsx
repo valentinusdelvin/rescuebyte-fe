@@ -14,6 +14,7 @@ export interface CustomerMarketplaceProps {
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onNavigateCart?: () => void;
+  onNavigateProfile?: () => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -278,6 +279,7 @@ export function CustomerMarketplace({
   onNavigateAuth,
   onNavigateDetail,
   onNavigateCart,
+  onNavigateProfile,
   onShowToast,
 }: CustomerMarketplaceProps) {
   // Search & Filter States
@@ -468,6 +470,7 @@ export function CustomerMarketplace({
           activeTab="marketplace"
           onSelectTab={handleHeaderTab}
           onNavigateSeller={onNavigateSeller}
+          onNavigateProfile={onNavigateProfile}
           onNavigateAuth={onNavigateAuth}
           onShowToast={onShowToast}
           onOpenAuthModal={() => {

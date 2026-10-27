@@ -96,7 +96,7 @@ export function CustomerHeader({
     if (onNavigateProfile) {
       onNavigateProfile();
     } else {
-      window.location.hash = '#profil-seller';
+      window.location.hash = '#akun';
     }
   };
 
@@ -432,37 +432,42 @@ export function CustomerHeader({
               <User className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
             </button>
 
-            {/* Dropdown Menu (Shopee-style clean layout with RescueBite brand palette) */}
+            {/* Dropdown Menu (Clean layout with precise arrow alignment and comfortable tap targets) */}
             {isProfileDropdownOpen && (
               <div
                 role="menu"
                 aria-orientation="vertical"
                 aria-labelledby="btn-customer-avatar"
-                className="absolute right-0 top-full mt-3.5 w-52 sm:w-56 bg-white rounded-2xl border-2 border-black shadow-2xl py-2 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
+                className="absolute right-0 top-full mt-4 w-52 sm:w-56 bg-white rounded-2xl border-2 border-black shadow-xl py-1.5 z-50 text-left transition-all duration-200 animate-in fade-in zoom-in-95"
               >
                 {/* Pointer triangle arrow pointing up to the avatar center */}
                 <div
-                  className="absolute -top-2 right-5 md:right-6 w-3.5 h-3.5 bg-white border-t-2 border-l-2 border-black rotate-45 pointer-events-none"
+                  className="absolute -top-[9px] right-[18px] md:right-[24px] w-4 h-4 bg-white border-t-2 border-l-2 border-black rotate-45 pointer-events-none z-10"
+                  aria-hidden="true"
+                />
+                {/* Mask to ensure seamless merge with the popover top border */}
+                <div
+                  className="absolute top-0 right-[15px] md:right-[21px] w-5 h-1.5 bg-white pointer-events-none z-10"
                   aria-hidden="true"
                 />
 
                 {/* Compact User Header */}
-                <div className="px-4 py-2 border-b border-[#f0eded] mb-1">
+                <div className="px-4 pt-2.5 pb-2 border-b border-[#f0eded] mb-1">
                   <p className="text-xs font-bold text-[#1b1c1c] truncate">
                     {currentUser.name}
                   </p>
-                  <p className="text-[11px] text-[#737874] truncate">
+                  <p className="text-[11px] text-[#525252] truncate font-medium">
                     {currentUser.email}
                   </p>
                 </div>
 
-                {/* Dropdown Action Items - Simple single-line text like screenshot */}
-                <div className="flex flex-col">
+                {/* Dropdown Action Items - Clean text without emojis, comfortable tap targets */}
+                <div className="flex flex-col gap-0.5">
                   <button
                     type="button"
                     role="menuitem"
                     onClick={handleProfileClick}
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
+                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
                     id="btn-dropdown-profile"
                   >
                     Akun Saya
@@ -472,7 +477,7 @@ export function CustomerHeader({
                     type="button"
                     role="menuitem"
                     onClick={handleOrdersClick}
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
+                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
                     id="btn-dropdown-orders"
                   >
                     Pesanan Saya
@@ -482,13 +487,13 @@ export function CustomerHeader({
                     type="button"
                     role="menuitem"
                     onClick={handleSellerClick}
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1b1c1c] hover:bg-[#F4F3F0] hover:text-[#3c6a00] transition-colors cursor-pointer"
+                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1e2420] hover:text-white transition-all cursor-pointer"
                     id="btn-dropdown-seller-dashboard"
                   >
                     Dashboard Restoran
                   </button>
 
-                  <div className="h-px bg-[#f0eded] my-1" />
+                  <div className="h-px bg-[#f0eded] my-1 mx-2" />
 
                   <button
                     type="button"
@@ -497,7 +502,7 @@ export function CustomerHeader({
                       setIsProfileDropdownOpen(false);
                       await handleLogout();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     id="btn-customer-logout"
                   >
                     Log Out

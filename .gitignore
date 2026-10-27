@@ -30,3 +30,7 @@ dist-ssr
 *.sln
 *.sw?
 scratch/
+
+# Design
+lomba43.fig
+/lomba43/

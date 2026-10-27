@@ -207,8 +207,9 @@ export async function logoutUser(): Promise<void> {
 export async function fetchCurrentUser(): Promise<UserPayload | null> {
   try {
     const response = await api.get('/api/v1/auth/me');
-    if (response.data?.payload?.user) {
-      const user = response.data.payload.user;
+    const payload = response.data?.payload;
+    const user = (payload?.user || (payload?.id || payload?.email ? payload : null)) as UserPayload | null;
+    if (user) {
       const currentAuth = getAuth();
       if (currentAuth) {
         saveAuth({

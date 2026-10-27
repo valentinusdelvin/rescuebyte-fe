@@ -39,6 +39,7 @@ export type ActiveViewId =
   | 'view-customer-marketplace'
   | 'view-customer-product-detail'
   | 'view-customer-cart'
+  | 'view-customer-profile'
   | 'view-beranda'
   | 'view-profil'
   | 'view-riwayat'
