@@ -1,4 +1,6 @@
----
+# Design System Tokens
+
+```yaml
 name: Botanical Rescue & Nourishment
 colors:
   surface: '#fcf9f8'
@@ -151,7 +153,7 @@ spacing:
   space-md: 1rem
   space-lg: 1.5rem
   space-xl: 2.25rem
----
+```
 
 ## Brand & Style
 The design system embodies botanical vitality, ethical stewardship, and community trust tailored specifically for the Indonesian urban food landscape. It balances ecological urgency with the warmth of local culinary culture, removing the stigma of "leftover food" by reframing rescued surplus into high-value mystery packages and verified redistribution opportunities.

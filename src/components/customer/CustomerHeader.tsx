@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { User, LogOut } from 'lucide-react';
 import rescueBiteLogo from '../../assets/logo.svg';
+import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
+import { UserPayload } from '../../types';
 
 export interface CustomerHeaderProps {
   activeTab?: 'beranda' | 'marketplace' | 'kontak';
   onNavigateSeller?: () => void;
   onOpenAuthModal?: () => void;
+  onNavigateAuth?: () => void;
   onSelectTab?: (tab: 'beranda' | 'marketplace' | 'kontak') => void;
+  onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 // =========================================================================
@@ -38,17 +43,42 @@ const NAV_TABS: NavTabItem[] = [
 /**
  * Customer Floating Pill Navigation Bar
  * - Center Capsule: Uniform-sized Animated Sliding Navbar / Active Indicator
- * - Logo & Daftar/Masuk: Cross-over sliding indicator + smooth hover scale expansion
+ * - Logo & Daftar/Masuk / Profile Avatar: Cross-over sliding indicator + smooth hover scale expansion
  */
 export function CustomerHeader({
   activeTab = 'beranda',
   onNavigateSeller,
   onOpenAuthModal,
+  onNavigateAuth,
   onSelectTab,
+  onShowToast,
 }: CustomerHeaderProps) {
+  const [currentUser, setCurrentUser] = useState<UserPayload | null>(() => getCurrentUser());
   const [selectedTab, setSelectedTab] = useState<TabType>(activeTab);
   const [hoveredTab, setHoveredTab] = useState<IndicatorKey | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      if (onShowToast) {
+        onShowToast('Berhasil keluar dari akun.', 'success');
+      }
+    } catch {
+      clearAuth();
+      if (onShowToast) {
+        onShowToast('Berhasil keluar.', 'success');
+      }
+    }
+  };
+
+  // Subscribe to auth state updates reactively
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
 
   // Common header container ref for coordinate calculations across all 3 elements
   const headerContainerRef = useRef<HTMLDivElement>(null);
@@ -87,7 +117,9 @@ export function CustomerHeader({
     activeIndicatorKey === 'logo'
       ? HOVER_SCALE_LOGO
       : activeIndicatorKey === 'auth'
-        ? HOVER_SCALE_AUTH
+        ? currentUser
+          ? HOVER_SCALE_LOGO
+          : HOVER_SCALE_AUTH
         : 1;
 
   // Sync selected tab when activeTab prop changes (React recommended pattern without effect)
@@ -185,10 +217,12 @@ export function CustomerHeader({
   };
 
   const handleAuthClick = () => {
-    if (onNavigateSeller) {
-      onNavigateSeller();
+    if (onNavigateAuth) {
+      onNavigateAuth();
     } else if (onOpenAuthModal) {
       onOpenAuthModal();
+    } else if (onNavigateSeller) {
+      onNavigateSeller();
     }
   };
 
@@ -292,32 +326,80 @@ export function CustomerHeader({
           </button>
         </div>
 
-        {/* 3. Standalone Daftar/Masuk Pill Button */}
-        <button
-          ref={(el) => {
-            itemRefs.current['auth'] = el;
-          }}
-          type="button"
-          onMouseEnter={() => setHoveredTab('auth')}
-          onFocus={() => setHoveredTab('auth')}
-          onBlur={() => setHoveredTab(null)}
-          className={`relative z-20 px-10 md:px-10 py-2.5 md:py-3.5 rounded-full border-2 border-black text-base font-bold shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black ${activeIndicatorKey === 'auth' ? 'bg-transparent' : 'bg-white hover:bg-gray-50'
-            }`}
-          style={{
-            transform: activeIndicatorKey === 'auth' ? `scale(${HOVER_SCALE_AUTH})` : 'scale(1)',
-            transformOrigin: 'center center',
-          }}
-          id="btn-customer-auth"
-          onClick={handleAuthClick}
-          title="Beralih ke Dashboard Restoran"
-        >
-          <span
-            className={`relative z-30 transition-colors duration-200 select-none ${activeIndicatorKey === 'auth' ? 'text-white' : 'text-[#1b1c1c]'
+        {/* 3. Standalone User Avatar Circle (Logged In) OR Daftar/Masuk Pill (Logged Out) */}
+        {currentUser ? (
+          <div className="flex items-center gap-2 sm:gap-2.5 relative z-20 shrink-0">
+            {/* Avatar Circle pointing to Restaurant Dashboard */}
+            <button
+              ref={(el) => {
+                itemRefs.current['auth'] = el;
+              }}
+              type="button"
+              onMouseEnter={() => setHoveredTab('auth')}
+              onFocus={() => setHoveredTab('auth')}
+              onBlur={() => setHoveredTab(null)}
+              className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+                activeIndicatorKey === 'auth' ? 'bg-[#121613]' : 'bg-[#1e2420] hover:bg-[#161a17]'
               }`}
+              style={{
+                transform: activeIndicatorKey === 'auth' ? `scale(${HOVER_SCALE_LOGO})` : 'scale(1)',
+                transformOrigin: 'center center',
+              }}
+              id="btn-customer-avatar"
+              onClick={() => {
+                if (onNavigateSeller) {
+                  onNavigateSeller();
+                } else {
+                  window.location.hash = '#beranda-seller';
+                }
+              }}
+              title={`Profil: ${currentUser.name} (Klik untuk buka Dashboard Restoran)`}
+              aria-label={`Profil ${currentUser.name}, Beralih ke Dashboard Restoran`}
+            >
+              <User className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
+            </button>
+
+            {/* Logout button for testing */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3.5 py-2 md:px-4 md:py-2.5 rounded-full border-2 border-black bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs md:text-sm font-bold shadow-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black hover:scale-105 active:scale-95"
+              id="btn-customer-logout"
+              title="Keluar dari akun (Testing Logout)"
+            >
+              <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-600 stroke-[2.5]" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            ref={(el) => {
+              itemRefs.current['auth'] = el;
+            }}
+            type="button"
+            onMouseEnter={() => setHoveredTab('auth')}
+            onFocus={() => setHoveredTab('auth')}
+            onBlur={() => setHoveredTab(null)}
+            className={`relative z-20 px-10 md:px-10 py-2.5 md:py-3.5 rounded-full border-2 border-black text-base font-bold shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black ${
+              activeIndicatorKey === 'auth' ? 'bg-transparent' : 'bg-white hover:bg-gray-50'
+            }`}
+            style={{
+              transform: activeIndicatorKey === 'auth' ? `scale(${HOVER_SCALE_AUTH})` : 'scale(1)',
+              transformOrigin: 'center center',
+            }}
+            id="btn-customer-auth"
+            onClick={handleAuthClick}
+            title="Masuk atau Daftar Akun"
           >
-            Daftar/Masuk
-          </span>
-        </button>
+            <span
+              className={`relative z-30 transition-colors duration-200 select-none ${
+                activeIndicatorKey === 'auth' ? 'text-white' : 'text-[#1b1c1c]'
+              }`}
+            >
+              Daftar/Masuk
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Mobile Drawer Navigation */}
@@ -339,16 +421,47 @@ export function CustomerHeader({
                 {tab.label}
               </a>
             ))}
-            <button
-              type="button"
-              className="w-full mt-2 py-2 px-4 rounded-xl bg-black text-white text-xs font-bold text-center cursor-pointer"
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                handleAuthClick();
-              }}
-            >
-              Daftar / Masuk (Dashboard Restoran)
-            </button>
+            {currentUser ? (
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  type="button"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1e2420] text-white text-xs font-bold text-center flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onNavigateSeller) {
+                      onNavigateSeller();
+                    } else {
+                      window.location.hash = '#beranda-seller';
+                    }
+                  }}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Dashboard Restoran ({currentUser.name})</span>
+                </button>
+                <button
+                  type="button"
+                  className="w-full py-2 px-4 rounded-xl border border-red-300 bg-red-50 text-red-600 text-xs font-bold text-center flex items-center justify-center gap-1.5 cursor-pointer hover:bg-red-100"
+                  onClick={async () => {
+                    setIsMobileMenuOpen(false);
+                    await handleLogout();
+                  }}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="w-full mt-2 py-2 px-4 rounded-xl bg-black text-white text-xs font-bold text-center cursor-pointer"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleAuthClick();
+                }}
+              >
+                Daftar / Masuk
+              </button>
+            )}
           </nav>
         </div>
       )}

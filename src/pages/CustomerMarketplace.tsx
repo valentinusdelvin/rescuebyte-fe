@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
@@ -11,6 +11,7 @@ import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 export interface CustomerMarketplaceProps {
   onNavigateHome?: () => void;
   onNavigateSeller?: () => void;
+  onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onNavigateCart?: () => void;
   onShowToast?: (message: string) => void;
@@ -41,48 +42,48 @@ const MARKETPLACE_PRODUCTS: MarketplaceBoxItem[] = [
     categoryBadge: '🥐 PASTRY SURPRISE',
     categoryType: 'pastry',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
+    remainingBoxesText: 'Sisa 2 Box',
     distanceText: '0.8 km',
     discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
+    originalPrice: 55000,
+    rescuePrice: 18000,
     pickupTime: '19:45 - 21:00 WIB (45 mnt lagi)',
     description: 'Artisan French Viennoiserie Surprise Box berisi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['Halal MUI', 'Gluten & Dairy'],
+    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-2',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
+    storeName: 'Holland Bakery Ijen',
+    category: '🍞 Roti & Pastry Harian',
+    categoryBadge: '🍞 ROTI SURPRISE',
     categoryType: 'pastry',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 3 Box',
+    distanceText: '1.2 km',
+    discountPercent: 65,
+    originalPrice: 25000,
+    rescuePrice: 8500,
+    pickupTime: '19:30 - 20:30 WIB',
+    description: 'Roti manis, lemper ayam, dan aneka jajanan pasar lembut dan fresh hari ini.',
+    tags: ['✓ Halal MUI', 'Tradisional'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-3',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
+    storeName: 'Gourmet Delicatessen Malang',
+    category: '🥪 European Cold Cuts & Bread',
+    categoryBadge: '🥪 DELI SURPRISE',
+    categoryType: 'heavy',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 2 Box',
+    distanceText: '3.5 km',
+    discountPercent: 60,
+    originalPrice: 65000,
+    rescuePrice: 25000,
+    pickupTime: '20:00 - 21:30 WIB',
+    description: 'Aneka artisan sourdough, cheese sandwich, dan ham roll impor kualitas premium.',
+    tags: ['Non Halal', 'European Deli'],
     imageSrc: cardMonsieurSpoon,
   },
   {
@@ -92,170 +93,244 @@ const MARKETPLACE_PRODUCTS: MarketplaceBoxItem[] = [
     categoryBadge: '🥐 PASTRY SURPRISE',
     categoryType: 'pastry',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 1 Box!',
-    distanceText: '0.8 km',
+    remainingBoxesText: 'Sisa 1 Box',
+    distanceText: '7.8 km',
     discountPercent: 68,
     originalPrice: 110000,
     rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
+    pickupTime: '19:45 - 21:00 WIB (45 mnt lagi)',
+    description: 'Artisan French Viennoiserie Surprise Box berisi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
     tags: ['✓ Halal MUI', 'Gluten & Dairy'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-5',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
+    storeName: 'Artisan Viennoiserie Cafe',
+    category: '☕ Pastry & Specialty Coffee',
+    categoryBadge: '☕ CAFE SURPRISE',
     categoryType: 'pastry',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 2 Box',
+    distanceText: '12.0 km',
+    discountPercent: 55,
+    originalPrice: 95000,
+    rescuePrice: 45000,
+    pickupTime: '20:30 - 22:00 WIB',
+    description: 'Paket brunch mystery: 2 pastry premium dan 1 kopi susu literan botolan segar.',
+    tags: ['✓ Halal MUI', 'Kopi & Roti'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-6',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
+    storeName: 'Donat Kampung Sutami',
+    category: '🍩 Donat & Sweet Treats',
+    categoryBadge: '🍩 DONAT SURPRISE',
+    categoryType: 'snack',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 4 Box',
+    distanceText: '2.1 km',
+    discountPercent: 60,
+    originalPrice: 22000,
+    rescuePrice: 9000,
+    pickupTime: '18:30 - 20:00 WIB',
+    description: 'Kotak donat kentang tabur gula halus dan meises klasik 6 pcs masih empuk.',
+    tags: ['✓ Halal MUI', 'Snack Manis'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-7',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
+    storeName: 'Bacon & Brew Bistro',
+    category: '🥓 Western Diner & Pastry',
+    categoryBadge: '🥓 DINER SURPRISE',
+    categoryType: 'heavy',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 2 Box',
+    distanceText: '18.5 km',
+    discountPercent: 62,
+    originalPrice: 40000,
+    rescuePrice: 15000,
+    pickupTime: '21:00 - 22:30 WIB',
+    description: 'Savory puff pastry dengan bacon bits dan creamy cheese melt hangat.',
+    tags: ['Non Halal', 'Western Food'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-8',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
+    storeName: 'Dapur Croissant Sawojajar',
+    category: '🥐 Pastry & Danish',
+    categoryBadge: '🥐 CROISSANT SURPRISE',
     categoryType: 'pastry',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 2 Box',
+    distanceText: '4.2 km',
+    discountPercent: 65,
+    originalPrice: 80000,
+    rescuePrice: 28000,
+    pickupTime: '19:00 - 20:30 WIB',
+    description: 'Surprise box berisi 3 almond croissant dan chocolate roll gurih.',
+    tags: ['✓ Halal MUI', 'Fresh Baked'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-9',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
+    storeName: 'Cake & Tart Dinoyo',
+    category: '🍰 Cake Slice & Tart',
+    categoryBadge: '🍰 CAKE SURPRISE',
+    categoryType: 'snack',
     city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    remainingBoxesText: 'Sisa 1 Box',
+    distanceText: '25.0 km',
+    discountPercent: 65,
+    originalPrice: 135000,
+    rescuePrice: 48000,
+    pickupTime: '20:00 - 21:00 WIB',
+    description: 'Aneka 2-3 slice whole cake signature seperti red velvet dan tiramisu segar.',
+    tags: ['✓ Halal MUI', 'Dessert Box'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-10',
-    storeName: 'Monsieur Spoon Senopati',
+    storeName: 'Monsieur Spoon Jakarta',
     category: '🥐 Pastry & Bakery Premium',
     categoryBadge: '🥐 PASTRY SURPRISE',
     categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
+    city: 'Jakarta Selatan',
+    remainingBoxesText: 'Sisa 2 Box',
     distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
+    discountPercent: 65,
+    originalPrice: 65000,
+    rescuePrice: 22000,
+    pickupTime: '19:45 - 21:00 WIB',
+    description: 'Artisan French Viennoiserie Surprise Box butter croissant & pain au chocolat.',
     tags: ['✓ Halal MUI', 'Gluten & Dairy'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-11',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
+    storeName: 'Roti Surabaya Gubeng',
+    category: '🍞 Roti & Pastry Harian',
+    categoryBadge: '🍞 ROTI SURPRISE',
     categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    city: 'Surabaya',
+    remainingBoxesText: 'Sisa 2 Box',
+    distanceText: '2.0 km',
+    discountPercent: 60,
+    originalPrice: 40000,
+    rescuePrice: 16000,
+    pickupTime: '19:00 - 20:30 WIB',
+    description: 'Paket aneka roti kasur dan roti sobek mentega manis lembut hari ini.',
+    tags: ['✓ Halal MUI', 'Keluarga'],
     imageSrc: cardMonsieurSpoon,
   },
   {
     id: 'mp-12',
-    storeName: 'Monsieur Spoon Senopati',
+    storeName: 'Bandung Pastry Express',
     category: '🥐 Pastry & Bakery Premium',
     categoryBadge: '🥐 PASTRY SURPRISE',
     categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 – 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3–4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
+    city: 'Bandung',
+    remainingBoxesText: 'Sisa 3 Box',
+    distanceText: '4.5 km',
+    discountPercent: 58,
+    originalPrice: 70000,
+    rescuePrice: 29000,
+    pickupTime: '19:30 - 21:00 WIB',
+    description: 'Aneka bolen pisang keju coklat dan pastry lapis legit mini khas Bandung.',
+    tags: ['✓ Halal MUI', 'Oleh-Oleh'],
     imageSrc: cardMonsieurSpoon,
   },
 ];
 
-const CITIES = ['Malang', 'Jakarta Selatan', 'Surabaya', 'Bandung', 'Yogyakarta'];
+const CITIES = ['Malang', 'Jakarta Selatan', 'Surabaya', 'Bandung', 'Yogyakarta', 'Semua Kota'];
+
+const PRICE_OPTIONS = [
+  { value: 'semua', label: 'Semua Harga' },
+  { value: '<10k', label: 'di bawah Rp 10.000' },
+  { value: '<20k', label: 'di bawah Rp 20.000' },
+  { value: '<30k', label: 'di bawah Rp 30.000' },
+  { value: '<50k', label: 'di bawah Rp 50.000' },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: 'semua', label: 'Semua Kategori' },
+  { value: 'halal', label: 'Halal' },
+  { value: 'non-halal', label: 'Non Halal' },
+];
+
+const DISTANCE_OPTIONS = [
+  { value: 'semua', label: 'Semua Jarak' },
+  { value: '<5km', label: 'Dalam 5 Km' },
+  { value: '<10km', label: 'Dalam 10 Km' },
+  { value: '<20km', label: 'Dalam 20 Km' },
+  { value: '<30km', label: 'Dalam 30 Km' },
+  { value: '<50km', label: 'Dalam 50 Km' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'relevan', label: 'Paling Relevan' },
+  { value: 'terdekat', label: 'Terdekat' },
+  { value: 'terfavorit', label: 'Ter favorit' },
+];
 
 export function CustomerMarketplace({
   onNavigateHome,
   onNavigateSeller,
+  onNavigateAuth,
   onNavigateDetail,
   onNavigateCart,
   onShowToast,
 }: CustomerMarketplaceProps) {
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('Malang');
+  const [selectedCity, setSelectedCity] = useState('Lokasi Saat Ini');
+  const [isLoadingLoc, setIsLoadingLoc] = useState(false);
   const [priceFilter, setPriceFilter] = useState('semua');
   const [categoryFilter, setCategoryFilter] = useState('semua');
   const [distanceFilter, setDistanceFilter] = useState('semua');
   const [sortFilter, setSortFilter] = useState('relevan');
+  const [openDropdown, setOpenDropdown] = useState<'harga' | 'kategori' | 'jarak' | 'urutkan' | 'kota' | null>(null);
+
+  // Request browser live location
+  const handleRequestLiveLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      if (onShowToast) onShowToast('Browser tidak mendukung geolokasi');
+      setSelectedCity('Malang');
+      return;
+    }
+    setIsLoadingLoc(true);
+    navigator.geolocation.getCurrentPosition(
+      (_pos) => {
+        setIsLoadingLoc(false);
+        setSelectedCity('Lokasi Saat Ini');
+        setOpenDropdown(null);
+        if (onShowToast) onShowToast('📍 Menggunakan lokasi live Anda');
+      },
+      (err) => {
+        setIsLoadingLoc(false);
+        console.warn('Geolocation permission:', err.message);
+        if (onShowToast) onShowToast('Izin lokasi belum diberikan, default: Malang');
+        setSelectedCity('Malang');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, [onShowToast]);
+
+  // Trigger live location request on mount asynchronously
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (_pos) => {
+        setSelectedCity('Lokasi Saat Ini');
+      },
+      (err) => {
+        console.warn('Geolocation permission:', err.message);
+        setSelectedCity('Malang');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, []);
 
   // Modal & Cart States
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
@@ -271,6 +346,27 @@ export function CustomerMarketplace({
     return unsubscribe;
   }, []);
 
+  // Close dropdown on click outside or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.filter-dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Filtered & Sorted products list
   const filteredProducts = useMemo(() => {
     return MARKETPLACE_PRODUCTS.filter((item) => {
@@ -280,51 +376,53 @@ export function CustomerMarketplace({
         const matchName = item.storeName.toLowerCase().includes(query);
         const matchDesc = item.description.toLowerCase().includes(query);
         const matchCat = item.category.toLowerCase().includes(query);
-        if (!matchName && !matchDesc && !matchCat) return false;
+        const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
+        if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
       }
 
-      // City filter
-      if (selectedCity && selectedCity !== 'Semua Kota') {
+      // City filter (based on live loc or selected city)
+      if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini') {
         if (item.city !== selectedCity) return false;
       }
 
       // Price filter
+      if (priceFilter === '<10k' && item.rescuePrice >= 10000) return false;
+      if (priceFilter === '<20k' && item.rescuePrice >= 20000) return false;
       if (priceFilter === '<30k' && item.rescuePrice >= 30000) return false;
-      if (priceFilter === '30k-50k' && (item.rescuePrice < 30000 || item.rescuePrice > 50000)) return false;
-      if (priceFilter === '>50k' && item.rescuePrice <= 50000) return false;
+      if (priceFilter === '<50k' && item.rescuePrice >= 50000) return false;
 
-      // Category filter
-      if (categoryFilter !== 'semua') {
-        if (categoryFilter === 'pastry' && item.categoryType !== 'pastry') return false;
-        if (categoryFilter === 'heavy' && item.categoryType !== 'heavy') return false;
-        if (categoryFilter === 'beverage' && item.categoryType !== 'beverage') return false;
-        if (categoryFilter === 'snack' && item.categoryType !== 'snack') return false;
+      // Category filter (Halal vs Non Halal)
+      if (categoryFilter === 'halal') {
+        const isHalal = item.tags.some((t) => t.toLowerCase().includes('halal')) || item.category.toLowerCase().includes('halal');
+        if (!isHalal) return false;
+      } else if (categoryFilter === 'non-halal') {
+        const isNonHalal = item.tags.some((t) => t.toLowerCase().includes('non halal') || t.toLowerCase().includes('non-halal') || t.toLowerCase().includes('bacon'));
+        const isHalal = item.tags.some((t) => t.toLowerCase().includes('halal'));
+        if (!isNonHalal && isHalal) return false;
       }
 
       // Distance filter
-      if (distanceFilter === '<1km') {
+      if (distanceFilter !== 'semua') {
         const dist = parseFloat(item.distanceText);
-        if (dist >= 1.0) return false;
-      } else if (distanceFilter === '<3km') {
-        const dist = parseFloat(item.distanceText);
-        if (dist >= 3.0) return false;
-      } else if (distanceFilter === '<5km') {
-        const dist = parseFloat(item.distanceText);
-        if (dist >= 5.0) return false;
+        if (distanceFilter === '<5km' && dist > 5.0) return false;
+        if (distanceFilter === '<10km' && dist > 10.0) return false;
+        if (distanceFilter === '<20km' && dist > 20.0) return false;
+        if (distanceFilter === '<30km' && dist > 30.0) return false;
+        if (distanceFilter === '<50km' && dist > 50.0) return false;
       }
 
       return true;
     }).sort((a, b) => {
-      if (sortFilter === 'diskon') {
-        return b.discountPercent - a.discountPercent;
-      }
-      if (sortFilter === 'harga-terendah') {
-        return a.rescuePrice - b.rescuePrice;
-      }
-      if (sortFilter === 'jarak') {
+      if (sortFilter === 'terdekat') {
         return parseFloat(a.distanceText) - parseFloat(b.distanceText);
       }
-      return 0; // relevan
+      if (sortFilter === 'terfavorit') {
+        const ratingA = a.rating || 4.8;
+        const ratingB = b.rating || 4.8;
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        return b.discountPercent - a.discountPercent;
+      }
+      return 0; // Paling Relevan
     });
   }, [searchQuery, selectedCity, priceFilter, categoryFilter, distanceFilter, sortFilter]);
 
@@ -370,7 +468,15 @@ export function CustomerMarketplace({
           activeTab="marketplace"
           onSelectTab={handleHeaderTab}
           onNavigateSeller={onNavigateSeller}
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onNavigateAuth={onNavigateAuth}
+          onShowToast={onShowToast}
+          onOpenAuthModal={() => {
+            if (onNavigateAuth) {
+              onNavigateAuth();
+            } else {
+              setIsAuthModalOpen(true);
+            }
+          }}
         />
 
         {/* 2. Main Marketplace Content Area */}
@@ -380,22 +486,36 @@ export function CustomerMarketplace({
             {/* Left Title & Subtitle */}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight">
-                  Jelajahi <span className="text-[#3c6a00]">Mystery Box</span>
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight flex items-center">
+                  <span>Jelajahi </span>
+                  <span className="text-[#3c6a00] ml-1.5">Mystery Box</span>
                 </h1>
-                {/* Decorative motif dots / paw from Figma */}
-                <div className="flex flex-col gap-1 -rotate-12 translate-y-0.5 select-none" aria-hidden="true">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3c6a00] self-end"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3c6a00] self-center"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3c6a00] self-start"></span>
-                </div>
+                {/* 4 Diagonal Footprints (Jejak Kaki Hitam 100% Persis Gambar Referensi) */}
+                <svg
+                  viewBox="0 0 49 89"
+                  width="26"
+                  height="46"
+                  fill="#1b1c1c"
+                  className="shrink-0 select-none ml-2 inline-block align-middle"
+                  aria-label="Jejak kaki"
+                  role="img"
+                >
+                  <path d="M 3,1 L 5,1 L 7,1 L 8,2 L 10,3 L 11,4 L 12,5 L 13,6 L 14,7 L 15,8 L 16,10 L 15,11 L 14,12 L 13,13 L 12,14 L 11,13 L 10,12 L 8,11 L 6,11 L 5,10 L 4,9 L 3,8 L 2,7 L 1,5 L 1,3 L 2,2 L 3,1 Z" />
+                  <path d="M 18,13 L 19,14 L 20,15 L 21,17 L 20,19 L 19,20 L 17,20 L 16,19 L 15,18 L 14,17 L 15,15 L 17,14 L 18,13 Z" />
+                  <path d="M 5,30 L 7,31 L 9,32 L 10,33 L 11,35 L 12,36 L 12,38 L 13,40 L 14,42 L 13,43 L 12,44 L 11,45 L 10,46 L 9,45 L 8,44 L 6,43 L 5,41 L 4,40 L 3,38 L 2,36 L 2,34 L 2,32 L 3,31 L 5,30 Z" />
+                  <path d="M 33,35 L 35,35 L 37,35 L 38,36 L 39,37 L 40,38 L 41,39 L 42,40 L 43,42 L 43,44 L 44,45 L 44,47 L 42,48 L 40,49 L 39,48 L 38,47 L 37,46 L 35,45 L 34,44 L 33,43 L 32,41 L 32,39 L 32,37 L 33,35 Z" />
+                  <path d="M 16,45 L 17,46 L 18,47 L 19,48 L 19,50 L 18,51 L 17,52 L 15,51 L 13,50 L 13,48 L 14,47 L 15,46 L 16,45 Z" />
+                  <path d="M 45,50 L 46,51 L 47,52 L 47,54 L 46,56 L 45,57 L 44,56 L 42,55 L 41,54 L 41,52 L 43,51 L 45,50 Z" />
+                  <path d="M 33,66 L 35,66 L 37,67 L 38,68 L 39,69 L 40,71 L 41,73 L 41,75 L 42,77 L 42,79 L 40,80 L 39,81 L 37,80 L 36,79 L 35,78 L 34,77 L 33,76 L 32,74 L 31,72 L 31,70 L 31,68 L 32,67 L 33,66 Z" />
+                  <path d="M 44,81 L 46,81 L 47,82 L 48,84 L 47,86 L 46,87 L 44,87 L 43,86 L 42,85 L 41,84 L 42,83 L 43,82 L 44,81 Z" />
+                </svg>
               </div>
               <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
-                Temukan makanan murah berkualitas di sekitarmu
+                Temukan makanan murah berkualitas disekitarmu
               </p>
             </div>
 
-            {/* Right: Search Bar & City Dropdown */}
+            {/* Right: Search Bar & City Selector */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search Bar */}
               <div className="relative flex-1 sm:w-72 lg:w-80">
@@ -404,10 +524,10 @@ export function CustomerMarketplace({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari makanan, toko atau kategori..."
-                  className="w-full bg-white border border-black/20 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-[#1b1c1c] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#3c6a00] focus:border-[#3c6a00] shadow-2xs transition-all"
+                  className="w-full bg-white border border-black/25 rounded-2xl pl-10 pr-4 py-3 text-xs sm:text-sm font-medium text-[#1b1c1c] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-2xs transition-all"
                   aria-label="Cari makanan, toko atau kategori"
                 />
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -425,115 +545,331 @@ export function CustomerMarketplace({
                 )}
               </div>
 
-              {/* City Dropdown Selector */}
-              <div className="relative min-w-[130px] sm:min-w-[145px]">
-                <label htmlFor="select-city" className="sr-only">Pilih Kota</label>
-                <select
-                  id="select-city"
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="w-full appearance-none bg-white border border-black/20 rounded-2xl pl-4 pr-9 py-2.5 text-xs sm:text-sm font-bold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#3c6a00] focus:border-[#3c6a00] shadow-2xs cursor-pointer transition-all"
+              {/* City Dropdown Selector with Live Location */}
+              <div className="relative filter-dropdown-container min-w-[155px] sm:min-w-[175px]">
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === 'kota' ? null : 'kota')}
+                  className={`w-full bg-white border rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#1b1c1c] flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'kota'
+                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6]'
+                    : 'border-black/25 hover:border-black/45'
+                    }`}
+                  aria-expanded={openDropdown === 'kota'}
+                  aria-haspopup="listbox"
                 >
-                  {CITIES.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
+                  <div className="flex items-center gap-1.5 truncate">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 text-black"
+                    >
+                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <span className="truncate">{isLoadingLoc ? 'Mendeteksi...' : selectedCity}</span>
+                  </div>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className={`shrink-0 text-black transition-transform duration-200 ${openDropdown === 'kota' ? 'rotate-180' : ''
+                      }`}
+                  >
+                    <path d="M12 15l-5-5h10z" />
                   </svg>
-                </div>
+                </button>
+
+                {openDropdown === 'kota' && (
+                  <div className="absolute top-full right-0 mt-1.5 w-full min-w-[200px] bg-white border border-black/15 rounded-xl shadow-lg z-40 py-1.5 overflow-hidden">
+                    {/* Live Location option */}
+                    <button
+                      type="button"
+                      onClick={handleRequestLiveLocation}
+                      className="w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold text-[#1b1c1c] hover:bg-gray-100 flex items-center justify-between border-b border-gray-100 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-black shrink-0"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="22" y1="12" x2="18" y2="12" />
+                          <line x1="6" y1="12" x2="2" y2="12" />
+                          <line x1="12" y1="6" x2="12" y2="2" />
+                          <line x1="12" y1="22" x2="12" y2="18" />
+                        </svg>
+                        <span>{isLoadingLoc ? 'Mendeteksi...' : 'Gunakan Live Loc'}</span>
+                      </div>
+                      {selectedCity === 'Lokasi Saat Ini' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black text-white">Aktif</span>
+                      )}
+                    </button>
+
+                    {CITIES.map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCity(city);
+                          setOpenDropdown(null);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${selectedCity === city
+                          ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                          : 'text-[#1b1c1c] hover:bg-gray-50'
+                          }`}
+                      >
+                        <span>{city}</span>
+                        {selectedCity === city && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Filter Pills Row (Harga, Kategori, Jarak, Urutkan) */}
+          {/* Filter Dropdowns Row (Harga, Kategori, Jarak, Urutkan) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-8">
             {/* 1. Filter Harga */}
-            <div className="relative">
-              <label htmlFor="filter-price" className="sr-only">Filter Harga</label>
-              <select
-                id="filter-price"
-                value={priceFilter}
-                onChange={(e) => setPriceFilter(e.target.value)}
-                className="w-full appearance-none bg-white border border-black/15 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[#1b1c1c] focus:outline-none focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] shadow-2xs cursor-pointer transition-all truncate pr-8"
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'harga' ? null : 'harga')}
+                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'harga'
+                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'harga'}
               >
-                <option value="semua">Harga: Semua</option>
-                <option value="<30k">&lt; Rp 30.000</option>
-                <option value="30k-50k">Rp 30.000 – Rp 50.000</option>
-                <option value=">50k">&gt; Rp 50.000</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="truncate">
+                  {priceFilter === 'semua' ? 'Harga' : PRICE_OPTIONS.find((o) => o.value === priceFilter)?.label}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'harga' ? 'rotate-180' : ''}`}
+                >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-              </div>
+              </button>
+
+              {openDropdown === 'harga' && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
+                  {PRICE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setPriceFilter(opt.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${priceFilter === opt.value
+                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                    >
+                      <span>{opt.label}</span>
+                      {priceFilter === opt.value && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 2. Filter Kategori */}
-            <div className="relative">
-              <label htmlFor="filter-category" className="sr-only">Filter Kategori</label>
-              <select
-                id="filter-category"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full appearance-none bg-white border border-black/15 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[#1b1c1c] focus:outline-none focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] shadow-2xs cursor-pointer transition-all truncate pr-8"
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'kategori' ? null : 'kategori')}
+                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'kategori'
+                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'kategori'}
               >
-                <option value="semua">Kategori: Semua</option>
-                <option value="pastry">🥐 Pastry & Bakery</option>
-                <option value="heavy">🍛 Makanan Berat</option>
-                <option value="beverage">☕ Minuman & Kopi</option>
-                <option value="snack">🍪 Camilan & Dessert</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="truncate">
+                  {categoryFilter === 'semua' ? 'Kategori' : CATEGORY_OPTIONS.find((o) => o.value === categoryFilter)?.label}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'kategori' ? 'rotate-180' : ''}`}
+                >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-              </div>
+              </button>
+
+              {openDropdown === 'kategori' && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
+                  {CATEGORY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setCategoryFilter(opt.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${categoryFilter === opt.value
+                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                    >
+                      <span>{opt.label}</span>
+                      {categoryFilter === opt.value && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 3. Filter Jarak */}
-            <div className="relative">
-              <label htmlFor="filter-distance" className="sr-only">Filter Jarak</label>
-              <select
-                id="filter-distance"
-                value={distanceFilter}
-                onChange={(e) => setDistanceFilter(e.target.value)}
-                className="w-full appearance-none bg-white border border-black/15 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[#1b1c1c] focus:outline-none focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] shadow-2xs cursor-pointer transition-all truncate pr-8"
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'jarak' ? null : 'jarak')}
+                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'jarak'
+                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'jarak'}
               >
-                <option value="semua">Jarak: Semua</option>
-                <option value="<1km">&lt; 1 km</option>
-                <option value="<3km">&lt; 3 km</option>
-                <option value="<5km">&lt; 5 km</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="truncate">
+                  {distanceFilter === 'semua' ? 'Jarak' : DISTANCE_OPTIONS.find((o) => o.value === distanceFilter)?.label}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'jarak' ? 'rotate-180' : ''}`}
+                >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-              </div>
+              </button>
+
+              {openDropdown === 'jarak' && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
+                  {DISTANCE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setDistanceFilter(opt.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${distanceFilter === opt.value
+                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                    >
+                      <span>{opt.label}</span>
+                      {distanceFilter === opt.value && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 4. Filter Urutkan */}
-            <div className="relative">
-              <label htmlFor="filter-sort" className="sr-only">Urutkan</label>
-              <select
-                id="filter-sort"
-                value={sortFilter}
-                onChange={(e) => setSortFilter(e.target.value)}
-                className="w-full appearance-none bg-white border border-black/15 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[#1b1c1c] focus:outline-none focus:border-[#3c6a00] focus:ring-1 focus:ring-[#3c6a00] shadow-2xs cursor-pointer transition-all truncate pr-8"
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'urutkan' ? null : 'urutkan')}
+                className={`w-full bg-white border rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'urutkan'
+                  ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                  : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'urutkan'}
               >
-                <option value="relevan">Urutkan: Paling Relevan</option>
-                <option value="diskon">Diskon Tertinggi</option>
-                <option value="harga-terendah">Harga Terendah</option>
-                <option value="jarak">Jarak Terdekat</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="truncate">
+                  {sortFilter === 'relevan' ? 'Urutkan' : SORT_OPTIONS.find((o) => o.value === sortFilter)?.label}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'urutkan' ? 'rotate-180' : ''}`}
+                >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-              </div>
+              </button>
+
+              {openDropdown === 'urutkan' && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/15 rounded-xl shadow-lg z-30 py-1.5 overflow-hidden">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSortFilter(opt.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${sortFilter === opt.value
+                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                    >
+                      <span>{opt.label}</span>
+                      {sortFilter === opt.value && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -578,7 +914,7 @@ export function CustomerMarketplace({
                           const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
                           const isAboveTwo = stockCount > 2;
                           const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
-                          const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '');
+                          const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
 
                           return isAboveTwo ? (
                             <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
@@ -602,7 +938,21 @@ export function CustomerMarketplace({
                           ) : (
                             <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
                               {isSingleLast ? (
-                                <span className="font-black text-[12px] leading-none" aria-hidden="true">!</span>
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="shrink-0"
+                                  aria-hidden="true"
+                                >
+                                  <line x1="12" y1="4.5" x2="12" y2="13.5" />
+                                  <line x1="12" y1="19" x2="12.01" y2="19" />
+                                </svg>
                               ) : (
                                 <svg
                                   width="12"
@@ -700,8 +1050,8 @@ export function CustomerMarketplace({
                                 className="shrink-0"
                                 aria-hidden="true"
                               >
-                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
                               </svg>
                               <span>{tag}</span>
                             </span>

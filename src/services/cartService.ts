@@ -285,7 +285,7 @@ export function clearCart(): void {
 export function subscribeToCart(
   callback: (count: number, stores: StoreCartGroup[]) => void
 ): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined') return () => { };
 
   const handleCustomEvent = (e: Event) => {
     const custom = e as CustomEvent<{ stores: StoreCartGroup[]; count: number }>;
