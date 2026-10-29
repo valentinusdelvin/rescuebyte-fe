@@ -47,7 +47,6 @@ export function CustomerProfile({
     user.gender === 2 || user.gender_name?.toLowerCase() === 'perempuan' ? 'Perempuan' : 'Laki-laki'
   );
   const [phone, setPhone] = useState(user.phone_number || '');
-  const [location, setLocation] = useState('Jl. Veteran No. 10, Merjosari');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -129,7 +128,6 @@ export function CustomerProfile({
     setBirthDate(user.date_of_birth ? parseIsoToIndonesianDate(user.date_of_birth) : getTodayFormatted());
     setGender(user.gender === 2 || user.gender_name?.toLowerCase() === 'perempuan' ? 'Perempuan' : 'Laki-laki');
     setPhone(user.phone_number || '');
-    setLocation('Jl. Veteran No. 10, Merjosari');
     setAvatarUrl(user.avatar_url || '');
     onShowToast?.('Perubahan dibatalkan.', 'info');
   };
@@ -197,8 +195,6 @@ export function CustomerProfile({
 
                 <AccountInfoCard
                   createdAt={user.created_at}
-                  location={location}
-                  onLocationChange={setLocation}
                   onShowToast={onShowToast}
                 />
               </div>

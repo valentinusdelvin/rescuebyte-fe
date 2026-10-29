@@ -1,7 +1,8 @@
 import React from 'react';
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, Store as StoreIcon } from 'lucide-react';
 import type { UserPayload } from '../../types';
 import { getRoleForEmail } from '../../services/authService';
+import { getStoreProfile } from '../../services/storeService';
 
 interface CustomerProfileDropdownProps {
   currentUser: UserPayload;
@@ -40,26 +41,143 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
 }) => {
   const [imageError, setImageError] = React.useState(false);
 
-  React.useEffect(() => {
-    setImageError(false);
-  }, [currentUser.avatar_url]);
-
-  const hasAvatar = !!currentUser.avatar_url && !imageError;
-
-  const isSeller =
-    currentUser.role_id === 3 ||
-    (typeof currentUser.role === 'string' &&
-      ['seller', 'merchant', 'mitra', 'restaurant', 'restoran', 'store', 'toko'].some((r) =>
-        currentUser.role.toLowerCase().includes(r)
-      )) ||
-    getRoleForEmail(currentUser.email) === 'seller' ||
-    (() => {
+  const isSeller = React.useMemo(() => {
+    const roleId = Number(currentUser.role_id);
+    const roleStr = typeof currentUser.role === 'string' ? currentUser.role.toLowerCase().trim() : '';
+    const storedRole = (() => {
       try {
-        return localStorage.getItem('rescuebyte_user_role') === 'seller';
+        return localStorage.getItem('rescuebyte_user_role');
       } catch {
-        return false;
+        return null;
       }
     })();
+
+    // 1. Explicit Customer check: role_id 1/2, 'customer'/'user', stored 'customer'
+    if (
+      roleId === 1 ||
+      roleId === 2 ||
+      ['customer', 'user', 'pembeli', 'pengguna'].includes(roleStr) ||
+      storedRole === 'customer' ||
+      getRoleForEmail(currentUser.email) === 'customer'
+    ) {
+      return false;
+    }
+
+    // 2. Explicit Seller / Mitra Toko check: role_id 3, seller keywords, stored 'seller'
+    if (
+      roleId === 3 ||
+      ['seller', 'merchant', 'mitra', 'restaurant', 'restoran', 'store', 'toko'].some((r) =>
+        roleStr.includes(r)
+      ) ||
+      storedRole === 'seller' ||
+      getRoleForEmail(currentUser.email) === 'seller'
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [currentUser.role_id, currentUser.role, currentUser.email]);
+
+  const [storeLogo, setStoreLogo] = React.useState<string>(() => {
+    if (!isSeller) return '';
+    try {
+      return localStorage.getItem('rescuebyte_store_logo') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [storeName, setStoreName] = React.useState<string>(() => {
+    if (!isSeller) return '';
+    try {
+      return localStorage.getItem('rescuebyte_store_name') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [storeEmail, setStoreEmail] = React.useState<string>(() => {
+    if (!isSeller) return '';
+    try {
+      return localStorage.getItem('rescuebyte_store_email') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Fetch store profile if seller and listen to profile updates from seller dashboard
+  React.useEffect(() => {
+    if (!isSeller) {
+      setStoreLogo('');
+      setStoreName('');
+      setStoreEmail('');
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncFromStorage = () => {
+      try {
+        const savedLogo = localStorage.getItem('rescuebyte_store_logo');
+        if (savedLogo !== null) {
+          setStoreLogo(savedLogo);
+          setImageError(false);
+        }
+        const savedName = localStorage.getItem('rescuebyte_store_name');
+        if (savedName) setStoreName(savedName);
+        const savedEmail = localStorage.getItem('rescuebyte_store_email');
+        if (savedEmail) setStoreEmail(savedEmail);
+      } catch {}
+    };
+
+    syncFromStorage();
+
+    getStoreProfile()
+      .then((store) => {
+        if (!isMounted) return;
+        if (store.profile_picture_url) {
+          setStoreLogo(store.profile_picture_url);
+          setImageError(false);
+          try {
+            localStorage.setItem('rescuebyte_store_logo', store.profile_picture_url);
+          } catch {}
+        }
+        if (store.name) {
+          setStoreName(store.name);
+          try {
+            localStorage.setItem('rescuebyte_store_name', store.name);
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
+    window.addEventListener('rescuebyte_store_updated', syncFromStorage);
+    window.addEventListener('storage', syncFromStorage);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('rescuebyte_store_updated', syncFromStorage);
+      window.removeEventListener('storage', syncFromStorage);
+    };
+  }, [isSeller]);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [currentUser.avatar_url, storeLogo]);
+
+  // Strip generic Dicebear avatar placeholder (cartoon girl)
+  const isDicebear = currentUser.avatar_url?.includes('dicebear.com');
+
+  // If user is seller, prioritize store logo from dashboard/backend
+  const effectiveAvatarUrl = isSeller
+    ? storeLogo || (!isDicebear ? currentUser.avatar_url : '')
+    : !isDicebear
+    ? currentUser.avatar_url
+    : '';
+
+  const hasAvatar = Boolean(effectiveAvatarUrl && !imageError);
+  const displayName = (isSeller && storeName) ? storeName : currentUser.name;
+  const displayEmail = (isSeller && storeEmail) ? storeEmail : currentUser.email;
 
   return (
     <div className="relative z-30 shrink-0" ref={containerRef}>
@@ -73,6 +191,8 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
         className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden ${
           hasAvatar
             ? 'bg-white'
+            : isSeller
+            ? 'bg-[#bbf7d0]'
             : isActiveOrHovered || isOpen
             ? 'bg-[#121613]'
             : 'bg-[#1e2420] hover:bg-[#161a17]'
@@ -85,16 +205,18 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        title={`Menu Akun: ${currentUser.name}`}
-        aria-label={`Menu Akun ${currentUser.name}`}
+        title={`Menu Akun: ${displayName}`}
+        aria-label={`Menu Akun ${displayName}`}
       >
         {hasAvatar ? (
           <img
-            src={currentUser.avatar_url}
-            alt={currentUser.name}
+            src={effectiveAvatarUrl}
+            alt={displayName}
             className="w-full h-full object-cover relative z-30"
             onError={() => setImageError(true)}
           />
+        ) : isSeller ? (
+          <StoreIcon className="w-6 h-6 md:w-7 md:h-7 text-black stroke-[2] relative z-30" />
         ) : (
           <UserIcon className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
         )}
@@ -119,25 +241,31 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
             aria-hidden="true"
           />
 
-          {/* User Info Header */}
+          {/* User / Store Info Header */}
           <div className="px-4 pt-2.5 pb-2 border-b border-[#f0eded] mb-1 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#f0eded] flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-200">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 ${
+                hasAvatar ? 'bg-white' : isSeller ? 'bg-[#bbf7d0]' : 'bg-[#f0eded]'
+              }`}
+            >
               {hasAvatar ? (
                 <img
-                  src={currentUser.avatar_url}
-                  alt={currentUser.name}
+                  src={effectiveAvatarUrl}
+                  alt={displayName}
                   className="w-full h-full object-cover"
                 />
+              ) : isSeller ? (
+                <StoreIcon className="w-4 h-4 text-black stroke-[2]" />
               ) : (
                 <UserIcon className="w-4 h-4 text-gray-500" />
               )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-[#1b1c1c] truncate">
-                {currentUser.name}
+                {displayName}
               </p>
               <p className="text-[11px] text-[#525252] truncate font-medium">
-                {currentUser.email}
+                {displayEmail}
               </p>
             </div>
           </div>

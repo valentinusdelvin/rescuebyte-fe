@@ -163,12 +163,13 @@ export interface ProductItem {
   rescuePrice: number;
   stock: number;
   maxStock: number;
-  status: 'aktif' | 'segera_habis' | 'habis';
+  status: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
+  isActive?: boolean;
   imageUrl?: string;
   createdAt: string;
 }
 
-export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis';
+export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
 
 export type OrderStatusTab =
   | 'diproses'

@@ -1,8 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Minus, Package, Eye, EyeOff } from 'lucide-react';
 import { ProductItem, ProductStatusTab } from '../types';
-import { getStoredProducts, updateProduct, deleteProduct, formatRupiah } from '../services/productService';
+import {
+  getStoredProducts,
+  updateProduct,
+  deleteProduct,
+  formatRupiah,
+  getMerchantProducts,
+  toggleProductStatusApi,
+  deleteProductApi,
+} from '../services/productService';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
-import mystBoxImg from '../assets/myst-box.svg';
 
 export interface DagangankuProps {
   onShowToast?: (message: string) => void;
@@ -15,6 +23,7 @@ const PRODUCT_TABS: { id: ProductStatusTab; label: string }[] = [
   { id: 'aktif', label: 'Aktif' },
   { id: 'segera_habis', label: 'Segera Habis' },
   { id: 'habis', label: 'Habis' },
+  { id: 'nonaktif', label: 'Nonaktif' },
 ];
 
 /**
@@ -34,6 +43,25 @@ export function Daganganku({
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
   const [itemToDelete, setItemToDelete] = useState<ProductItem | null>(null);
 
+  // Fetch real merchant products from backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    getMerchantProducts()
+      .then((serverProducts) => {
+        if (!isMounted) return;
+        if (serverProducts && serverProducts.length > 0) {
+          setProducts(serverProducts);
+        }
+      })
+      .catch((err) => {
+        console.warn('Gagal mengambil daftar produk dari backend, menggunakan cache:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Filtered & Sorted products
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -42,9 +70,11 @@ export function Daganganku({
     if (activeTab === 'aktif') {
       result = result.filter((p) => p.status === 'aktif' && p.stock > 0);
     } else if (activeTab === 'segera_habis') {
-      result = result.filter((p) => p.status === 'segera_habis' || (p.stock > 0 && p.stock <= 2));
+      result = result.filter((p) => p.status === 'segera_habis');
     } else if (activeTab === 'habis') {
-      result = result.filter((p) => p.status === 'habis' || p.stock === 0);
+      result = result.filter((p) => p.status === 'habis' || (p.stock === 0 && p.status !== 'nonaktif'));
+    } else if (activeTab === 'nonaktif') {
+      result = result.filter((p) => p.status === 'nonaktif');
     }
 
     // 2. Search query filter
@@ -80,25 +110,112 @@ export function Daganganku({
     return result;
   }, [products, activeTab, searchQuery, filterCategory, sortOrder]);
 
-  const handleToggleStatus = async (item: ProductItem) => {
-    const nextStatus = item.status === 'aktif' ? 'habis' : 'aktif';
-    const nextStock = nextStatus === 'aktif' && item.stock === 0 ? 5 : item.stock;
+  const handleToggleVisibility = async (item: ProductItem) => {
+    const isCurrentlyActive = item.status !== 'nonaktif';
+    const nextIsActive = !isCurrentlyActive;
+    let nextStatus: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
+
+    if (nextIsActive) {
+      if (item.stock === 0) {
+        nextStatus = 'habis';
+      } else if (item.stock <= 2) {
+        nextStatus = 'segera_habis';
+      } else {
+        nextStatus = 'aktif';
+      }
+    } else {
+      nextStatus = 'nonaktif';
+    }
 
     if (onTriggerLoading) {
       await onTriggerLoading(
         'Memperbarui Status Produk...',
-        `Mengubah status ${item.name} menjadi ${nextStatus === 'aktif' ? 'Aktif' : 'Nonaktif'}`
+        `${nextIsActive ? 'Mengaktifkan' : 'Menonaktifkan'} produk "${item.name}"`
       );
+    }
+
+    // Try backend API toggle
+    try {
+      await toggleProductStatusApi(item.id, nextIsActive);
+    } catch (err) {
+      console.warn('Backend toggle status failed, updated locally:', err);
     }
 
     const updated = updateProduct(item.id, {
       status: nextStatus,
-      stock: nextStock,
+      isActive: nextIsActive,
     });
     setProducts(updated);
 
     if (onShowToast) {
-      onShowToast(`Status "${item.name}" berhasil diubah menjadi ${nextStatus === 'aktif' ? 'Aktif' : 'Habis'}`);
+      onShowToast(
+        `Produk "${item.name}" ${nextIsActive ? 'berhasil diaktifkan' : 'telah dinonaktifkan'}`
+      );
+    }
+  };
+
+  const handleDirectStockChange = async (item: ProductItem, newStock: number) => {
+    const validStock = Math.max(0, newStock);
+    let nextStatus = item.status;
+    if (item.status !== 'nonaktif') {
+      if (validStock === 0) {
+        nextStatus = 'habis';
+      } else if (validStock <= 2) {
+        nextStatus = 'segera_habis';
+      } else {
+        nextStatus = 'aktif';
+      }
+    }
+
+    const nextMaxStock = Math.max(item.maxStock || 0, validStock);
+
+    const updated = updateProduct(item.id, {
+      stock: validStock,
+      maxStock: nextMaxStock,
+      status: nextStatus,
+    });
+    setProducts(updated);
+
+    if (item.status !== 'nonaktif') {
+      try {
+        await toggleProductStatusApi(item.id, validStock > 0);
+      } catch (err) {
+        console.warn('Backend toggle status sync failed:', err);
+      }
+    }
+  };
+
+  const handleQuickStockChange = async (item: ProductItem, delta: number) => {
+    const currentStock = item.stock;
+    const newStock = Math.max(0, currentStock + delta);
+    if (newStock === currentStock) return;
+
+    let nextStatus = item.status;
+    if (item.status !== 'nonaktif') {
+      if (newStock === 0) {
+        nextStatus = 'habis';
+      } else if (newStock <= 2) {
+        nextStatus = 'segera_habis';
+      } else {
+        nextStatus = 'aktif';
+      }
+    }
+
+    const nextMaxStock = Math.max(item.maxStock || 0, newStock);
+
+    const updated = updateProduct(item.id, {
+      stock: newStock,
+      maxStock: nextMaxStock,
+      status: nextStatus,
+    });
+    setProducts(updated);
+
+    if (item.status !== 'nonaktif' && ((currentStock === 0 && newStock > 0) || (currentStock > 0 && newStock === 0))) {
+      try {
+        await toggleProductStatusApi(item.id, newStock > 0);
+      } catch (err) {
+        console.warn('Backend toggle status sync failed:', err);
+      }
     }
   };
 
@@ -106,9 +223,17 @@ export function Daganganku({
     setItemToDelete(item);
   };
 
-  const handleExecuteDelete = () => {
+  const handleExecuteDelete = async () => {
     if (!itemToDelete) return;
     const target = itemToDelete;
+
+    // Try backend API delete
+    try {
+      await deleteProductApi(target.id);
+    } catch (err) {
+      console.warn('Backend delete product failed, removed locally:', err);
+    }
+
     const updated = deleteProduct(target.id);
     setProducts(updated);
     setItemToDelete(null);
@@ -238,18 +363,28 @@ export function Daganganku({
             </div>
           ) : (
             filteredProducts.map((item) => {
-              const isAktif = item.status === 'aktif' && item.stock > 0;
-              const isSegeraHabis = item.status === 'segera_habis' || (item.stock > 0 && item.stock <= 2);
+              const isNonaktif = item.status === 'nonaktif';
+              const isAktif = !isNonaktif && item.status === 'aktif' && item.stock > 0;
+              const isSegeraHabis = !isNonaktif && (item.status === 'segera_habis' || (item.stock > 0 && item.stock <= 2));
 
               return (
                 <article key={item.id} className="p-4 rounded-2xl border border-gray-200/80 bg-white hover:border-gray-400 hover:shadow-xs transition-all flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {/* Left: Thumbnail */}
                   <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-200/80 flex items-center justify-center p-1 overflow-hidden shrink-0">
-                    <img
-                      src={item.imageUrl || mystBoxImg}
-                      alt={item.name}
-                      className="w-full h-full object-contain"
-                    />
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-lg bg-brand-lime/25 flex items-center justify-center">
+                        <Package className="w-7 h-7 text-[#1F4D36]" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Center: Info */}
@@ -259,12 +394,45 @@ export function Daganganku({
                     <span className="text-[11px] text-gray-400 mt-1">{item.createdAt}</span>
                   </div>
 
-                  {/* Metrics Col 1: Stok */}
-                  <div className="flex flex-col items-start sm:items-center min-w-17.5">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stok</span>
-                    <div className="mt-0.5">
-                      <span className="text-sm font-bold text-gray-900">{item.stock}</span>
-                      <span className="text-xs text-gray-400 font-normal">/{item.maxStock || 10}</span>
+                  {/* Metrics Col 1: Stok dengan Quick Edit + dan - serta Input Langsung */}
+                  <div className="flex flex-col items-start sm:items-center min-w-28 select-none">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Stok</span>
+                    <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-gray-50 border border-gray-200/80 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickStockChange(item, -1)}
+                        disabled={item.stock <= 0}
+                        className="w-6 h-6 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:text-black transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-90"
+                        title="Kurangi stok (-1)"
+                        aria-label={`Kurangi stok ${item.name}`}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+
+                      <div className="px-1 text-center min-w-8 flex items-center justify-center">
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.stock}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            handleDirectStockChange(item, isNaN(val) ? 0 : val);
+                          }}
+                          className="w-10 text-center font-bold text-sm bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary rounded p-0 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          title="Ketik untuk mengubah stok langsung"
+                          aria-label={`Stok tersedia ${item.name}`}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuickStockChange(item, 1)}
+                        className="w-6 h-6 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:text-black transition-all cursor-pointer active:scale-90"
+                        title="Tambah stok (+1)"
+                        aria-label={`Tambah stok ${item.name}`}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
 
@@ -277,23 +445,41 @@ export function Daganganku({
                     </div>
                   </div>
 
-                  {/* Status Badge */}
+                  {/* Status Badge & Visibility Eye Toggle */}
                   <div className="flex flex-col items-start sm:items-center">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</span>
-                    <button
-                      type="button"
-                      className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all hover:scale-105 cursor-pointer select-none ${
-                        isAktif
-                          ? 'bg-[#dcfce7] text-primary'
-                          : isSegeraHabis
-                          ? 'bg-[#fef3c7] text-[#b45309]'
-                          : 'bg-[#f3f4f6] text-[#6b7280]'
-                      }`}
-                      title="Klik untuk mengubah status aktif/nonaktif"
-                      onClick={() => handleToggleStatus(item)}
-                    >
-                      {isAktif ? 'Aktif' : isSegeraHabis ? 'Segera Habis' : 'Habis'}
-                    </button>
+                    <div className="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all select-none ${
+                          isNonaktif
+                            ? 'bg-gray-100 text-gray-500 border border-gray-200'
+                            : isAktif
+                            ? 'bg-[#dcfce7] text-primary'
+                            : isSegeraHabis
+                            ? 'bg-[#fef3c7] text-[#b45309]'
+                            : 'bg-[#f3f4f6] text-[#6b7280]'
+                        }`}
+                        title={isNonaktif ? 'Produk dinonaktifkan (klik untuk mengaktifkan)' : 'Status produk'}
+                        onClick={() => handleToggleVisibility(item)}
+                      >
+                        {isNonaktif ? 'Nonaktif' : isAktif ? 'Aktif' : isSegeraHabis ? 'Segera Habis' : 'Habis'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVisibility(item)}
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                          isNonaktif
+                            ? 'bg-gray-100 border-gray-300 text-gray-400 hover:text-gray-700 hover:bg-gray-200'
+                            : 'bg-emerald-50 border-emerald-200 text-primary hover:bg-emerald-100'
+                        }`}
+                        title={isNonaktif ? 'Tampilkan produk (Aktifkan)' : 'Sembunyikan produk (Nonaktifkan)'}
+                        aria-label={isNonaktif ? `Aktifkan ${item.name}` : `Nonaktifkan ${item.name}`}
+                      >
+                        {isNonaktif ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Delete Button */}

@@ -133,7 +133,7 @@ export function Header({
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    if (onNavigate) onNavigate('view-beranda');
+    if (onNavigate) onNavigate('view-customer-home');
   };
 
   const handleGotoProfil = () => {
@@ -171,7 +171,7 @@ export function Header({
         </button>
 
         {/* RescueBite Logo */}
-        <a href="#beranda-seller" className="flex items-center justify-center gap-2.5 no-underline text-inherit hover:scale-[1.03] transition-transform duration-150" id="brand-logo-link" onClick={handleLogoClick}>
+        <a href="#beranda-customer" className="flex items-center justify-center gap-2.5 no-underline text-inherit hover:scale-[1.03] transition-transform duration-150" id="brand-logo-link" onClick={handleLogoClick} title="Ke Landing Page RescueBite">
           <img
             src={rescueBiteLogo}
             alt="RescueBite"

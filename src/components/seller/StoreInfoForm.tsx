@@ -8,7 +8,7 @@ import {
   KecamatanItem,
   OSMSearchResult,
 } from '../../services/locationService';
-import { uploadImage } from '../../services/storageService';
+import { ProfileAvatar } from '../common/ProfileAvatar';
 import { Coordinates } from '../../types';
 
 export interface StoreInfoFormProps {
@@ -21,7 +21,7 @@ export interface StoreInfoFormProps {
   storeEmail: string;
   onStoreEmailChange: (val: string) => void;
   avatarUrl?: string;
-  onAvatarUrlChange: (url: string) => void;
+  onAvatarUrlChange: (url: string) => Promise<void> | void;
   currentCoordinates: Coordinates;
   addressValue: string;
   cityValue: string;
@@ -50,7 +50,7 @@ export function StoreInfoForm({
   storeWa,
   onStoreWaChange,
   storeEmail,
-  onStoreEmailChange,
+  onStoreEmailChange: _onStoreEmailChange,
   avatarUrl = '',
   onAvatarUrlChange,
   currentCoordinates,
@@ -78,7 +78,6 @@ export function StoreInfoForm({
   const [showDistrictDropdown, setShowDistrictDropdown] = useState<boolean>(false);
 
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -97,55 +96,6 @@ export function StoreInfoForm({
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
-
-  // Handle Logo Upload
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [localLogoPreview, setLocalLogoPreview] = useState<string | null>(null);
-  const [logoImageError, setLogoImageError] = useState(false);
-
-  useEffect(() => {
-    setLogoImageError(false);
-  }, [avatarUrl]);
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      if (onShowToast) onShowToast('File harus berupa gambar (JPEG, PNG, atau WebP).');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      if (onShowToast) onShowToast('Ukuran logo toko maksimal adalah 2 MB.');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    setIsUploadingLogo(true);
-    setLogoImageError(false);
-    const previewUrl = URL.createObjectURL(file);
-    setLocalLogoPreview(previewUrl);
-
-    try {
-      const uploadRes = await uploadImage(file, 'stores');
-      onAvatarUrlChange(uploadRes.url);
-      try {
-        localStorage.setItem('rescuebyte_store_logo', uploadRes.url);
-        window.dispatchEvent(new Event('rescuebyte_store_updated'));
-      } catch {}
-      if (onShowToast) onShowToast('Foto logo toko berhasil diunggah!');
-    } catch (err) {
-      setLocalLogoPreview(null);
-      const msg = err instanceof Error ? err.message : 'Gagal mengunggah logo toko.';
-      if (onShowToast) onShowToast(msg);
-    } finally {
-      setIsUploadingLogo(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   // 1. Alamat OSM Live Search
   const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,8 +192,6 @@ export function StoreInfoForm({
     if (onShowToast) onShowToast(`Kecamatan dipilih: ${district.name}`);
   };
 
-  const currentDisplayLogo = localLogoPreview || (!logoImageError && avatarUrl ? avatarUrl : '');
-
   return (
     <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6 relative">
       {isLoading && (
@@ -257,71 +205,19 @@ export function StoreInfoForm({
       <form id="form-info-toko" className="flex flex-col gap-5" onSubmit={onSubmit} noValidate>
         {/* Avatar & Store Name Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-          <div className="flex flex-col items-center gap-2.5 shrink-0">
-            <label
-              htmlFor="store-logo-file"
-              className={`group/avatar relative w-20.5 h-20.5 rounded-full border border-gray-300 flex items-center justify-center bg-brand-lime transition-transform shrink-0 overflow-hidden ${
-                isUploadingLogo ? 'cursor-wait' : 'cursor-pointer hover:scale-[1.03]'
-              }`}
-              id="store-avatar-preview"
-              tabIndex={0}
-              role="button"
-              aria-label="Upload logo toko"
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !isUploadingLogo) {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-            >
-              {currentDisplayLogo ? (
-                <img
-                  src={currentDisplayLogo}
-                  alt="Logo Toko"
-                  className="w-full h-full object-cover rounded-full"
-                  onError={() => setLogoImageError(true)}
-                />
-              ) : (
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l2-5h14l2 5" />
-                  <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
-                  <path d="M9 22V12h6v10" />
-                  <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-                </svg>
-              )}
-
-              <div
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] border-[1.5px] border-gray-400 flex items-center justify-center transition-all group-hover/avatar:scale-110 group-hover/avatar:border-gray-900 group-hover/avatar:bg-gray-50 z-10"
-                title="Pilih foto untuk logo toko"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-              </div>
-            </label>
-
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingLogo}
-              className="px-3.5 py-1 text-xs font-semibold text-white bg-gray-600 hover:bg-gray-700 rounded-full cursor-pointer transition-all select-none active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              {isUploadingLogo && <Loader2 className="w-3 h-3 animate-spin text-white" />}
-              <span>{isUploadingLogo ? 'Mengunggah...' : 'Ubah Logo'}</span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              id="store-logo-file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              aria-label="Upload logo toko"
-              onChange={handleLogoUpload}
-              disabled={isUploadingLogo}
-            />
-          </div>
+          <ProfileAvatar
+            name={storeName}
+            avatarUrl={avatarUrl || ''}
+            onAvatarChange={onAvatarUrlChange}
+            onShowToast={onShowToast}
+            folder="stores"
+            label="Logo Toko"
+            buttonText="Ubah Logo"
+            modalButtonText="Ganti Logo"
+            fallbackIcon="store"
+            fallbackBg="bg-brand-lime"
+            layout="column"
+          />
 
           <div className="flex flex-col gap-1.5 flex-1 w-full">
             <label htmlFor="nama-toko" className="text-sm font-semibold text-gray-800">Nama Toko</label>
@@ -368,16 +264,19 @@ export function StoreInfoForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email-toko" className="text-sm font-semibold text-gray-800">Email Toko</label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="email-toko" className="text-sm font-semibold text-gray-800">Email Toko</label>
+              <span className="text-[11px] font-medium text-gray-400">Tidak dapat diubah</span>
+            </div>
             <input
               type="email"
               id="email-toko"
               name="emailToko"
-              className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
+              disabled
+              readOnly
+              className="w-full px-4 py-3 rounded-2xl border border-gray-300 bg-gray-100 text-sm font-semibold text-gray-500 cursor-not-allowed select-none transition-colors"
               value={storeEmail}
               placeholder="toko@email.com"
-              required
-              onChange={(e) => onStoreEmailChange(e.target.value)}
             />
           </div>
         </div>
@@ -553,7 +452,7 @@ export function StoreInfoForm({
         <div className="pt-2">
           <button
             type="submit"
-            disabled={isSaving || isUploadingLogo || isLoading}
+            disabled={isSaving || isLoading}
             className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             id="btn-save-profile"
           >

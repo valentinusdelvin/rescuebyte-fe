@@ -1,5 +1,7 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import { DayKey, DayItem, DaysSchedule } from '../../types';
+import { isValidTimeFormat } from '../../utils/time';
 
 export interface OperationalCardProps {
   isActive?: boolean;
@@ -12,6 +14,8 @@ export interface OperationalCardProps {
   onDayToggle?: (dayKey: DayKey) => void;
   onShowToast?: (message: string) => void;
   isLoading?: boolean;
+  isSaving?: boolean;
+  onSave?: () => Promise<void> | void;
 }
 
 const DAY_LIST: DayItem[] = [
@@ -42,14 +46,16 @@ const DEFAULT_DAYS: DaysSchedule = {
 export function OperationalCard({
   isActive = true,
   onActiveChange,
-  jamBuka = '08:00',
+  jamBuka = '08.00',
   onJamBukaChange,
-  jamTutup = '20:00',
+  jamTutup = '22.00',
   onJamTutupChange,
   days = DEFAULT_DAYS,
   onDayToggle,
   onShowToast,
   isLoading = false,
+  isSaving = false,
+  onSave,
 }: OperationalCardProps) {
   const handleToggleStatus = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
@@ -65,6 +71,45 @@ export function OperationalCard({
     if (onDayToggle) {
       onDayToggle(dayKey);
     }
+  };
+
+  const isJamBukaInvalid = !!(jamBuka && jamBuka.length === 5 && !isValidTimeFormat(jamBuka));
+  const isJamTutupInvalid = !!(jamTutup && jamTutup.length === 5 && !isValidTimeFormat(jamTutup));
+
+  const handleJamBukaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = e.target.value.replace(':', '.');
+    onJamBukaChange?.(formatted);
+    if (formatted.length === 5 && !isValidTimeFormat(formatted)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+    }
+  };
+
+  const handleJamTutupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = e.target.value.replace(':', '.');
+    onJamTutupChange?.(formatted);
+    if (formatted.length === 5 && !isValidTimeFormat(formatted)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+    }
+  };
+
+  const handleBlurJamBuka = () => {
+    if (jamBuka && !isValidTimeFormat(jamBuka)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+    }
+  };
+
+  const handleBlurJamTutup = () => {
+    if (jamTutup && !isValidTimeFormat(jamTutup)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+    }
+  };
+
+  const handleSaveOperational = () => {
+    if (!isValidTimeFormat(jamBuka) || !isValidTimeFormat(jamTutup)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+      return;
+    }
+    onSave?.();
   };
 
   return (
@@ -112,25 +157,36 @@ export function OperationalCard({
             <input
               type="text"
               id="jam-buka"
-              className="w-full sm:w-36 text-center px-4 py-3 border border-gray-700 rounded-2xl font-bold text-black text-sm focus:outline-black focus:border-black bg-white"
+              className={`w-full sm:w-36 text-center px-4 py-3 border rounded-2xl font-bold text-sm bg-white transition-colors ${
+                isJamBukaInvalid
+                  ? 'border-red-500 text-red-600 focus:outline-red-500 focus:border-red-500'
+                  : 'border-gray-700 text-black focus:outline-black focus:border-black'
+              }`}
               value={jamBuka}
               maxLength={5}
-              placeholder="08:00"
+              placeholder="08.00"
               aria-label="Jam Buka"
-              onChange={(e) => onJamBukaChange?.(e.target.value)}
+              onChange={handleJamBukaChange}
+              onBlur={handleBlurJamBuka}
             />
             <span className="text-black font-extrabold text-lg" aria-hidden="true">-</span>
             <input
               type="text"
               id="jam-tutup"
-              className="w-full sm:w-36 text-center px-4 py-3 border border-gray-700 rounded-2xl font-bold text-black text-sm focus:outline-black focus:border-black bg-white"
+              className={`w-full sm:w-36 text-center px-4 py-3 border rounded-2xl font-bold text-sm bg-white transition-colors ${
+                isJamTutupInvalid
+                  ? 'border-red-500 text-red-600 focus:outline-red-500 focus:border-red-500'
+                  : 'border-gray-700 text-black focus:outline-black focus:border-black'
+              }`}
               value={jamTutup}
               maxLength={5}
-              placeholder="20:00"
+              placeholder="22.00"
               aria-label="Jam Tutup"
-              onChange={(e) => onJamTutupChange?.(e.target.value)}
+              onChange={handleJamTutupChange}
+              onBlur={handleBlurJamTutup}
             />
           </div>
+          <span className="text-xs text-gray-500 font-medium">Format 24 jam (contoh: 08.00 - 22.00)</span>
         </div>
 
         {/* Hari Operasional Section */}
@@ -166,6 +222,22 @@ export function OperationalCard({
             ))}
           </div>
         </div>
+
+        {/* Tombol Simpan Perubahan Operasional */}
+        {onSave && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleSaveOperational}
+              disabled={isSaving || isLoading}
+              className="w-full py-3.5 px-6 rounded-2xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-sm shadow-sm transition-all cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              id="btn-simpan-operasional"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+              <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

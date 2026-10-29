@@ -219,7 +219,8 @@ export function App() {
   // Sync store name from backend for seller portal
   useEffect(() => {
     const user = getCurrentUser();
-    if (user && (user.role_id === 3 || user.role === 'Seller' || localStorage.getItem('rescuebyte_user_role') === 'seller')) {
+    const isCustomer = user && (user.role_id === 1 || user.role_id === 2 || user.role?.toLowerCase() === 'user' || user.role?.toLowerCase() === 'customer');
+    if (user && !isCustomer && (user.role_id === 3 || user.role === 'Seller' || localStorage.getItem('rescuebyte_user_role') === 'seller')) {
       getStoreProfile()
         .then((store) => {
           if (store?.name) {

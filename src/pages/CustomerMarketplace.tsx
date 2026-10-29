@@ -4,6 +4,11 @@ import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, subscribeToCart } from '../services/cartService';
+import {
+  getPublicProducts,
+  PublicProductItem,
+  getStoredProducts,
+} from '../services/productService';
 
 // Optional existing assets (can be replaced/augmented anytime from assets)
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
@@ -22,6 +27,7 @@ export interface MarketplaceBoxItem extends CustomerMysteryBox {
   categoryBadge: string;
   city: string;
   categoryType: 'pastry' | 'heavy' | 'beverage' | 'snack';
+  productName?: string;
 }
 
 /**
@@ -259,6 +265,74 @@ const MARKETPLACE_PRODUCTS: MarketplaceBoxItem[] = [
   },
 ];
 
+export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  'Malang': { lat: -7.9526, lng: 112.6146 },
+  'Surabaya': { lat: -7.2575, lng: 112.7521 },
+  'Jakarta Selatan': { lat: -6.2615, lng: 106.8106 },
+  'Bandung': { lat: -6.9175, lng: 107.6191 },
+  'Yogyakarta': { lat: -7.7956, lng: 110.3695 },
+};
+
+export const DEFAULT_COORDS = { lat: -7.9526, lng: 112.6146 };
+
+function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): MarketplaceBoxItem {
+  const normalPrice = p.normal_price || 0;
+  const rescuePrice = p.rescue_price || 0;
+  const discount =
+    typeof p.discount_percentage === 'number' && p.discount_percentage > 0
+      ? p.discount_percentage
+      : normalPrice > 0
+      ? Math.round(((normalPrice - rescuePrice) / normalPrice) * 100)
+      : 0;
+
+  let pickup = '';
+  if (p.pickup_time) {
+    pickup = p.pickup_time.replace(/^Ambil:\s*/i, '').trim();
+  } else if (p.operational_start && p.operational_end) {
+    const start = p.operational_start.slice(0, 5).replace(':', '.');
+    const end = p.operational_end.slice(0, 5).replace(':', '.');
+    pickup = `${start} – ${end} WIB`;
+  } else {
+    pickup = '08.00 – 23.59 WIB';
+  }
+
+  const dist = typeof p.distance_km === 'number' ? p.distance_km : 2.1;
+  const distanceText = `${dist.toFixed(1)} km`;
+
+  const realProductName = p.name || 'Surprise Box';
+  let realStoreName = p.store_name || '';
+  if (!realStoreName) {
+    try {
+      realStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
+    } catch {
+      realStoreName = 'Toko Rejak';
+    }
+  }
+
+  return {
+    id: p.id,
+    storeName: realStoreName,
+    productName: realProductName,
+    category: realProductName,
+    categoryBadge: realProductName,
+    categoryType: 'heavy',
+    city: fallbackCity,
+    remainingBoxesText: `Sisa ${p.stock ?? 1} Box`,
+    distanceText,
+    discountPercent: discount,
+    originalPrice: normalPrice,
+    rescuePrice: rescuePrice,
+    pickupTime: pickup,
+    description:
+      p.description ||
+      'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
+    tags: [realStoreName, realProductName, '✓ Halal MUI', 'Surplus Harian'],
+    imageSrc: p.main_image_url || cardMonsieurSpoon,
+    rating: 4.9,
+    reviewCount: 42,
+  };
+}
+
 const CITIES = ['Malang', 'Jakarta Selatan', 'Surabaya', 'Bandung', 'Yogyakarta', 'Semua Kota'];
 
 const DISTANCE_OPTIONS = [
@@ -334,6 +408,56 @@ export function CustomerMarketplace({
   onNavigateProfile,
   onShowToast,
 }: CustomerMarketplaceProps) {
+  // Coordinates State
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(() => {
+    try {
+      const saved = localStorage.getItem('rescuebyte_user_coords');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_COORDS;
+  });
+
+  // Dynamic Marketplace Products from Backend & Local Dagangan
+  const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(() => {
+    try {
+      const savedStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
+      const localItems = getStoredProducts().filter(
+        (lp) => lp.isActive && lp.status !== 'nonaktif'
+      );
+      return localItems.map((lp) => {
+        const discount =
+          lp.normalPrice > 0
+            ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
+            : 0;
+        return {
+          id: lp.id,
+          storeName: savedStoreName,
+          productName: lp.name,
+          category: lp.name,
+          categoryBadge: lp.name,
+          categoryType: 'heavy' as const,
+          city: 'Malang',
+          remainingBoxesText: `Sisa ${lp.stock} Box`,
+          distanceText: '2.1 km',
+          discountPercent: discount,
+          originalPrice: lp.normalPrice,
+          rescuePrice: lp.rescuePrice,
+          pickupTime: '08.00 – 23.59 WIB',
+          description:
+            lp.description ||
+            'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
+          tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
+          imageSrc: lp.imageUrl || cardMonsieurSpoon,
+          rating: 5.0,
+          reviewCount: 12,
+        };
+      });
+    } catch {
+      return [];
+    }
+  });
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
+
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('Lokasi Saat Ini');
@@ -347,6 +471,77 @@ export function CustomerMarketplace({
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [openDropdown, setOpenDropdown] = useState<'harga' | 'jarak' | 'urutkan' | 'kota' | null>(null);
 
+  // Fetch products from backend GET /api/v1/products with coordinates
+  const fetchMarketplaceProducts = useCallback(
+    async (coords: { lat: number; lng: number }, query?: string) => {
+      setIsLoadingProducts(true);
+      try {
+        const publicItems = await getPublicProducts({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          search: query?.trim() ? query.trim() : undefined,
+        });
+
+        const mappedApi = publicItems.map((p) => mapPublicProductToItem(p, 'Malang'));
+
+        // Merge local stored products if seller created them locally
+        const savedStoreName = (() => {
+          try {
+            return localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
+          } catch {
+            return 'Toko Rejak';
+          }
+        })();
+
+        const localItems = getStoredProducts().filter(
+          (lp) => lp.isActive && lp.status !== 'nonaktif'
+        );
+        const mappedLocal: MarketplaceBoxItem[] = localItems
+          .filter((lp) => !mappedApi.some((ap) => ap.id === lp.id || ap.productName === lp.name))
+          .map((lp) => {
+            const discount =
+              lp.normalPrice > 0
+                ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
+                : 0;
+            return {
+              id: lp.id,
+              storeName: savedStoreName,
+              productName: lp.name,
+              category: lp.name,
+              categoryBadge: lp.name,
+              categoryType: 'heavy',
+              city: 'Malang',
+              remainingBoxesText: `Sisa ${lp.stock} Box`,
+              distanceText: '2.1 km',
+              discountPercent: discount,
+              originalPrice: lp.normalPrice,
+              rescuePrice: lp.rescuePrice,
+              pickupTime: '08.00 – 23.59 WIB',
+              description:
+                lp.description ||
+                'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
+              tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
+              imageSrc: lp.imageUrl || cardMonsieurSpoon,
+              rating: 5.0,
+              reviewCount: 12,
+            };
+          });
+
+        setApiProducts([...mappedApi, ...mappedLocal]);
+      } catch (err) {
+        console.warn('Gagal mengambil produk marketplace:', err);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    },
+    []
+  );
+
+  // Initial products fetch on mount
+  useEffect(() => {
+    fetchMarketplaceProducts(userCoords);
+  }, [fetchMarketplaceProducts, userCoords]);
+
   // Request browser live location
   const handleRequestLiveLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -356,21 +551,30 @@ export function CustomerMarketplace({
     }
     setIsLoadingLoc(true);
     navigator.geolocation.getCurrentPosition(
-      (_pos) => {
+      (pos) => {
         setIsLoadingLoc(false);
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        try {
+          localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
+        } catch {}
         setSelectedCity('Lokasi Saat Ini');
         setOpenDropdown(null);
-        if (onShowToast) onShowToast('📍 Menggunakan lokasi live Anda');
+        fetchMarketplaceProducts(coords);
+        if (onShowToast) onShowToast('📍 Lokasi terdeteksi, menampilkan Mystery Box terdekat');
       },
       (err) => {
         setIsLoadingLoc(false);
         console.warn('Geolocation permission:', err.message);
         if (onShowToast) onShowToast('Izin lokasi belum diberikan, default: Malang');
         setSelectedCity('Malang');
+        const fallback = CITY_COORDINATES['Malang'];
+        setUserCoords(fallback);
+        fetchMarketplaceProducts(fallback);
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, [onShowToast]);
+  }, [onShowToast, fetchMarketplaceProducts]);
 
   // Trigger live location request on mount asynchronously
   useEffect(() => {
@@ -378,8 +582,14 @@ export function CustomerMarketplace({
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (_pos) => {
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        try {
+          localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
+        } catch {}
         setSelectedCity('Lokasi Saat Ini');
+        fetchMarketplaceProducts(coords);
       },
       (err) => {
         console.warn('Geolocation permission:', err.message);
@@ -387,7 +597,7 @@ export function CustomerMarketplace({
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, []);
+  }, [fetchMarketplaceProducts]);
 
   // Modal & Cart States
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
@@ -424,13 +634,22 @@ export function CustomerMarketplace({
     };
   }, []);
 
+  // Combine API & Local products with Figma Mock Marketplace products
+  const allProducts = useMemo(() => {
+    const existingIds = new Set(apiProducts.map((p) => p.id));
+    const remainingMocks = MARKETPLACE_PRODUCTS.filter((m) => !existingIds.has(m.id));
+    return [...apiProducts, ...remainingMocks];
+  }, [apiProducts]);
+
   // Filtered & Sorted products list
   const filteredProducts = useMemo(() => {
-    return MARKETPLACE_PRODUCTS.filter((item) => {
+    return allProducts.filter((item) => {
       // Search Query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchName = item.storeName.toLowerCase().includes(query);
+        const matchName =
+          item.storeName.toLowerCase().includes(query) ||
+          (item.productName && item.productName.toLowerCase().includes(query));
         const matchDesc = item.description.toLowerCase().includes(query);
         const matchCat = item.category.toLowerCase().includes(query);
         const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
@@ -473,7 +692,16 @@ export function CustomerMarketplace({
       }
       return 0;
     });
-  }, [searchQuery, selectedCity, appliedMinPrice, appliedMaxPrice, distanceFilter, sortField, sortOrder]);
+  }, [
+    allProducts,
+    searchQuery,
+    selectedCity,
+    appliedMinPrice,
+    appliedMaxPrice,
+    distanceFilter,
+    sortField,
+    sortOrder,
+  ]);
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
     if (onNavigateDetail) {
@@ -622,7 +850,9 @@ export function CustomerMarketplace({
                       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
-                    <span className="truncate">{isLoadingLoc ? 'Mendeteksi...' : selectedCity}</span>
+                    <span className="truncate">
+                      {isLoadingLoc ? 'Mendeteksi...' : isLoadingProducts ? 'Memperbarui...' : selectedCity}
+                    </span>
                   </div>
                   <svg
                     width="14"
@@ -676,6 +906,12 @@ export function CustomerMarketplace({
                         onClick={() => {
                           setSelectedCity(city);
                           setOpenDropdown(null);
+                          const coords = CITY_COORDINATES[city] || DEFAULT_COORDS;
+                          setUserCoords(coords);
+                          try {
+                            localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
+                          } catch {}
+                          fetchMarketplaceProducts(coords);
                         }}
                         className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${selectedCity === city
                           ? 'bg-gray-100 text-[#1b1c1c] font-bold'
@@ -1019,7 +1255,7 @@ export function CustomerMarketplace({
                     {item.imageSrc ? (
                       <img
                         src={item.imageSrc}
-                        alt={`Mystery Box ${item.storeName}`}
+                        alt={`Mystery Box ${item.productName || item.storeName}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
@@ -1113,10 +1349,10 @@ export function CustomerMarketplace({
                       </div>
                     </div>
 
-                    {/* Bottom Dark Gradient with Store Name Overlay */}
+                    {/* Bottom Dark Gradient with Product & Store Name Overlay */}
                     <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
                       <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
-                        {cleanProductName(item.categoryBadge || item.category)}
+                        {cleanProductName(item.productName || item.categoryBadge || item.category)}
                       </span>
                       <h2 className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate">
                         {item.storeName}
@@ -1142,7 +1378,9 @@ export function CustomerMarketplace({
                       </svg>
                       <div className="text-xs text-[#434844] truncate">
                         <span className="font-normal text-[#5a625d]">Ambil: </span>
-                        <span className="font-bold text-[#1b1c1c]">{item.pickupTime}</span>
+                        <span className="font-bold text-[#1b1c1c]">
+                          {item.pickupTime.replace(/^Ambil:\s*/i, '')}
+                        </span>
                       </div>
                     </div>
 

@@ -10,6 +10,11 @@ export interface ProfileAvatarProps {
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   folder?: StorageFolder;
   label?: string;
+  buttonText?: string;
+  modalButtonText?: string;
+  fallbackIcon?: 'user' | 'store';
+  fallbackBg?: string;
+  layout?: 'row' | 'column';
 }
 
 export function ProfileAvatar({
@@ -20,6 +25,11 @@ export function ProfileAvatar({
   onShowToast,
   folder = 'avatars',
   label = 'Foto Profil',
+  buttonText = 'Ubah Foto',
+  modalButtonText = 'Ganti Foto',
+  fallbackIcon = 'user',
+  fallbackBg = 'bg-[#f0eded]',
+  layout = 'row',
 }: ProfileAvatarProps) {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -77,7 +87,7 @@ export function ProfileAvatar({
     } catch (err) {
       setLocalPreview(null);
       if (!(err instanceof Error && err.message.includes('profil'))) {
-        const msg = err instanceof Error ? err.message : 'Gagal mengunggah foto profil.';
+        const msg = err instanceof Error ? err.message : `Gagal mengunggah ${label.toLowerCase()}.`;
         onShowToast?.(msg, 'error');
       }
     } finally {
@@ -90,16 +100,46 @@ export function ProfileAvatar({
 
   const currentDisplayUrl = localPreview || (!imageError && avatarUrl ? avatarUrl : '');
 
+  const renderFallbackIcon = (size: 'sm' | 'lg') => {
+    if (fallbackIcon === 'store') {
+      return size === 'lg' ? (
+        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 9l2-5h14l2 5" />
+          <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
+          <path d="M9 22V12h6v10" />
+          <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+        </svg>
+      ) : (
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 9l2-5h14l2 5" />
+          <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
+          <path d="M9 22V12h6v10" />
+          <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+        </svg>
+      );
+    }
+
+    return size === 'lg' ? (
+      <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400" aria-hidden="true">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      </svg>
+    ) : (
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400" aria-hidden="true">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      </svg>
+    );
+  };
+
   return (
     <>
-      <div className="flex items-center gap-4">
-        <div className="relative group/avatar">
+      <div className={layout === 'column' ? 'flex flex-col items-center gap-2.5 shrink-0' : 'flex items-center gap-4'}>
+        <div className="relative group/avatar shrink-0">
           <div
             onClick={() => !isUploading && setIsZoomOpen(true)}
-            className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#f0eded] flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-200/80 shadow-2xs relative transition-all ${
+            className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full ${fallbackBg} flex items-center justify-center text-gray-800 shrink-0 overflow-hidden border border-gray-300 shadow-2xs relative transition-all ${
               isUploading ? 'cursor-wait' : 'cursor-zoom-in hover:brightness-95'
             }`}
-            title={isUploading ? 'Sedang memperbarui foto profil...' : 'Klik untuk melihat foto lebih besar'}
+            title={isUploading ? `Sedang memperbarui ${label.toLowerCase()}...` : `Klik untuk melihat ${label.toLowerCase()} lebih besar`}
           >
             {currentDisplayUrl ? (
               <img
@@ -109,9 +149,7 @@ export function ProfileAvatar({
                 onError={() => setImageError(true)}
               />
             ) : (
-              <svg width="42" height="42" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400" aria-hidden="true">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
+              renderFallbackIcon('sm')
             )}
           </div>
 
@@ -120,8 +158,8 @@ export function ProfileAvatar({
             onClick={() => !isUploading && setIsZoomOpen(true)}
             disabled={isUploading}
             className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] border-[1.5px] border-gray-400 flex items-center justify-center transition-all hover:scale-110 hover:border-gray-900 hover:bg-gray-50 z-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Lihat dan ubah foto profil"
-            aria-label="Lihat dan Ubah Foto Profil"
+            title={`Lihat dan ubah ${label.toLowerCase()}`}
+            aria-label={`Lihat dan Ubah ${label}`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -131,31 +169,45 @@ export function ProfileAvatar({
           </button>
         </div>
 
-        <div>
-          <span className="font-bold text-sm text-[#1b1c1c] block">{label}</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={handleAvatarFileChange}
-            aria-label="Upload Foto Profil"
-            disabled={isUploading}
-          />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={handleAvatarFileChange}
+          aria-label={`Upload ${label}`}
+          disabled={isUploading}
+        />
+
+        {layout === 'column' ? (
           <button
             type="button"
             onClick={() => !isUploading && setIsZoomOpen(true)}
             disabled={isUploading}
-            className="mt-1.5 px-3.5 py-1.5 rounded-xl border border-[#e6e4df] bg-[#f4f3f0] hover:bg-[#eae8e3] text-xs font-bold text-gray-800 shadow-2xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
-            title="Lihat dan ubah foto profil"
+            className="px-3.5 py-1 text-xs font-semibold text-white bg-gray-600 hover:bg-gray-700 rounded-full cursor-pointer transition-all select-none active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-2xs"
+            title={`Lihat dan ubah ${label.toLowerCase()}`}
           >
-            {isUploading && <Loader2 className="w-3 h-3 animate-spin text-gray-700" />}
-            <span>{isUploading ? (uploadStatus || 'Menyimpan...') : 'Ubah Foto'}</span>
+            {isUploading && <Loader2 className="w-3 h-3 animate-spin text-white" />}
+            <span>{isUploading ? (uploadStatus || 'Menyimpan...') : buttonText}</span>
           </button>
-          <span className="text-[11px] text-gray-400 mt-1 block">
-            Format JPG, PNG, atau WebP, maksimal 2MB.
-          </span>
-        </div>
+        ) : (
+          <div>
+            <span className="font-bold text-sm text-[#1b1c1c] block">{label}</span>
+            <button
+              type="button"
+              onClick={() => !isUploading && setIsZoomOpen(true)}
+              disabled={isUploading}
+              className="mt-1.5 px-3.5 py-1.5 rounded-xl border border-[#e6e4df] bg-[#f4f3f0] hover:bg-[#eae8e3] text-xs font-bold text-gray-800 shadow-2xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
+              title={`Lihat dan ubah ${label.toLowerCase()}`}
+            >
+              {isUploading && <Loader2 className="w-3 h-3 animate-spin text-gray-700" />}
+              <span>{isUploading ? (uploadStatus || 'Menyimpan...') : buttonText}</span>
+            </button>
+            <span className="text-[11px] text-gray-400 mt-1 block">
+              Format JPG, PNG, atau WebP, maksimal 2MB.
+            </span>
+          </div>
+        )}
       </div>
 
       {isZoomOpen && (
@@ -164,7 +216,7 @@ export function ProfileAvatar({
           onClick={() => setIsZoomOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label="Lihat Foto Profil Penuh"
+          aria-label={`Lihat ${label} Penuh`}
         >
           <div
             className="relative max-w-sm sm:max-w-md w-full bg-white rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4 cursor-default animate-in zoom-in-95 duration-150"
@@ -182,7 +234,7 @@ export function ProfileAvatar({
               </button>
             </div>
 
-            <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-2 border-gray-200 bg-[#f0eded] flex items-center justify-center shadow-inner relative">
+            <div className={`w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-2 border-gray-200 ${fallbackBg} flex items-center justify-center shadow-inner relative`}>
               {currentDisplayUrl ? (
                 <img
                   src={currentDisplayUrl}
@@ -191,9 +243,7 @@ export function ProfileAvatar({
                   onError={() => setImageError(true)}
                 />
               ) : (
-                <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400" aria-hidden="true">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
+                renderFallbackIcon('lg')
               )}
             </div>
 
@@ -211,7 +261,7 @@ export function ProfileAvatar({
                 ) : (
                   <Upload className="w-3.5 h-3.5" />
                 )}
-                <span>{isUploading ? (uploadStatus || 'Menyimpan...') : 'Ganti Foto'}</span>
+                <span>{isUploading ? (uploadStatus || 'Menyimpan...') : modalButtonText}</span>
               </button>
               <button
                 type="button"
