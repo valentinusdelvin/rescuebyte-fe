@@ -103,6 +103,7 @@ export interface PaymentOrderData {
   serviceFee: number;
   grandTotal: number;
   source?: 'direct' | 'cart';
+  status?: string;
 }
 
 export interface CustomerMysteryBox {

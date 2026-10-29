@@ -33,9 +33,9 @@ export function CustomerProfileSidebar({
   const hasValidAvatar = !!avatarUrl && !imageError;
 
   return (
-    <aside className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-5">
+    <aside className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-4 lg:sticky lg:top-28 z-20 self-start">
       {/* Mini Profile Card */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-black/5 shadow-2xs flex items-center gap-3.5">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex items-center gap-3.5 transition-shadow hover:shadow-sm">
         <div className="w-12 h-12 rounded-full bg-[#f0eded] flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-150">
           {hasValidAvatar ? (
             <img
@@ -57,7 +57,7 @@ export function CustomerProfileSidebar({
       </div>
 
       {/* Navigation Menu */}
-      <nav className="bg-white rounded-2xl p-2.5 border border-black/5 shadow-2xs flex flex-col gap-1" aria-label="Menu Navigasi Akun">
+      <nav className="bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 border border-slate-200/80 shadow-xs flex flex-col gap-1 transition-shadow hover:shadow-sm" aria-label="Menu Navigasi Akun">
         <button
           type="button"
           onClick={() => {

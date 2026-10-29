@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
-import { CartItem, StoreCartGroup } from '../types';
+import { CartItem, StoreCartGroup, CustomerMysteryBox } from '../types';
 import {
   getStoredCart,
   saveCart,
@@ -19,6 +19,8 @@ export interface CustomerCartProps {
   onNavigateMarketplace?: () => void;
   onNavigateSeller?: () => void;
   onNavigateCheckout?: (items?: import('../types').CheckoutItem[]) => void;
+  onNavigateStore?: (storeName: string) => void;
+  onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -37,16 +39,60 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function formatStorePickupTime(pickupTime?: string): string {
+  if (!pickupTime) return '19:00 - 20:30 WIB';
+  return pickupTime
+    .replace(/^Waktu Pickup\s*/i, '')
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/—/g, '-')
+    .trim();
+}
+
 export function CustomerCart({
   onNavigateHome,
   onNavigateMarketplace,
   onNavigateSeller,
   onNavigateCheckout,
+  onNavigateStore,
+  onNavigateDetail,
   onShowToast,
 }: CustomerCartProps) {
   const [cartStores, setCartStores] = useState<StoreCartGroup[]>(getStoredCart);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+  const handleStoreClick = (storeName: string) => {
+    if (onNavigateStore) {
+      onNavigateStore(storeName);
+    } else {
+      window.location.hash = '#toko';
+    }
+  };
+
+  const handleItemClick = (store: StoreCartGroup, item: CartItem) => {
+    if (onNavigateDetail) {
+      const mysteryBoxItem: CustomerMysteryBox = {
+        id: item.id,
+        storeName: store.storeName,
+        category: item.name,
+        categoryBadge: item.name,
+        remainingBoxesText: 'Sisa Stok Terbatas',
+        distanceText: store.distanceText,
+        discountPercent: item.discountPercent,
+        originalPrice: item.originalPrice,
+        rescuePrice: item.rescuePrice,
+        pickupTime: store.pickupTime,
+        description: `Menu surplus segar dan berkualitas dari ${store.storeName}. Tetap lezat, higienis, dan layak dinikmati dengan harga hemat.`,
+        tags: item.categoryTags && item.categoryTags.length > 0 ? item.categoryTags : ['Halal MUI', 'Surplus Fresh'],
+        rating: store.rating,
+        reviewCount: store.reviewCount,
+        imageSrc: item.imageSrc || '',
+      };
+      onNavigateDetail(mysteryBoxItem);
+    } else {
+      window.location.hash = '#detail-produk';
+    }
+  };
 
   // Track checked/selected items in cart (default: all checked)
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(() => {
@@ -234,13 +280,6 @@ export function CustomerCart({
     setDeleteTarget(null);
   };
 
-  const handlePickupTimeChange = (storeId: string, newTime: string) => {
-    const updated = cartStores.map((store) =>
-      store.storeId === storeId ? { ...store, pickupTime: newTime } : store
-    );
-    setCartStores(updated);
-    saveCart(updated);
-  };
 
   const handleCheckout = () => {
     if (selectedCount === 0 || totalBoxes === 0) {
@@ -352,57 +391,63 @@ export function CustomerCart({
                           ) : null}
                         </button>
 
-                        <div className="w-10 h-10 rounded-full bg-[#1b261e] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs">
-                          {store.storeAvatar && store.storeAvatar.length <= 2
-                            ? store.storeAvatar
-                            : getStoreInitials(store.storeName)}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c] whitespace-nowrap">
+                        {/* Store Avatar & Name (Clickable to Store Page) */}
+                        <div
+                          onClick={() => handleStoreClick(store.storeName)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleStoreClick(store.storeName);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Buka halaman toko ${store.storeName}`}
+                          title={`Lihat halaman toko ${store.storeName}`}
+                          className="flex items-center gap-3 min-w-0 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 rounded-xl p-0.5"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#1b261e] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs group-hover:scale-105 transition-transform">
+                            {store.storeAvatar && store.storeAvatar.length <= 2
+                              ? store.storeAvatar
+                              : getStoreInitials(store.storeName)}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c] whitespace-nowrap group-hover:text-emerald-800 group-hover:underline transition-colors">
                               {store.storeName}
                             </h2>
-                            <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0 whitespace-nowrap select-none">
-                              ✓ Terverifikasi
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 whitespace-nowrap">
-                            <span className="text-amber-500 font-bold">★ {store.rating.toFixed(1)}</span>
-                            <span className="text-gray-400">({store.reviewCount} ulasan)</span>
-                            <span className="text-gray-300">•</span>
-                            <span>{store.distanceText}</span>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 whitespace-nowrap">
+                              <span className="text-amber-500 font-bold">★ {store.rating.toFixed(1)}</span>
+                              <span className="text-gray-400">({store.reviewCount} ulasan)</span>
+                              <span className="text-gray-300">•</span>
+                              <span>{store.distanceText}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Right: Pickup Time Pill & Hapus Semua */}
                       <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-center">
-                        {/* Pickup Time Dropdown */}
-                        <div className="relative inline-flex items-center bg-[#f8f8f6] hover:bg-[#f0f0ee] border border-gray-200/90 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 transition-colors">
-                          <label htmlFor={`pickup-${store.storeId}`} className="sr-only">Waktu Pickup</label>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0 mr-1.5">
+                        {/* Waktu Pickup Tetap dari Toko */}
+                        <div className="inline-flex items-center bg-[#f8f8f6] border border-gray-200/90 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 select-none">
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-gray-500 shrink-0 mr-1.5"
+                            aria-hidden="true"
+                          >
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                           </svg>
                           <span className="text-gray-500 whitespace-nowrap mr-1 text-[11px] sm:text-xs">Waktu Pickup</span>
-                          <select
-                            id={`pickup-${store.storeId}`}
-                            value={store.pickupTime}
-                            onChange={(e) => handlePickupTimeChange(store.storeId, e.target.value)}
-                            className="bg-transparent border-none text-xs font-bold text-gray-900 focus:outline-none cursor-pointer pr-1 appearance-none"
-                          >
-                            {store.availablePickupTimes.map((time) => {
-                              const cleanTime = time.replace(/^Waktu Pickup\s*/i, '').replace(/\s*\([^)]*\)/, '').trim();
-                              return (
-                                <option key={time} value={time}>
-                                  {cleanTime}
-                                </option>
-                              );
-                            })}
-                          </select>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 pointer-events-none ml-0.5">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
+                          <span className="font-bold text-gray-900 whitespace-nowrap text-[11px] sm:text-xs">
+                            {formatStorePickupTime(store.pickupTime)}
+                          </span>
                         </div>
 
                         {/* Hapus Semua Button */}
@@ -451,17 +496,30 @@ export function CustomerCart({
                               )}
                             </button>
 
-                            {/* Product Thumbnail */}
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#24201c] shrink-0 border border-black/10 relative">
+                            {/* Product Thumbnail (Clickable to Detail) */}
+                            <div
+                              onClick={() => handleItemClick(store, item)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleItemClick(store, item);
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Lihat detail produk ${item.name}`}
+                              title={`Lihat detail produk ${item.name}`}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#24201c] shrink-0 border border-black/10 relative cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                            >
                               {item.imageSrc ? (
                                 <img
                                   src={item.imageSrc}
                                   alt={item.name}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   loading="lazy"
                                 />
                               ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-[#2a241e] to-[#1c1815] text-amber-200">
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-[#2a241e] to-[#1c1815] text-amber-200 group-hover:scale-105 transition-transform duration-300">
                                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                                   </svg>
@@ -471,28 +529,25 @@ export function CustomerCart({
 
                             {/* Details */}
                             <div className="flex flex-col min-w-0">
-                              <h3 className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
+                              <h3
+                                onClick={() => handleItemClick(store, item)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleItemClick(store, item);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Lihat detail produk ${item.name}`}
+                                title={`Lihat detail produk ${item.name}`}
+                                className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate cursor-pointer hover:text-emerald-800 hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-sm"
+                              >
                                 {item.name}
                               </h3>
 
-                              {/* Tags */}
-                              <div className="flex items-center gap-1.5 flex-wrap my-1.5">
-                                {item.categoryTags.map((tag, idx) => (
-                                  <span
-                                    key={`${tag}-${idx}`}
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                      tag.includes('Halal')
-                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
-                                        : 'bg-gray-100 text-gray-600'
-                                    }`}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-
                               {/* Prices */}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mt-1.5">
                                 <span className="font-black text-sm text-[#e11d48]">
                                   Rp {formatRupiah(item.rescuePrice)}
                                 </span>
@@ -563,7 +618,7 @@ export function CustomerCart({
               </div>
 
               {/* RIGHT COLUMN: Info Cards & Order Summary */}
-              <div className="lg:col-span-4 flex flex-col gap-6">
+              <div className="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-28 z-20 self-start">
                 {/* 1. Card: Penting untuk Diketahui */}
                 <article className="bg-white rounded-3xl p-6 border border-black/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center gap-2">
@@ -577,58 +632,35 @@ export function CustomerCart({
                     </h2>
                   </div>
 
-                  <div className="flex flex-col gap-4 mt-1">
+                  <div className="flex flex-col gap-3.5 mt-1">
                     {/* Item 1: Pesanan dikelompokkan per toko */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                          <polyline points="9 22 9 12 15 12 15 22" />
-                        </svg>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Pesanan dikelompokkan per toko
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Setiap toko memiliki lokasi dan waktu pickup yang berbeda.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Pesanan dikelompokkan per toko
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Setiap toko memiliki lokasi dan waktu pickup yang berbeda.
+                      </p>
                     </div>
 
                     {/* Item 2: Stok tidak dijamin */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                        </svg>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Stok tidak dijamin
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Stok akan divalidasi ulang saat checkout.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Stok tidak dijamin
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Stok akan divalidasi ulang saat checkout.
+                      </p>
                     </div>
 
                     {/* Item 3: Mystery Box */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="23 4 23 10 17 10" />
-                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                        </svg>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Mystery Box
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Isi menyesuaikan stok harian toko. Tidak dapat memilih menu tertentu.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Mystery Box
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Isi menyesuaikan stok harian toko. Tidak dapat memilih menu tertentu.
+                      </p>
                     </div>
                   </div>
                 </article>
@@ -669,13 +701,39 @@ export function CustomerCart({
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        Biaya Layanan
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
+                      <span className="flex items-center gap-1.5">
+                        <span>Biaya Layanan</span>
+                        <span className="relative group inline-flex items-center">
+                          <button
+                            type="button"
+                            className="text-gray-400 hover:text-gray-600 focus:text-gray-700 focus:outline-none transition-colors cursor-help p-0.5 rounded"
+                            aria-label="Informasi biaya layanan"
+                            title="Biaya layanan untuk pengembangan aplikasi"
+                          >
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="16" x2="12" y2="12" />
+                              <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                          </button>
+                          <span
+                            role="tooltip"
+                            className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#1b1c1c] text-white text-[11px] leading-relaxed rounded-xl shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-20 text-center"
+                          >
+                            Biaya layanan untuk pengembangan dan pemeliharaan aplikasi RescueBite.
+                            <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-[#1b1c1c]" aria-hidden="true" />
+                          </span>
+                        </span>
                       </span>
                       <span className="font-semibold text-gray-900">Rp {formatRupiah(serviceFee)}</span>
                     </div>
@@ -689,14 +747,10 @@ export function CustomerCart({
                   </div>
 
                   {/* Impact Note Banner */}
-                  <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#24521e]">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polyline points="23 4 23 10 17 10" />
-                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                    </svg>
-                    <span className="leading-relaxed">
+                  <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 text-xs text-[#24521e]">
+                    <p className="leading-relaxed">
                       Dengan berbelanja di RescueBite, kamu ikut membantu mengurangi food waste dan mendukung bisnis lokal.
-                    </span>
+                    </p>
                   </div>
 
                   {/* Checkout Button matching Image 3 */}

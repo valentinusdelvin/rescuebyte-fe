@@ -94,7 +94,20 @@ export function MysteryBoxCard({
       id={`box-card-${item.id}`}
     >
       {/* 1. Card Visual Header with Badges & Store Name Overlay */}
-      <div className="relative w-full h-52 sm:h-56 overflow-hidden bg-[#24201c]">
+      <div
+        onClick={() => onOrderClick(item)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOrderClick(item);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Lihat detail produk ${item.storeName}`}
+        title={`Lihat detail ${cleanProductName(item.categoryBadge || item.category)}`}
+        className="relative w-full h-52 sm:h-56 overflow-hidden bg-[#24201c] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2a24] focus-visible:ring-offset-2"
+      >
         <img
           src={item.imageSrc}
           alt={`Mystery Box ${item.storeName}`}

@@ -21,7 +21,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-bakery-box',
         name: 'Mystery Bakery Box',
-        categoryTags: ['Roti & Pastry', '✓ Halal', 'Tanpa Babi'],
+        categoryTags: ['Roti & Pastry', 'Halal', 'Tanpa Babi'],
         originalPrice: 40000,
         rescuePrice: 20000,
         discountPercent: 50,
@@ -31,7 +31,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-pastry-box',
         name: 'Mystery Pastry Box',
-        categoryTags: ['Pastry', 'Kue', '✓ Halal'],
+        categoryTags: ['Pastry', 'Kue', 'Halal'],
         originalPrice: 36000,
         rescuePrice: 18000,
         discountPercent: 50,
@@ -53,7 +53,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-meal-box',
         name: 'Mystery Meal Box',
-        categoryTags: ['Makanan Berat', 'Lauk', '✓ Halal'],
+        categoryTags: ['Makanan Berat', 'Lauk', 'Halal'],
         originalPrice: 50000,
         rescuePrice: 25000,
         discountPercent: 50,
@@ -75,7 +75,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-fresh-box',
         name: 'Mystery Fresh Box',
-        categoryTags: ['Sayur & Buah', 'Organik', '✓ Halal'],
+        categoryTags: ['Sayur & Buah', 'Organik', 'Halal'],
         originalPrice: 30000,
         rescuePrice: 15000,
         discountPercent: 50,
@@ -198,7 +198,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
           {
             id: box.id,
             name: `${box.category.replace(/^[^\w\s]+/, '').trim()} Reguler`,
-            categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['✓ Halal', 'Sisa Stok Harian'],
+            categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['Halal', 'Sisa Stok Harian'],
             originalPrice: box.originalPrice,
             rescuePrice: box.rescuePrice,
             discountPercent: box.discountPercent,
@@ -227,7 +227,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
         {
           id: box.id,
           name: `${box.category.replace(/^[^\w\s]+/, '').trim()} Reguler`,
-          categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['✓ Halal', 'Sisa Stok Harian'],
+          categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['Halal', 'Sisa Stok Harian'],
           originalPrice: box.originalPrice,
           rescuePrice: box.rescuePrice,
           discountPercent: box.discountPercent,
