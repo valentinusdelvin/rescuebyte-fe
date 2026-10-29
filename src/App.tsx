@@ -531,10 +531,6 @@ export function App() {
           onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateStore={handleNavigateStore}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateDetail={(item) => {
             const user = getCurrentUser();
@@ -561,10 +557,6 @@ export function App() {
           }}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateStore={handleNavigateStore}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-product-detail' ? (
@@ -573,10 +565,6 @@ export function App() {
           onNavigateBack={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateStore={handleNavigateStore}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateCheckout={(product, qty) => {
@@ -612,20 +600,12 @@ export function App() {
           }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-cart' ? (
         <CustomerCart
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateCheckout={(items) => {
             setCheckoutPayload({
@@ -641,10 +621,6 @@ export function App() {
           payload={checkoutPayload}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateDetail={() => handleNavigate('view-customer-product-detail', 'Detail Produk')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
@@ -663,20 +639,12 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateStore={handleNavigateStore}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
           onNavigateOrderDetail={(order) => {
             setPaymentOrderData(order);
             handleNavigate('view-customer-order-detail', 'Detail Pesanan');
           }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-order-detail' ? (
@@ -684,17 +652,9 @@ export function App() {
           orderData={paymentOrderData}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateStore={handleNavigateStore}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-store' ? (
@@ -716,10 +676,6 @@ export function App() {
           storeName={selectedStoreName}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
           onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onNavigateProductDetail={(item) => {
@@ -747,10 +703,6 @@ export function App() {
           }
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onSwitchRole={(nextRole) => {
@@ -774,10 +726,6 @@ export function App() {
           }
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onSwitchRole={(nextRole) => {
@@ -793,10 +741,6 @@ export function App() {
         <CustomerProfile
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={(name) => {
-            setSelectedStoreName(name);
-            handleNavigate('view-customer-store', 'Detail Toko');
-          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onShowToast={showToast}
