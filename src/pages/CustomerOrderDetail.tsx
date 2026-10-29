@@ -1,32 +1,35 @@
 import { useState, useMemo } from 'react';
 import {
   Check,
-  Copy,
-  Calendar,
+  CheckCircle2,
   Clock,
+  UserCheck,
   MapPin,
   ExternalLink,
-  FileText,
-  Building2,
-  Package,
-  CheckCircle2,
-  Leaf,
+  Star,
+  RefreshCw,
+  ArrowLeft,
+  Copy,
+  Sparkles,
   Info,
-  ArrowRight,
-  Store,
-  Home,
   ShieldCheck,
+  X,
+  MessageSquare,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { PaymentOrderData } from '../types';
-import mystBoxSvg from '../assets/myst-box.svg';
+
+import saladStopCard from '../assets/customer/card-saladstop.jpg';
+import breadCard from '../assets/customer/card-tous-les-jours.jpg';
+import bentoCard from '../assets/customer/card-dapur-solo.jpg';
 
 export interface CustomerOrderDetailProps {
   orderData?: PaymentOrderData | null;
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateOrders?: () => void;
+  onNavigateStore?: (storeName: string) => void;
   onNavigateSeller?: () => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
@@ -35,541 +38,692 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/**
- * CustomerOrderDetail Page Component
- * Renders the order confirmation and details page matching Image 2
- * ("Pesanan Berhasil Dibuat!") after payment completion.
- */
 export function CustomerOrderDetail({
   orderData,
   onNavigateHome,
   onNavigateMarketplace,
   onNavigateOrders,
+  onNavigateStore,
   onNavigateSeller,
   onShowToast,
 }: CustomerOrderDetailProps) {
   const [copiedOrderId, setCopiedOrderId] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<number>(5);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
 
-  // Fallback defaults matching design screenshot
-  const orderId = orderData?.orderId || 'RB251026-00123';
-  const primaryItem = orderData?.items?.[0] || {
-    id: 'item-bakery-box-reguler',
-    name: 'Mystery Bakery Box Reguler',
-    storeName: 'TerasRasa Bakery',
-    categoryTags: ['Roti & Pastry', '✓ Halal'],
-    originalPrice: 40000,
-    rescuePrice: 20000,
-    discountPercent: 50,
-    quantity: 1,
-    imageSrc: mystBoxSvg,
-    storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-  };
+  // Fallback defaults matching design specification
+  const orderId = orderData?.orderId || 'RB251023-00455';
+  const primaryItem = orderData?.items?.[0];
 
-  const storeName = orderData?.primaryStore?.storeName || primaryItem.storeName || 'TerasRasa Bakery';
+  const itemName = primaryItem?.name || 'Mystery Fresh Box';
+  const itemDescription =
+    'Koleksi sayuran hidroponik, buah potong premium, dan salad segar sortiran harian yang lolos uji mutu kesegaran.';
+  const storeName = orderData?.primaryStore?.storeName || primaryItem?.storeName || 'SayurKita Outlet Dharmawangsa';
   const storeAddress =
     orderData?.primaryStore?.storeAddress ||
-    primaryItem.storeAddress ||
-    'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur';
-  const storeRating = orderData?.primaryStore?.rating || 4.8;
-  const storeReviewCount = orderData?.primaryStore?.reviewCount || 320;
+    'Jl. Dharmawangsa Raya No. 42B, Kebayoran Baru, Jakarta Selatan, DKI Jakarta 12160';
+  const storeRating = orderData?.primaryStore?.rating || 4.6;
+  const storeReviewCount = orderData?.primaryStore?.reviewCount || 180;
+  const storeAvatar = orderData?.primaryStore?.storeAvatar || 'SK';
 
-  const pickupDate = orderData?.pickupDate || 'Sabtu, 26 Oktober 2025';
-  const pickupTimeSlot = orderData?.pickupTimeSlot || '16.00 - 17.00 WIB';
+  const recipientName = orderData?.customerInfo?.name || 'Reza Pratama';
+  const totalBoxes = orderData?.totalBoxes || primaryItem?.quantity || 1;
 
-  const totalBoxes = orderData?.totalBoxes || primaryItem.quantity || 1;
-  const itemUnitPrice = primaryItem.rescuePrice || 20000;
-  const subtotal = orderData?.subtotal || itemUnitPrice * totalBoxes;
-  const discountTotal =
-    orderData?.discountTotal ||
-    ((primaryItem.originalPrice || 40000) - itemUnitPrice) * totalBoxes;
+  const originalUnitPrice = primaryItem?.originalPrice || 30000;
+  const rescueUnitPrice = primaryItem?.rescuePrice || 15000;
+  const discountPercent = primaryItem?.discountPercent || 50;
+
+  const totalOriginalPrice = originalUnitPrice * totalBoxes;
+  const totalRescuePrice = rescueUnitPrice * totalBoxes;
+  const discountAmount = totalOriginalPrice - totalRescuePrice;
+
   const serviceFee = orderData?.serviceFee || 2000;
-  const grandTotal = orderData?.grandTotal || subtotal + serviceFee;
+  const packagingFee = 5000;
+  const grandTotal = totalRescuePrice + serviceFee + packagingFee;
 
-  // Formatted current date for order timestamp
-  const orderTimestamp = useMemo(() => {
-    return '26 Oktober 2025 14:23 WIB';
+  const completionTimestamp = useMemo(() => {
+    return '23 Okt 2026, 15:42 WIB';
   }, []);
 
-  const paymentVerifiedTimestamp = useMemo(() => {
-    return '26 Oktober 2025, 14:24 WIB';
+  const fullOrderDate = useMemo(() => {
+    return '23 Oktober 2026, 15:42 WIB';
   }, []);
 
-  // Copy order id handler
   const handleCopyOrderId = () => {
     try {
       navigator.clipboard.writeText(orderId);
       setCopiedOrderId(true);
-      if (onShowToast) {
-        onShowToast(`Nomor pesanan ${orderId} berhasil disalin!`, 'success');
-      }
+      onShowToast?.(`ID Pesanan #${orderId} berhasil disalin!`, 'success');
       setTimeout(() => setCopiedOrderId(false), 2000);
     } catch {
-      if (onShowToast) {
-        onShowToast(`Nomor pesanan ${orderId} disalin.`, 'info');
-      }
+      onShowToast?.('Gagal menyalin ID Pesanan.', 'error');
     }
   };
 
-  // Google Maps navigation handler
-  const handleOpenGoogleMaps = () => {
-    const mapsQuery = encodeURIComponent(`${storeName} ${storeAddress}`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`, '_blank', 'noopener,noreferrer');
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingReview(true);
+    setTimeout(() => {
+      setIsSubmittingReview(false);
+      setIsReviewModalOpen(false);
+      setIsReviewSubmitted(true);
+      onShowToast?.('Terima kasih! Ulasan kamu berhasil dikirim.', 'success');
+    }, 600);
   };
 
   return (
-    <div
-      className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between"
-      id="customer-order-detail-page-root"
-    >
+    <div className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between selection:bg-[#bbf381] selection:text-[#0e2000]">
       <div>
-        {/* Floating Header */}
         <CustomerHeader
           activeTab="marketplace"
-          onSelectTab={(tab) => {
-            if (tab === 'beranda' && onNavigateHome) onNavigateHome();
-            if (tab === 'marketplace' && onNavigateMarketplace) onNavigateMarketplace();
-          }}
+          onNavigateHome={onNavigateHome}
           onNavigateSeller={onNavigateSeller}
           onNavigateOrders={onNavigateOrders}
           onShowToast={onShowToast}
         />
 
-        {/* Main Container */}
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* LEFT COLUMN: Success Hero Card, Progress Tracker, & Pickup Information */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* CARD 1: Banner Pesanan Berhasil Dibuat! & Progress Stepper */}
-              <section
-                className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-xs space-y-6 sm:space-y-8"
-                aria-label="Status Pesanan Berhasil"
-              >
-                {/* Hero Header Row with Mystery Box Illustration & Badge */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6">
-                  {/* Mystery Box Container with Green Checkmark Badge */}
-                  <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-linear-to-br from-[#f8f6f0] to-[#f0ebde] p-3 flex items-center justify-center border border-amber-200/50 shadow-xs">
-                    {/* Soft background aura */}
-                    <div className="absolute inset-0 bg-emerald-500/10 rounded-2xl filter blur-sm pointer-events-none" />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+          {/* Breadcrumb Navigation */}
+          <nav aria-label="Breadcrumb" className="flex items-center flex-wrap gap-2 text-xs text-slate-500 mb-6">
+            <button
+              type="button"
+              onClick={onNavigateHome}
+              className="hover:text-[#1b1c1c] transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              Beranda
+            </button>
+            <span aria-hidden="true" className="text-slate-400">&gt;</span>
+            <button
+              type="button"
+              onClick={onNavigateOrders}
+              className="hover:text-[#1b1c1c] transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              Pesanan Saya
+            </button>
+            <span aria-hidden="true" className="text-slate-400">&gt;</span>
+            <span className="text-slate-800 font-medium">Detail Pesanan</span>
+            <span aria-hidden="true" className="text-slate-400">&gt;</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#dcfce7] text-[#15803d]">
+              Selesai
+            </span>
+          </nav>
 
-                    <img
-                      src={mystBoxSvg}
-                      alt="RescueBite Mystery Box"
-                      className="w-full h-full object-contain drop-shadow-sm relative z-0"
-                    />
-
-                    {/* Green checkmark circle overlay badge */}
-                    <div
-                      className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-md border-2 border-white z-10"
-                      title="Pesanan Berhasil"
-                    >
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-3" />
-                    </div>
-                  </div>
-
-                  {/* Heading Text */}
-                  <div className="space-y-1 sm:space-y-1.5 flex-1">
-                    <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#1b1c1c] tracking-tight">
-                      Pesanan Berhasil Dibuat!
-                    </h1>
-                    <p className="text-brand-green font-semibold text-xs sm:text-sm flex items-center gap-1.5">
-                      <span>Terima kasih sudah ikut menyelamatkan makanan</span>
-                      <span className="text-sm">🌿</span>
-                    </p>
-                    <p className="text-gray-500 text-xs sm:text-sm leading-relaxed pt-0.5">
-                      Pesanan kamu sudah berhasil dibuat dan akan segera diproses oleh pihak toko. Silakan
-                      cek detail pesanan dan ikuti informasi pengambilan di bawah ini.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Sub-Card: Nomor Pesanan & Tanggal Pesanan */}
-                <div className="bg-[#fbfaf8] border border-gray-100 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Nomor Pesanan */}
-                  <div className="space-y-1">
-                    <span className="text-[11px] sm:text-xs text-gray-500 font-medium block">
-                      Nomor Pesanan
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-sm sm:text-base text-gray-900 tracking-wide">
-                        {orderId}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleCopyOrderId}
-                        className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors cursor-pointer"
-                        title="Salin nomor pesanan"
-                        aria-label="Salin nomor pesanan"
-                      >
-                        {copiedOrderId ? (
-                          <Check className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="hidden sm:block w-px h-10 bg-gray-200" />
-
-                  {/* Tanggal Pesanan */}
-                  <div className="space-y-1 text-left sm:text-right">
-                    <span className="text-[11px] sm:text-xs text-gray-500 font-medium block">
-                      Tanggal Pesanan
-                    </span>
-                    <span className="font-medium text-xs sm:text-sm text-gray-900 block">
-                      {orderTimestamp}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4-Step Horizontal Progress Stepper Tracker */}
-                <div className="pt-2">
-                  <div className="relative flex items-start justify-between">
-                    {/* Step 1: Pesanan Dibuat (Completed) */}
-                    <div className="flex flex-col items-center text-center flex-1 z-10">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#eef8ee] border-2 border-[#16a34a] text-[#16a34a] flex items-center justify-center shadow-xs">
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <div className="mt-2.5">
-                        <span className="font-bold text-xs sm:text-sm text-gray-900 block">
-                          Pesanan Dibuat
-                        </span>
-                        <span className="text-[10px] sm:text-[11px] text-gray-400 block mt-0.5">
-                          26 Okt 2025, 14:23
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Step 2: Diproses Toko (Active / In Progress) */}
-                    <div className="flex flex-col items-center text-center flex-1 z-10">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#eef8ee] border-2 border-[#16a34a] text-[#16a34a] flex items-center justify-center shadow-xs">
-                        <Store className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <div className="mt-2.5">
-                        <span className="font-bold text-xs sm:text-sm text-gray-900 block">
-                          Diproses Toko
-                        </span>
-                        <span className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold block mt-0.5">
-                          Segera diproses
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Step 3: Siap diambil (Pending) */}
-                    <div className="flex flex-col items-center text-center flex-1 z-10">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-100 border-2 border-gray-200 text-gray-400 flex items-center justify-center">
-                        <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <div className="mt-2.5">
-                        <span className="font-semibold text-xs sm:text-sm text-gray-500 block">
-                          Siap diambil
-                        </span>
-                        <span className="text-[10px] sm:text-[11px] text-gray-400 block mt-0.5">
-                          Sesuai jadwal
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Step 4: Selesai (Pending) */}
-                    <div className="flex flex-col items-center text-center flex-1 z-10">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-100 border-2 border-gray-200 text-gray-400 flex items-center justify-center">
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <div className="mt-2.5">
-                        <span className="font-semibold text-xs sm:text-sm text-gray-500 block">
-                          Selesai
-                        </span>
-                        <span className="text-[10px] sm:text-[11px] text-gray-400 block mt-0.5">
-                          Setelah pickup
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar Track Lines behind Step Badges */}
-                    <div className="absolute top-4 sm:top-5 left-[12%] right-[12%] -translate-y-1/2 flex items-center z-0">
-                      {/* Segment 1: Completed (Green) */}
-                      <div className="h-0.5 flex-1 bg-[#16a34a]" />
-                      {/* Segment 2: Transition (Green to Gray) */}
-                      <div className="h-0.5 flex-1 bg-gray-200" />
-                      {/* Segment 3: Pending (Gray) */}
-                      <div className="h-0.5 flex-1 bg-gray-200" />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* CARD 2: Informasi Pengambilan Pesanan */}
-              <section
-                className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-xs space-y-6"
-                aria-label="Informasi Pengambilan Pesanan"
-              >
-                {/* Header */}
-                <div className="flex items-center gap-2.5 text-[#1b1c1c] pb-2">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <h2 className="font-display font-extrabold text-base sm:text-lg text-[#1b1c1c]">
-                    Informasi Pengambilan Pesanan
-                  </h2>
-                </div>
-
-                {/* Content Grid: Merchant Info vs Pickup Schedule */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-100">
-                  {/* Column A: Store Identity, Address & Maps Button */}
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      {/* Store Avatar Badge */}
-                      <div className="w-11 h-11 rounded-full bg-[#1b1c1c] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                        TR
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm sm:text-base text-gray-900">
-                            {storeName}
-                          </span>
-                          <span className="inline-flex items-center gap-1 bg-[#dcfce7] text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                            <Check className="w-3 h-3 stroke-3" /> Terverifikasi
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <span className="text-amber-500 font-bold">★ {storeRating}</span>
-                          <span>({storeReviewCount} ulasan)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Store Address */}
-                    <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
-                      <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-                      <span>{storeAddress}</span>
-                    </div>
-
-                    {/* Google Maps Button */}
-                    <div>
-                      <button
-                        type="button"
-                        onClick={handleOpenGoogleMaps}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Lihat di Google Maps</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Column B: Pickup Schedule & Notice */}
-                  <div className="space-y-3.5">
-                    {/* Tanggal Pickup */}
-                    <div className="flex items-center justify-between text-xs sm:text-sm py-1">
-                      <span className="text-gray-500 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span>Tanggal Pickup</span>
-                      </span>
-                      <span className="font-bold text-gray-900">{pickupDate}</span>
-                    </div>
-
-                    {/* Waktu Pickup */}
-                    <div className="flex items-center justify-between text-xs sm:text-sm py-1">
-                      <span className="text-gray-500 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span>Waktu Pickup</span>
-                      </span>
-                      <span className="font-bold text-gray-900">{pickupTimeSlot}</span>
-                    </div>
-
-                    {/* Green Advisory Banner */}
-                    <div className="bg-[#edf7e4] text-[#2c5000] p-3.5 rounded-2xl text-xs flex items-start gap-2.5 leading-relaxed mt-2 border border-[#d2eab5]/60">
-                      <div className="w-4 h-4 rounded-full bg-brand-green text-white flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
-                        i
-                      </div>
-                      <span>Pesanan harus diambil langsung di lokasi toko sesuai jadwal yang dipilih.</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Action Navigation Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onNavigateOrders) {
-                        onNavigateOrders();
-                      } else if (onNavigateMarketplace) {
-                        onNavigateMarketplace();
-                      }
-                    }}
-                    className="flex-1 py-3.5 px-6 rounded-xl bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Lihat Pesanan Saya</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onNavigateMarketplace) onNavigateMarketplace();
-                    }}
-                    className="flex-1 py-3.5 px-6 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <Home className="w-4 h-4 text-gray-500" />
-                    <span>Kembali ke Marketplace</span>
-                  </button>
-                </div>
-              </section>
+          {/* Page Heading & Transaction Meta */}
+          <section className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+              <p className="text-[11px] font-bold tracking-wider text-emerald-700 uppercase mb-1">
+                Konfirmasi Penyelesaian Transaksi
+              </p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1b1c1c] tracking-tight">
+                Detail Pesanan
+              </h1>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs sm:text-sm text-slate-500">
+                <button
+                  type="button"
+                  onClick={handleCopyOrderId}
+                  className="font-medium text-slate-700 hover:text-emerald-700 inline-flex items-center gap-1 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                  title="Klik untuk menyalin ID pesanan"
+                >
+                  <span>#{orderId}</span>
+                  {copiedOrderId ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                  )}
+                </button>
+                <span aria-hidden="true" className="text-slate-300">•</span>
+                <span>{fullOrderDate}</span>
+                <span aria-hidden="true" className="text-slate-300">•</span>
+                <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                  QRIS Verifikasi Otomatis
+                </span>
+              </div>
             </div>
 
-            {/* RIGHT COLUMN: Ringkasan Pesanan, Status Pembayaran, & Impact */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* CARD 1: Ringkasan Pesanan */}
-              <section
-                className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs space-y-4"
-                aria-label="Ringkasan Pesanan"
-              >
-                {/* Header */}
-                <div className="flex items-center gap-2 text-[#1b1c1c]">
-                  <FileText className="w-4 h-4 text-gray-500" />
-                  <h3 className="font-display font-bold text-sm sm:text-base text-gray-900">
-                    Ringkasan Pesanan
-                  </h3>
+            <div className="flex items-center self-start md:self-auto">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#bbf381] text-[#0e2000] border border-[#a0d668] shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-[#2c5000]" aria-hidden="true" />
+                Pesanan Selesai
+              </span>
+            </div>
+          </section>
+
+          {/* Celebration / Successful Pickup Banner */}
+          <section className="bg-gradient-to-r from-[#edf9ef] via-[#f2faf3] to-[#edf9ef] border border-emerald-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#22c55e] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Check className="w-6 h-6 stroke-[3]" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#86efac] text-[#14532d]">
+                      100% Berhasil Diselamatkan
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/90 border border-emerald-300 text-slate-700">
+                      Pengambilan Langsung
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#1b1c1c]">
+                    Pesanan Telah Berhasil Diambil!
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                    Terima kasih telah menyelamatkan {totalBoxes} porsi makanan surplus bermutu tinggi dari{' '}
+                    <strong className="text-slate-800 font-semibold">{storeName}</strong>. Kontribusimu langsung
+                    memutus rantai emisi gas rumah kaca di area Jakarta Selatan.
+                  </p>
+                </div>
+              </div>
+
+              {/* Verified Recipient & Timestamp Card */}
+              <div className="w-full lg:w-auto bg-white/90 border border-emerald-100 rounded-2xl p-4 shadow-xs shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[230px]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                    <UserCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-slate-500 font-medium">Penerima Resmi</p>
+                    <p className="text-sm font-bold text-[#1b1c1c]">{recipientName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-2 sm:pt-0 lg:pt-2 border-t sm:border-t-0 lg:border-t border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                    <Clock className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-slate-500 font-medium">Waktu Selesai</p>
+                    <p className="text-sm font-bold text-[#1b1c1c]">{completionTimestamp}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Order Tracking Timeline */}
+          <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-[#1b1c1c]">Jejak Status Pesanan</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Seluruh 5 tahap telah selesai dan diverifikasi oleh sistem loket {storeName}
+                </p>
+              </div>
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                  <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  Log Verifikasi Lengkap
+                </span>
+              </div>
+            </div>
+
+            {/* Step Progress Track */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 relative">
+              {/* Connector line for large screens */}
+              <div
+                aria-hidden="true"
+                className="hidden sm:block absolute top-4 left-[10%] right-[10%] h-1 bg-[#22c55e] z-0"
+              />
+
+              {/* Step 1 */}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </div>
+                <p className="text-xs font-bold text-[#1b1c1c]">1. Pesanan Dibuat</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">23 Okt • 14:10 WIB</p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </div>
+                <p className="text-xs font-bold text-[#1b1c1c]">2. Pembayaran</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Lunas QRIS • 14:12 WIB</p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </div>
+                <p className="text-xs font-bold text-[#1b1c1c]">3. Dikonfirmasi</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Diterima Toko • 14:15 WIB</p>
+              </div>
+
+              {/* Step 4 */}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </div>
+                <p className="text-xs font-bold text-[#1b1c1c]">4. Siap Diambil</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Di Rak Khusus • 15:00 WIB</p>
+              </div>
+
+              {/* Step 5 */}
+              <div className="relative z-10 flex flex-col items-center text-center col-span-2 sm:col-span-1">
+                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </div>
+                <p className="text-xs font-bold text-[#1b1c1c]">5. Selesai</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Diambil • 15:42 WIB</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Feedback & Review Prompt Card */}
+          <section className="bg-[#fffbf0] border border-[#fde68a] rounded-3xl p-5 sm:p-6 shadow-xs mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-[#fed7aa] text-[#c2410c] flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1b1c1c]">Bagaimana Pengalamanmu?</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-xl leading-relaxed">
+                    Bagikan ulasanmu saat menikmati Mystery Fresh Box dari {storeName}. Pendapatmu membantu
+                    pelanggan lain menemukan pangan surplus bermutu dan memberi apresiasi kepada mitra toko.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center flex-wrap gap-3 self-start md:self-auto shrink-0">
+                <div className="flex items-center gap-1" aria-label="Beri rating bintang">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRating(star);
+                        setIsReviewModalOpen(true);
+                      }}
+                      className="text-amber-400 hover:text-amber-500 transition p-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                      title={`Beri ${star} bintang`}
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
                 </div>
 
-                {/* Item Thumbnail & Info */}
-                <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-[#fbfaf8] border border-gray-100">
-                  <div className="w-14 h-14 rounded-xl bg-[#f8f6f0] border border-amber-200/50 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full inline-flex items-center gap-2 transition cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <span>{isReviewSubmitted ? 'Ubah Ulasan' : 'Beri Ulasan Sekarang'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Two-Column Grid: Saved Goods & Partner vs Payment & Recommendations */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column (Span 7) */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              {/* Card 1: Barang yang Diselamatkan */}
+              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <h3 className="text-base font-bold text-[#1b1c1c]">Barang yang Diselamatkan</h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                    {totalBoxes} Kotak Diclaim
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start gap-4">
+                  {/* Thumbnail with discount badge */}
+                  <div className="relative w-full sm:w-28 sm:h-28 aspect-video sm:aspect-square rounded-2xl overflow-hidden bg-slate-100 shrink-0">
                     <img
-                      src={primaryItem.imageSrc || mystBoxSvg}
-                      alt={primaryItem.name}
-                      className="w-full h-full object-contain"
+                      src={primaryItem?.imageSrc || saladStopCard}
+                      alt={itemName}
+                      className="w-full h-full object-cover"
                     />
+                    <div className="absolute top-2 left-2 bg-[#22c55e] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
+                      -{discountPercent}%
+                    </div>
                   </div>
 
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <h4 className="font-bold text-xs sm:text-sm text-gray-900 truncate">
-                      {primaryItem.name}
-                    </h4>
-                    <p className="text-[11px] text-gray-500 truncate">{storeName}</p>
-                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                      <span className="bg-gray-100 text-gray-700 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                        Roti & Pastry
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#ffedd5] text-[#c2410c]">
+                        <Sparkles className="w-3 h-3" aria-hidden="true" />
+                        Mystery Box
                       </span>
-                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                        <Check className="w-2.5 h-2.5" /> Halal
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-[#15803d]">
+                        Halal MUI
                       </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+                        Organik & Segar
+                      </span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-[#1b1c1c] truncate">{itemName}</h4>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      {itemDescription}
+                    </p>
+
+                    <div className="flex items-baseline justify-between gap-2 mt-3 pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-xs text-slate-400 line-through block">
+                          Rp {formatRupiah(totalOriginalPrice)}
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-black text-[#1b1c1c]">
+                            Rp {formatRupiah(rescueUnitPrice)}
+                          </span>
+                          <span className="text-xs text-slate-500">/ 1 Box</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg">
+                        Subtotal: Rp {formatRupiah(totalRescuePrice)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Card 2: Mitra F&B Penyedia */}
+              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="text-base font-bold text-[#1b1c1c]">Mitra F&B Penyedia</h3>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                    <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    Mitra Resmi
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-sm shrink-0">
+                    {storeAvatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <h4
+                        onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
+                        className="text-sm font-bold text-[#1b1c1c] hover:text-emerald-700 hover:underline cursor-pointer truncate"
+                      >
+                        {storeName}
+                      </h4>
+                      <span className="text-xs text-slate-500 font-medium">
+                        ★ {storeRating} ({storeReviewCount} ulasan)
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-1.5 mt-1 text-xs text-slate-500">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" aria-hidden="true" />
+                      <p className="line-clamp-2">{storeAddress}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Price Breakdown Lines */}
-                <div className="space-y-2.5 text-xs text-gray-600 pt-1">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Harga per box</span>
-                    <span className="font-medium text-gray-900">Rp {formatRupiah(itemUnitPrice)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Jumlah box</span>
-                    <span className="font-medium text-gray-900">{totalBoxes} box</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-medium text-gray-900">Rp {formatRupiah(subtotal)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-[#e11d48]">
-                    <span className="font-medium flex items-center gap-1">
-                      <span>Diskon</span>
-                      <span className="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.2 text-[10px] rounded">
-                        50%
-                      </span>
-                    </span>
-                    <span className="font-bold">- Rp {formatRupiah(discountTotal)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 flex items-center gap-1">
-                      <span>Biaya layanan</span>
-                      <Info className="w-3 h-3 text-gray-400" />
-                    </span>
-                    <span className="font-medium text-gray-900">Rp {formatRupiah(serviceFee)}</span>
-                  </div>
-                </div>
-
-                {/* Total Highlight Green Card */}
-                <div className="bg-[#edf7e4] rounded-2xl p-4 flex justify-between items-center border border-[#d2eab5]/70 mt-3">
-                  <span className="font-bold text-xs sm:text-sm text-gray-900">
-                    Total Pembayaran
+                <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-100">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
+                    Jadwal Ambil Reguler: 14:00 - 16:30 WIB
                   </span>
-                  <span className="font-black text-base sm:text-lg text-[#e11d48]">
-                    Rp {formatRupiah(grandTotal)}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#1b1c1c] hover:text-emerald-700 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <span>Kunjungi Halaman Toko</span>
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                  </button>
                 </div>
               </section>
 
-              {/* CARD 2: Status Pembayaran */}
-              <section
-                className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs space-y-3.5"
-                aria-label="Status Pembayaran"
-              >
-                {/* Header */}
-                <div className="flex items-center gap-2 text-[#1b1c1c]">
-                  <ShieldCheck className="w-4 h-4 text-gray-500" />
-                  <h3 className="font-display font-bold text-sm sm:text-base text-gray-900">
-                    Status Pembayaran
-                  </h3>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                <button
+                  type="button"
+                  onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
+                  className="bg-[#1b1c1c] hover:bg-black text-white text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 shadow-xs transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                  <span>Beli Lagi di SayurKita</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onNavigateOrders}
+                  className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                  <span>Kembali ke Pesanan Saya</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column (Span 5) */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              {/* Card 1: Rincian Pembayaran */}
+              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="text-base font-bold text-[#1b1c1c]">Rincian Pembayaran</h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                    <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
+                    Lunas
+                  </span>
                 </div>
 
-                {/* Status Verified Banner */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#16a34a] text-white flex items-center justify-center shrink-0">
-                    <Check className="w-3.5 h-3.5 stroke-3" />
+                <div className="flex flex-col gap-2.5 text-xs sm:text-sm">
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Harga Barang Asli</span>
+                    <span className="font-medium text-slate-800">Rp {formatRupiah(totalOriginalPrice)}</span>
                   </div>
-                  <div>
-                    <span className="font-bold text-xs sm:text-sm text-gray-900 block">
-                      Pembayaran Berhasil
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span className="inline-flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                      Diskon Penyelamatan ({discountPercent}%)
                     </span>
-                    <span className="text-[11px] text-gray-500 block">
-                      {paymentVerifiedTimestamp}
-                    </span>
+                    <span className="font-semibold text-emerald-600">-Rp {formatRupiah(discountAmount)}</span>
                   </div>
-                </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span className="inline-flex items-center gap-1">
+                      Biaya Layanan RescueBite
+                      <Info className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                    </span>
+                    <span className="font-medium text-slate-800">Rp {formatRupiah(serviceFee)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Biaya Pengemasan Ramah Lingkungan</span>
+                    <span className="font-medium text-slate-800">Rp {formatRupiah(packagingFee)}</span>
+                  </div>
 
-                {/* Verified Confirmation Sub-Box */}
-                <div className="bg-[#fbfaf8] border border-gray-100 rounded-xl p-3 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Pembayaran kamu sudah terverifikasi. Pesanan sedang diproses oleh pihak toko.
-                  </p>
+                  <div className="border-t border-slate-100 my-2 pt-3 flex items-baseline justify-between">
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium">Total Pembayaran Akhir</p>
+                      <p className="text-2xl font-black text-[#1b1c1c]">Rp {formatRupiah(grandTotal)}</p>
+                    </div>
+                  </div>
                 </div>
               </section>
 
-              {/* CARD 3: Green Eco Impact Card */}
-              <section
-                className="bg-[#edf7e4] border border-[#d2eab5] rounded-3xl p-4 sm:p-5 flex items-start gap-3.5"
-                aria-label="Dampak Lingkungan"
-              >
-                <div className="w-8 h-8 rounded-full bg-white text-brand-green flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                  <Leaf className="w-4 h-4" />
+              {/* Card 2: Rekomendasi Lainnya */}
+              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                  <h3 className="text-base font-bold text-[#1b1c1c]">Rekomendasi Lainnya</h3>
                 </div>
-                <p className="text-xs font-medium text-[#2c5000] leading-relaxed">
-                  Dengan berbelanja di RescueBite, kamu ikut membantu mengurangi food waste dan mendukung
-                  bisnis lokal.
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                  Mystery Box terdekat di area Dharmawangsa yang butuh diselamatkan sore ini:
                 </p>
+
+                <div className="flex flex-col gap-3">
+                  {/* Rec 1 */}
+                  <div
+                    onClick={() => (onNavigateStore ? onNavigateStore('Rotiku Dharmawangsa') : onNavigateMarketplace?.())}
+                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition cursor-pointer border border-transparent hover:border-slate-200"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (onNavigateStore) onNavigateStore('Rotiku Dharmawangsa');
+                        else onNavigateMarketplace?.();
+                      }
+                    }}
+                  >
+                    <img
+                      src={breadCard}
+                      alt="Artisan Bread & Pastry Box"
+                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c] truncate">
+                        Artisan Bread &amp; Pastry Box
+                      </p>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">Rotiku Dharmawangsa • 0.8 km</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">Rp 25.000</p>
+                      <p className="text-[11px] font-semibold text-emerald-600">Sisa 3 Box</p>
+                    </div>
+                  </div>
+
+                  {/* Rec 2 */}
+                  <div
+                    onClick={() => (onNavigateStore ? onNavigateStore('Dapoer Pandan Wangi') : onNavigateMarketplace?.())}
+                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition cursor-pointer border border-transparent hover:border-slate-200"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (onNavigateStore) onNavigateStore('Dapoer Pandan Wangi');
+                        else onNavigateMarketplace?.();
+                      }
+                    }}
+                  >
+                    <img
+                      src={bentoCard}
+                      alt="Nusantara Surplus Bento"
+                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c] truncate">
+                        Nusantara Surplus Bento
+                      </p>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">Dapoer Pandan Wangi • 1.4 km</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">Rp 18.000</p>
+                      <p className="text-[11px] font-semibold text-emerald-600">Sisa 2 Box</p>
+                    </div>
+                  </div>
+                </div>
               </section>
             </div>
           </div>
         </main>
       </div>
 
+      {/* Review Modal Dialog */}
+      {isReviewModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setIsReviewModalOpen(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-xl border border-slate-100 relative">
+            <button
+              type="button"
+              onClick={() => setIsReviewModalOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2"
+              aria-label="Tutup modal"
+            >
+              <X className="w-5 h-5" aria-hidden="true" />
+            </button>
+
+            <h3 id="review-modal-title" className="text-xl font-bold text-[#1b1c1c] mb-1">
+              Beri Ulasan untuk {storeName}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed">
+              Bagaimana kualitas makanan surplus yang kamu dapatkan? Ulasanmu sangat berarti untuk menjaga mutu
+              penyelamatan makanan.
+            </p>
+
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                  Tingkat Kepuasan
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setSelectedRating(star)}
+                      className="text-amber-400 hover:scale-110 transition p-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <Star
+                        className={`w-7 h-7 ${
+                          star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
+                  <span className="text-xs font-semibold text-slate-600 ml-2">
+                    {selectedRating === 5 && 'Sangat Puas!'}
+                    {selectedRating === 4 && 'Puas'}
+                    {selectedRating === 3 && 'Cukup'}
+                    {selectedRating === 2 && 'Kurang'}
+                    {selectedRating === 1 && 'Kecewa'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="review-comment"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2"
+                >
+                  Catatan Pengalaman (Opsional)
+                </label>
+                <textarea
+                  id="review-comment"
+                  rows={3}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Contoh: Sayurannya masih sangat segar dan porsinya melimpah!"
+                  className="w-full text-xs sm:text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition disabled:opacity-50"
+                >
+                  {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Customer Footer */}
-      <CustomerFooter
-        onNavigateSeller={onNavigateSeller}
-        onContactSupport={() => {
-          if (onShowToast) onShowToast('Hubungi tim bantuan kami via WhatsApp: 0812-3456-7890', 'info');
-        }}
-      />
+      <CustomerFooter onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }

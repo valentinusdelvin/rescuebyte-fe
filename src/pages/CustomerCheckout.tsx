@@ -24,6 +24,7 @@ export interface CustomerCheckoutProps {
   onNavigateDetail?: () => void;
   onNavigateSeller?: () => void;
   onNavigatePayment?: (orderData: PaymentOrderData) => void;
+  onNavigateOrderDetail?: (orderData: PaymentOrderData) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -39,6 +40,7 @@ export function CustomerCheckout({
   onNavigateDetail,
   onNavigateSeller,
   onNavigatePayment,
+  onNavigateOrderDetail,
   onShowToast,
 }: CustomerCheckoutProps) {
   // Customer Info State
@@ -200,7 +202,9 @@ export function CustomerCheckout({
 
     setTimeout(() => {
       setIsSubmitting(false);
-      if (onNavigatePayment) {
+      if (onNavigateOrderDetail) {
+        onNavigateOrderDetail(orderData);
+      } else if (onNavigatePayment) {
         onNavigatePayment(orderData);
       }
     }, 300);

@@ -40,7 +40,9 @@ export type ActiveViewId =
   | 'view-customer-product-detail'
   | 'view-customer-cart'
   | 'view-customer-checkout'
-  | 'view-customer-payment'
+
+  | 'view-customer-store'
+  | 'view-customer-orders'
   | 'view-customer-order-detail'
   | 'view-customer-profile'
   | 'view-auth-role-selection'

@@ -4,8 +4,9 @@ import { CustomerMarketplace } from './pages/CustomerMarketplace';
 import { CustomerProductDetail } from './pages/CustomerProductDetail';
 import { CustomerCart } from './pages/CustomerCart';
 import { CustomerCheckout } from './pages/CustomerCheckout';
-import { CustomerPayment } from './pages/CustomerPayment';
 import { CustomerOrderDetail } from './pages/CustomerOrderDetail';
+import { CustomerOrderHistory } from './pages/CustomerOrderHistory';
+import { CustomerStoreDetail } from './pages/CustomerStoreDetail';
 import { AuthRoleSelection } from './pages/AuthRoleSelection';
 import { CustomerAuth } from './pages/CustomerAuth';
 import { CustomerProfile } from './pages/CustomerProfile';
@@ -53,13 +54,30 @@ export function App() {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-cart';
     }
-    if (hash.startsWith('#pembayaran') || hash.startsWith('#payment')) {
-      if (!getCurrentUser()) return 'view-auth-role-selection';
-      return 'view-customer-payment';
-    }
-    if (hash.startsWith('#detail-pesanan') || hash.startsWith('#order-detail')) {
+    if (
+      hash.startsWith('#pembayaran') ||
+      hash.startsWith('#payment') ||
+      hash.startsWith('#detail-pesanan') ||
+      hash.startsWith('#order-detail')
+    ) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-order-detail';
+    }
+    if (
+      hash.startsWith('#pesanan-saya') ||
+      hash.startsWith('#pesanan') ||
+      hash.startsWith('#riwayat-pesanan') ||
+      hash.startsWith('#customer-orders')
+    ) {
+      if (!getCurrentUser()) return 'view-auth-role-selection';
+      return 'view-customer-orders';
+    }
+    if (
+      hash.startsWith('#toko') ||
+      hash.startsWith('#store') ||
+      hash.startsWith('#detail-toko')
+    ) {
+      return 'view-customer-store';
     }
     if (hash.startsWith('#checkout')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
@@ -91,6 +109,7 @@ export function App() {
   const [selectedProduct, setSelectedProduct] = useState<CustomerMysteryBox | null>(null);
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [paymentOrderData, setPaymentOrderData] = useState<PaymentOrderData | null>(null);
+  const [selectedStoreName, setSelectedStoreName] = useState<string>('TerasRasa Bakery');
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
     const hash = window.location.hash.toLowerCase();
@@ -118,13 +137,29 @@ export function App() {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Keranjang Saya';
     }
-    if (hash.startsWith('#pembayaran') || hash.startsWith('#payment')) {
-      if (!getCurrentUser()) return 'Pilih Peran Akun';
-      return 'Pembayaran';
-    }
-    if (hash.startsWith('#detail-pesanan') || hash.startsWith('#order-detail')) {
+    if (
+      hash.startsWith('#pembayaran') ||
+      hash.startsWith('#payment') ||
+      hash.startsWith('#detail-pesanan') ||
+      hash.startsWith('#order-detail')
+    ) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Detail Pesanan';
+    }
+    if (
+      hash.startsWith('#pesanan-saya') ||
+      hash.startsWith('#pesanan') ||
+      hash.startsWith('#riwayat-pesanan')
+    ) {
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
+      return 'Pesanan Saya';
+    }
+    if (
+      hash.startsWith('#toko') ||
+      hash.startsWith('#store') ||
+      hash.startsWith('#detail-toko')
+    ) {
+      return 'Detail Toko';
     }
     if (hash.startsWith('#checkout')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
@@ -234,13 +269,13 @@ export function App() {
   // Sync hash on navigation
   const handleNavigate = useCallback(
     (viewId: string, label: string = '', tab?: OrderStatusTab) => {
-      // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, or payment
+      // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, orders, or order detail
       if (
         viewId === 'view-customer-marketplace' ||
         viewId === 'view-customer-product-detail' ||
         viewId === 'view-customer-cart' ||
         viewId === 'view-customer-checkout' ||
-        viewId === 'view-customer-payment' ||
+        viewId === 'view-customer-orders' ||
         viewId === 'view-customer-order-detail'
       ) {
         const user = getCurrentUser();
@@ -273,10 +308,12 @@ export function App() {
         window.history.replaceState(null, '', '#keranjang');
       } else if (viewId === 'view-customer-checkout') {
         window.history.replaceState(null, '', '#checkout');
-      } else if (viewId === 'view-customer-payment') {
-        window.history.replaceState(null, '', '#pembayaran');
+      } else if (viewId === 'view-customer-orders') {
+        window.history.replaceState(null, '', '#pesanan-saya');
       } else if (viewId === 'view-customer-order-detail') {
         window.history.replaceState(null, '', '#detail-pesanan');
+      } else if (viewId === 'view-customer-store') {
+        window.history.replaceState(null, '', '#toko');
       } else if (viewId === 'view-customer-profile') {
         window.history.replaceState(null, '', '#akun');
       } else if (viewId === 'view-auth-role-selection') {
@@ -358,18 +395,27 @@ export function App() {
         }
         setActiveView('view-customer-checkout');
         setActiveLabel('Checkout');
-      } else if (hash.startsWith('#pembayaran') || hash.startsWith('#payment')) {
+      } else if (
+        hash.startsWith('#pesanan-saya') ||
+        hash.startsWith('#pesanan') ||
+        hash.startsWith('#riwayat-pesanan')
+      ) {
         const user = getCurrentUser();
         if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses pembayaran.', 'warning');
+          showToast('Silakan masuk terlebih dahulu untuk mengakses pesanan Anda.', 'warning');
           setActiveView('view-auth-role-selection');
           setActiveLabel('Pilih Peran Akun');
           window.history.replaceState(null, '', '#auth');
           return;
         }
-        setActiveView('view-customer-payment');
-        setActiveLabel('Pembayaran');
-      } else if (hash.startsWith('#detail-pesanan') || hash.startsWith('#order-detail')) {
+        setActiveView('view-customer-orders');
+        setActiveLabel('Pesanan Saya');
+      } else if (
+        hash.startsWith('#pembayaran') ||
+        hash.startsWith('#payment') ||
+        hash.startsWith('#detail-pesanan') ||
+        hash.startsWith('#order-detail')
+      ) {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
@@ -380,6 +426,13 @@ export function App() {
         }
         setActiveView('view-customer-order-detail');
         setActiveLabel('Detail Pesanan');
+      } else if (
+        hash.startsWith('#toko') ||
+        hash.startsWith('#store') ||
+        hash.startsWith('#detail-toko')
+      ) {
+        setActiveView('view-customer-store');
+        setActiveLabel('Detail Toko');
       } else if (hash.startsWith('#marketplace')) {
         const user = getCurrentUser();
         if (!user) {
@@ -435,6 +488,9 @@ export function App() {
           hash.startsWith('#keranjang') ||
           hash.startsWith('#cart') ||
           hash.startsWith('#checkout') ||
+          hash.startsWith('#pesanan-saya') ||
+          hash.startsWith('#pesanan') ||
+          hash.startsWith('#riwayat-pesanan') ||
           hash.startsWith('#pembayaran') ||
           hash.startsWith('#payment') ||
           hash.startsWith('#detail-pesanan') ||
@@ -454,6 +510,16 @@ export function App() {
     return unsubscribe;
   }, [handleNavigate]);
 
+  const handleNavigateStore = useCallback(
+    (targetStoreName?: string) => {
+      if (targetStoreName) {
+        setSelectedStoreName(targetStoreName);
+      }
+      handleNavigate('view-customer-store', 'Detail Toko');
+    },
+    [handleNavigate]
+  );
+
   return (
     <>
       {/* 1. Customer Views */}
@@ -461,8 +527,13 @@ export function App() {
         <CustomerHome
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateDetail={(item) => {
             const user = getCurrentUser();
@@ -482,11 +553,17 @@ export function App() {
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onNavigateDetail={(item) => {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
           }}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-product-detail' ? (
@@ -494,6 +571,11 @@ export function App() {
           product={selectedProduct}
           onNavigateBack={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateCheckout={(product, qty) => {
@@ -529,12 +611,20 @@ export function App() {
           }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-cart' ? (
         <CustomerCart
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateCheckout={(items) => {
             setCheckoutPayload({
@@ -550,26 +640,41 @@ export function App() {
           payload={checkoutPayload}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
           onNavigateDetail={() => handleNavigate('view-customer-product-detail', 'Detail Produk')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateOrderDetail={(orderData) => {
+            setPaymentOrderData(orderData);
+            handleNavigate('view-customer-order-detail', 'Detail Pesanan');
+          }}
           onNavigatePayment={(orderData) => {
             setPaymentOrderData(orderData);
-            handleNavigate('view-customer-payment', 'Pembayaran');
+            handleNavigate('view-customer-order-detail', 'Detail Pesanan');
           }}
           onShowToast={showToast}
         />
-      ) : activeView === 'view-customer-payment' ? (
-        <CustomerPayment
-          orderData={paymentOrderData}
-          onNavigateBack={() => handleNavigate('view-customer-checkout', 'Checkout')}
+      ) : activeView === 'view-customer-orders' ? (
+        <CustomerOrderHistory
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
+          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
           onNavigateOrderDetail={(order) => {
             setPaymentOrderData(order);
             handleNavigate('view-customer-order-detail', 'Detail Pesanan');
+          }}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
           }}
           onShowToast={showToast}
         />
@@ -578,7 +683,48 @@ export function App() {
           orderData={paymentOrderData}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-store' ? (
+        <CustomerStoreDetail
+          storeName={selectedStoreName}
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateProductDetail={(item) => {
+            setSelectedProduct(item);
+            handleNavigate('view-customer-product-detail', 'Detail Produk');
+          }}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-store' ? (
+        <CustomerStoreDetail
+          storeName={selectedStoreName}
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
+          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateProductDetail={(item) => {
+            setSelectedProduct(item);
+            handleNavigate('view-customer-product-detail', 'Detail Produk');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />
@@ -600,6 +746,10 @@ export function App() {
           }
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onSwitchRole={(nextRole) => {
@@ -623,6 +773,10 @@ export function App() {
           }
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onSwitchRole={(nextRole) => {
@@ -638,8 +792,12 @@ export function App() {
         <CustomerProfile
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateStore={(name) => {
+            setSelectedStoreName(name);
+            handleNavigate('view-customer-store', 'Detail Toko');
+          }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
           onShowToast={showToast}
         />
       ) : (
