@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
-import { DatePicker } from '../../common/DatePicker';
+import { DatePicker } from '../common/DatePicker';
 
 export interface CustomerProfileFormProps {
   name: string;

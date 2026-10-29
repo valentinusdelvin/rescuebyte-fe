@@ -1,12 +1,16 @@
 import rescueBiteLogo from '../../assets/logo.svg';
 import centerpieceLogin from '../../assets/Login & Register/Centerpiece_ Realistic Mystery Box & Fresh Harvest Artwork.svg';
 import centerpieceRegister from '../../assets/Login & Register/Centerpiece Illustration.svg';
+import merchantIllustration from '../../assets/Login & Register/Illustration Area_margin (1).svg';
 
 interface CustomerAuthArtworkProps {
   mode: 'login' | 'register';
+  roleType?: 'customer' | 'seller';
 }
 
-export function CustomerAuthArtwork({ mode }: CustomerAuthArtworkProps) {
+export function CustomerAuthArtwork({ mode, roleType = 'customer' }: CustomerAuthArtworkProps) {
+  const isSeller = roleType === 'seller';
+
   return (
     <section
       className="lg:col-span-6 p-6 sm:p-9 lg:p-12 relative flex flex-col justify-between z-10"
@@ -23,15 +27,27 @@ export function CustomerAuthArtwork({ mode }: CustomerAuthArtworkProps) {
               className="w-6 h-6 sm:w-7 sm:h-7 object-contain brightness-0 invert select-none"
             />
           </div>
-          <span className="text-xl sm:text-2xl font-extrabold tracking-tight select-none">
-            <span className="text-[#191c1d]">Rescue</span>
-            <span className="text-[#237126]">Bite</span>
-          </span>
+          <div className="flex flex-col">
+            <span className="text-xl sm:text-2xl font-extrabold tracking-tight select-none leading-none">
+              <span className="text-[#191c1d]">Rescue</span>
+              <span className="text-[#237126]">Bite</span>
+            </span>
+            {isSeller && (
+              <span className="text-[10px] font-bold text-[#237126] uppercase tracking-wider mt-0.5">
+                Portal Mitra Toko
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Slogan */}
         <div className="text-right select-none">
-          {mode === 'login' ? (
+          {isSeller ? (
+            <p className="font-['Caveat',cursive] text-sm sm:text-base font-bold text-[#2D3748] leading-[1.3]">
+              Kurangi Food Waste, <br />
+              Maksimalkan Profit.
+            </p>
+          ) : mode === 'login' ? (
             <>
               <p className="font-['Caveat',cursive] text-sm sm:text-base font-bold text-[#2D3748] leading-tight">
                 Lebih Baik <br />
@@ -54,14 +70,29 @@ export function CustomerAuthArtwork({ mode }: CustomerAuthArtworkProps) {
 
       {/* 2. Value Proposition Headline */}
       <div className="my-6 lg:my-auto py-2">
-        <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-[1.18] text-[#191c1d]">
-          Selamatkan Makanan, <br />
-          <span className="text-[#237126]">Nikmati Harga Lebih</span> <br />
-          <span className="text-[#237126]">Hemat!</span>
-        </h1>
-        <p className="text-xs sm:text-sm lg:text-[15px] text-[#525D50] leading-relaxed max-w-md mt-3.5">
-          Temukan Mystery Box dari toko favoritmu, nikmati makanan berkualitas dengan harga spesial, dan bantu kurangi food waste.
-        </p>
+        {isSeller ? (
+          <>
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-[1.18] text-[#191c1d]">
+              Jual Surplus Makanan, <br />
+              <span className="text-[#237126]">Maksimalkan Profit</span> <br />
+              <span className="text-[#237126]">Toko Anda!</span>
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-[15px] text-[#525D50] leading-relaxed max-w-md mt-3.5">
+              Ubah makanan layak konsumsi yang belum terjual menjadi pemasukan baru. Jangkau ribuan pelanggan lokal dan kurangi kerugian stok toko.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-[1.18] text-[#191c1d]">
+              Selamatkan Makanan, <br />
+              <span className="text-[#237126]">Nikmati Harga Lebih</span> <br />
+              <span className="text-[#237126]">Hemat!</span>
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-[15px] text-[#525D50] leading-relaxed max-w-md mt-3.5">
+              Temukan Mystery Box dari toko favoritmu, nikmati makanan berkualitas dengan harga spesial, dan bantu kurangi food waste.
+            </p>
+          </>
+        )}
       </div>
 
       {/* 3. Centerpiece Illustration */}
@@ -69,12 +100,21 @@ export function CustomerAuthArtwork({ mode }: CustomerAuthArtworkProps) {
         {mode === 'register' && (
           <div className="mb-2 self-center sm:self-end mr-0 sm:mr-8 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#263238] font-['Caveat',cursive] select-none">
             <span className="text-[#237126] font-bold text-base">↗</span>
-            <span>Makanan Enak, Masa Depan Lebih Baik.</span>
+            <span>
+              {isSeller ? 'Bisnis Berdaya, Makanan Terjaga.' : 'Makanan Enak, Masa Depan Lebih Baik.'}
+            </span>
           </div>
         )}
 
         <div className="w-full max-w-[440px] flex items-center justify-center">
-          {mode === 'login' ? (
+          {isSeller ? (
+            <img
+              src={merchantIllustration}
+              alt="Ilustrasi Kemitraan Toko RescueBite"
+              className="w-full h-auto object-contain select-none drop-shadow-xs transition-opacity duration-300"
+              draggable={false}
+            />
+          ) : mode === 'login' ? (
             <img
               src={centerpieceLogin}
               alt="RescueBite Mystery Box & Hasil Panen Segar"
@@ -93,4 +133,4 @@ export function CustomerAuthArtwork({ mode }: CustomerAuthArtworkProps) {
       </div>
     </section>
   );
-};
+}

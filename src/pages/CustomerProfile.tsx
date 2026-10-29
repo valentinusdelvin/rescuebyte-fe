@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerProfileSidebar } from '../components/customer/CustomerProfileSidebar';
-import { ProfileAvatar } from '../components/customer/profile/ProfileAvatar';
-import { AccountInfoCard } from '../components/customer/profile/AccountInfoCard';
-import { CustomerProfileForm } from '../components/customer/profile/CustomerProfileForm';
-import { getCurrentUser, clearAuth } from '../services/authService';
+import { ProfileAvatar } from '../components/common/ProfileAvatar';
+import { AccountInfoCard } from '../components/customer/AccountInfoCard';
+import { CustomerProfileForm } from '../components/customer/CustomerProfileForm';
+import { getCurrentUser, clearAuth, logoutUser } from '../services/authService';
 import { getUserProfile, updateUserProfile } from '../services/userService';
 import { getTodayFormatted, parseIsoToIndonesianDate, parseIndonesianDateToIso } from '../utils/date';
 import { UserPayload } from '../types';
@@ -50,6 +50,7 @@ export function CustomerProfile({
   const [location, setLocation] = useState('Jl. Veteran No. 10, Merjosari');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     getUserProfile()
@@ -70,6 +71,29 @@ export function CustomerProfile({
       })
       .catch(() => {});
   }, []);
+
+  const handleAvatarChange = async (newUrl: string) => {
+    setAvatarUrl(newUrl);
+    try {
+      const genderCode = gender === 'Perempuan' ? 2 : 1;
+      const isoBirthDate = parseIndonesianDateToIso(birthDate);
+
+      const updated = await updateUserProfile({
+        name: name.trim() || user.name || 'Pengguna',
+        avatar_url: newUrl,
+        phone_number: phone.trim() || user.phone_number,
+        date_of_birth: isoBirthDate || user.date_of_birth,
+        gender: genderCode,
+      });
+      setUser(updated);
+      onShowToast?.('Foto profil berhasil diperbarui.', 'success');
+    } catch (err) {
+      setAvatarUrl(user.avatar_url || '');
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan foto profil.';
+      onShowToast?.(msg, 'error');
+      throw err;
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,17 +134,27 @@ export function CustomerProfile({
     onShowToast?.('Perubahan dibatalkan.', 'info');
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    onShowToast?.('Berhasil keluar dari akun.', 'success');
-    if (onNavigateHome) onNavigateHome();
-    else window.location.hash = '#beranda-customer';
+  const handleLogout = async () => {
+    if (onNavigateHome) {
+      onNavigateHome();
+    } else {
+      window.location.hash = '#beranda-customer';
+    }
+    try {
+      await logoutUser();
+      onShowToast?.('Berhasil keluar dari akun.', 'success');
+    } catch {
+      clearAuth();
+      onShowToast?.('Berhasil keluar.', 'success');
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-[#3c6a00]/20 selection:text-[#0b1510]">
       <CustomerHeader
         activeTab="profile"
+        currentUser={user}
+        onNavigateHome={onNavigateHome}
         onSelectTab={(tab) => {
           if (tab === 'beranda' && onNavigateHome) onNavigateHome();
           else if (tab === 'marketplace' && onNavigateMarketplace) onNavigateMarketplace();
@@ -156,7 +190,8 @@ export function CustomerProfile({
                 <ProfileAvatar
                   name={name}
                   avatarUrl={avatarUrl}
-                  onAvatarChange={setAvatarUrl}
+                  onAvatarChange={handleAvatarChange}
+                  onUploadingChange={setIsUploadingAvatar}
                   onShowToast={onShowToast}
                 />
 
@@ -178,7 +213,7 @@ export function CustomerProfile({
                 setGender={setGender}
                 phone={phone}
                 setPhone={setPhone}
-                isSaving={isSaving}
+                isSaving={isSaving || isUploadingAvatar}
                 onSave={handleSave}
                 onCancel={handleCancel}
               />

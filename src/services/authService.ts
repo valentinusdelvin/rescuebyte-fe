@@ -5,6 +5,65 @@ import { api } from './api';
 const AUTH_STORAGE_KEY = 'rescuebyte_auth';
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const ROLES_BY_EMAIL_KEY = 'rescuebyte_roles_by_email';
+
+/**
+ * Retrieve registered role associated with a specific email
+ */
+export function getRoleForEmail(email: string): 'seller' | 'customer' | null {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const raw = localStorage.getItem(ROLES_BY_EMAIL_KEY);
+    const map: Record<string, 'seller' | 'customer'> = raw ? JSON.parse(raw) : {};
+    if (map[cleanEmail]) {
+      return map[cleanEmail];
+    }
+  } catch {
+    // ignore parse error
+  }
+
+  // Fallback heuristic based on store email keywords
+  const storeKeywords = [
+    'toko',
+    'seller',
+    'mitra',
+    'resto',
+    'restaurant',
+    'restoran',
+    'warung',
+    'kedai',
+    'merchant',
+    'store',
+    'cafe',
+    'kafe',
+    'dapur',
+    'bakery',
+    'outlet',
+    'kuliner',
+  ];
+  if (storeKeywords.some((k) => cleanEmail.includes(k)) || cleanEmail === 'tokoreza@gmail.com') {
+    return 'seller';
+  }
+
+  return null;
+}
+
+/**
+ * Register or update the role associated with an email
+ */
+export function setRoleForEmail(email: string, role: 'seller' | 'customer'): void {
+  if (!email) return;
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const raw = localStorage.getItem(ROLES_BY_EMAIL_KEY);
+    const map: Record<string, 'seller' | 'customer'> = raw ? JSON.parse(raw) : {};
+    map[cleanEmail] = role;
+    localStorage.setItem(ROLES_BY_EMAIL_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
 
 type AuthListener = (user: UserPayload | null) => void;
 const authListeners: Set<AuthListener> = new Set();
@@ -126,6 +185,7 @@ export function clearAuth(): void {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem('rescuebyte_user_role');
     notifyAuthListeners(null);
   } catch (err) {
     console.error('Failed to clear auth from localStorage:', err);
@@ -139,13 +199,19 @@ export async function registerUser(data: {
   name: string;
   email: string;
   password?: string;
+  role_id?: number;
 }): Promise<AuthPayload> {
   try {
-    const response = await api.post('/api/v1/auth/register', {
+    const requestBody: Record<string, unknown> = {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       password: data.password,
-    });
+    };
+    if (typeof data.role_id === 'number') {
+      requestBody.role_id = data.role_id;
+    }
+
+    const response = await api.post('/api/v1/auth/register', requestBody);
 
     if (response.data?.payload) {
       saveAuth(response.data.payload);

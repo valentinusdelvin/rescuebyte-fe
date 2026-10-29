@@ -1,28 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { loginUser, registerUser, getGoogleAuthUrl } from '../services/authService';
+import {
+  loginUser,
+  registerUser,
+  getGoogleAuthUrl,
+  getAuth,
+  saveAuth,
+  clearAuth,
+  getRoleForEmail,
+  setRoleForEmail,
+} from '../services/authService';
 import { CustomerAuthArtwork } from '../components/auth/CustomerAuthArtwork';
 import { CustomerLoginForm } from '../components/auth/CustomerLoginForm';
 import { CustomerRegisterForm } from '../components/auth/CustomerRegisterForm';
 
 export interface CustomerAuthProps {
   initialMode?: 'login' | 'register';
+  roleType?: 'customer' | 'seller';
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
+  onNavigateSeller?: () => void;
+  onNavigateRoleSelection?: () => void;
+  onSwitchRole?: (role: 'customer' | 'seller') => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 /**
  * CustomerAuth Page (Login & Register Views)
- * Modular orchestrator delegating UI subtrees to CustomerAuthArtwork, CustomerLoginForm, and CustomerRegisterForm.
+ * Supports Customer (role_id: 1) and Mitra Toko (role_id: 3) authentication.
  * Complies with AGENTS.md, .agents/docs/architecture.md, and antislop guidelines.
  */
 export function CustomerAuth({
   initialMode = 'login',
+  roleType = 'customer',
   onNavigateHome,
   onNavigateMarketplace,
+  onNavigateRoleSelection,
+  onSwitchRole,
   onShowToast,
 }: CustomerAuthProps) {
+  const [currentRole, setCurrentRole] = useState<'customer' | 'seller'>(roleType);
+
+  // Sync role when prop changes
+  const [prevRoleType, setPrevRoleType] = useState(roleType);
+  if (roleType !== prevRoleType) {
+    setPrevRoleType(roleType);
+    setCurrentRole(roleType);
+  }
+
   const [mode, setMode] = useState<'login' | 'register'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
@@ -76,6 +101,31 @@ export function CustomerAuth({
       return;
     }
 
+    const cleanEmail = loginEmail.trim().toLowerCase();
+    const existingRole = getRoleForEmail(cleanEmail);
+
+    // Pre-flight check: store email cannot log in via Customer form
+    if (currentRole === 'customer' && existingRole === 'seller') {
+      if (onShowToast) {
+        onShowToast(
+          'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.',
+          'error'
+        );
+      }
+      return;
+    }
+
+    // Pre-flight check: customer email cannot log in via Mitra Toko form
+    if (currentRole === 'seller' && existingRole === 'customer') {
+      if (onShowToast) {
+        onShowToast(
+          'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.',
+          'error'
+        );
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = await loginUser({
@@ -83,10 +133,98 @@ export function CustomerAuth({
         password: loginPassword,
       });
 
+      const userRoleId = Number(payload.user?.role_id);
+      const userRoleStr = (payload.user?.role || '').toLowerCase();
+      const storeKeywords = [
+        'seller',
+        'merchant',
+        'mitra',
+        'restaurant',
+        'restoran',
+        'store',
+        'toko',
+        'warung',
+        'kedai',
+        'cafe',
+        'kafe',
+        'dapur',
+        'bakery',
+        'outlet',
+        'kuliner',
+      ];
+      const isActuallySeller =
+        existingRole === 'seller' ||
+        userRoleId === 3 ||
+        storeKeywords.some((r) => userRoleStr.includes(r)) ||
+        storeKeywords.some((k) => cleanEmail.includes(k)) ||
+        cleanEmail === 'tokoreza@gmail.com';
+
+      // Role guard: Customer cannot login through Mitra Toko portal
+      if (currentRole === 'seller' && !isActuallySeller) {
+        clearAuth();
+        setRoleForEmail(cleanEmail, 'customer');
+        setIsSubmitting(false);
+        if (onShowToast) {
+          onShowToast(
+            'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.',
+            'error'
+          );
+        }
+        return;
+      }
+
+      // Role guard: Mitra Toko cannot login through Customer portal
+      if (currentRole === 'customer' && isActuallySeller) {
+        clearAuth();
+        setRoleForEmail(cleanEmail, 'seller');
+        setIsSubmitting(false);
+        if (onShowToast) {
+          onShowToast(
+            'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.',
+            'error'
+          );
+        }
+        return;
+      }
+
+      // Record verified role in email registry
+      setRoleForEmail(cleanEmail, isActuallySeller ? 'seller' : 'customer');
+
+      // Synchronize role state
+      try {
+        if (isActuallySeller) {
+          localStorage.setItem('rescuebyte_user_role', 'seller');
+          if (payload.user && payload.user.role_id !== 3) {
+            payload.user.role_id = 3;
+            payload.user.role = 'seller';
+            const auth = getAuth();
+            if (auth) {
+              auth.user.role_id = 3;
+              auth.user.role = 'seller';
+              saveAuth(auth);
+            }
+          }
+        } else {
+          localStorage.setItem('rescuebyte_user_role', 'customer');
+          if (payload.user && payload.user.role_id !== 1) {
+            payload.user.role_id = 1;
+            const auth = getAuth();
+            if (auth) {
+              auth.user.role_id = 1;
+              saveAuth(auth);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       setIsSubmitting(false);
       if (onShowToast) {
         onShowToast(`Selamat datang kembali, ${payload.user.name}!`, 'success');
       }
+
+      // Always redirect to landing page (customer home) for both customer and restaurant
       if (onNavigateHome) {
         onNavigateHome();
       } else if (onNavigateMarketplace) {
@@ -127,16 +265,40 @@ export function CustomerAuth({
 
     setIsSubmitting(true);
     try {
+      const roleId = currentRole === 'seller' ? 3 : 1;
+      const cleanEmail = registerEmail.trim().toLowerCase();
+
+      // Register role in email registry
+      setRoleForEmail(cleanEmail, currentRole);
+
       const payload = await registerUser({
         name: fullName,
         email: registerEmail,
         password: registerPassword,
+        role_id: roleId,
       });
+
+      try {
+        localStorage.setItem('rescuebyte_user_role', currentRole);
+        if (currentRole === 'seller' && payload.user && payload.user.role_id !== 3) {
+          payload.user.role_id = 3;
+          payload.user.role = 'seller';
+          const auth = getAuth();
+          if (auth) {
+            auth.user.role_id = 3;
+            auth.user.role = 'seller';
+            saveAuth(auth);
+          }
+        }
+      } catch {
+        // ignore
+      }
 
       setIsSubmitting(false);
       if (onShowToast) {
         onShowToast(`Akun berhasil dibuat! Selamat bergabung, ${payload.user.name}!`, 'success');
       }
+      // Always redirect to landing page (customer home) for both customer and restaurant
       if (onNavigateHome) {
         onNavigateHome();
       } else if (onNavigateMarketplace) {
@@ -173,16 +335,27 @@ export function CustomerAuth({
     }
   };
 
+  const handleSwitchRole = (newRole: 'customer' | 'seller') => {
+    setCurrentRole(newRole);
+    if (onSwitchRole) onSwitchRole(newRole);
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6F2] flex items-center justify-center p-3 sm:p-6 lg:p-8 relative overflow-x-hidden font-sans">
-      {/* Top Floating Back to Home Button */}
+      {/* Top Floating Back Button (Goes to Role Selection or Home) */}
       <div className="absolute top-4 sm:top-6 left-4 sm:left-8 z-30">
         <button
           type="button"
-          onClick={onNavigateHome}
+          onClick={() => {
+            if (onNavigateRoleSelection) {
+              onNavigateRoleSelection();
+            } else if (onNavigateHome) {
+              onNavigateHome();
+            }
+          }}
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 hover:bg-white border border-[#DCE4D8] text-xs sm:text-sm font-bold text-[#191c1d] shadow-2xs hover:shadow-xs transition-all cursor-pointer backdrop-blur-xs"
-          title="Kembali ke Beranda"
-          aria-label="Kembali ke Beranda"
+          title={onNavigateRoleSelection ? 'Kembali ke Pilihan Akun' : 'Kembali ke Beranda'}
+          aria-label={onNavigateRoleSelection ? 'Kembali ke Pilihan Akun' : 'Kembali ke Beranda'}
         >
           <ArrowLeft className="w-4 h-4 text-[#5A6658]" />
           <span>Kembali</span>
@@ -232,7 +405,7 @@ export function CustomerAuth({
         )}
 
         {/* LEFT COLUMN: BRAND, VALUE PROP & CENTERPIECE ARTWORK */}
-        <CustomerAuthArtwork mode={mode} />
+        <CustomerAuthArtwork mode={mode} roleType={currentRole} />
 
         {/* RIGHT COLUMN: AUTHENTICATION FORM CARD */}
         <section
@@ -252,9 +425,11 @@ export function CustomerAuth({
                 onForgotPassword={handleForgotPassword}
                 onGoogleAuth={handleGoogleAuth}
                 onSwitchToRegister={() => switchMode('register')}
+                onSwitchRole={handleSwitchRole}
                 onShowTerms={() => onShowToast?.('Membuka Syarat & Ketentuan RescueBite', 'info')}
                 onShowPrivacy={() => onShowToast?.('Membuka Kebijakan Privasi RescueBite', 'info')}
                 isSubmitting={isSubmitting}
+                roleType={currentRole}
               />
             ) : (
               <CustomerRegisterForm
@@ -271,9 +446,11 @@ export function CustomerAuth({
                 onSubmit={handleRegisterSubmit}
                 onGoogleAuth={handleGoogleAuth}
                 onSwitchToLogin={() => switchMode('login')}
+                onSwitchRole={handleSwitchRole}
                 onShowTerms={() => onShowToast?.('Membuka Syarat & Ketentuan RescueBite', 'info')}
                 onShowPrivacy={() => onShowToast?.('Membuka Kebijakan Privasi RescueBite', 'info')}
                 isSubmitting={isSubmitting}
+                roleType={currentRole}
               />
             )}
           </div>

@@ -15,9 +15,11 @@ interface CustomerRegisterFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onGoogleAuth: () => void;
   onSwitchToLogin: () => void;
+  onSwitchRole?: (role: 'customer' | 'seller') => void;
   onShowTerms: () => void;
   onShowPrivacy: () => void;
   isSubmitting: boolean;
+  roleType?: 'customer' | 'seller';
 }
 
 export function CustomerRegisterForm({
@@ -34,31 +36,38 @@ export function CustomerRegisterForm({
   onSubmit,
   onGoogleAuth,
   onSwitchToLogin,
+  onSwitchRole,
   onShowTerms,
   onShowPrivacy,
   isSubmitting,
+  roleType = 'customer',
 }: CustomerRegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const isSeller = roleType === 'seller';
 
   return (
     <div>
       {/* Top Link: Kembali ke Login */}
-      <button
-        type="button"
-        onClick={onSwitchToLogin}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5A6658] hover:text-[#111913] transition-colors cursor-pointer mb-2"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Kembali ke Login</span>
-      </button>
+      <div className="flex items-center mb-2">
+        <button
+          type="button"
+          onClick={onSwitchToLogin}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5A6658] hover:text-[#111913] transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Kembali ke Login</span>
+        </button>
+      </div>
 
       {/* Title & Subtitle */}
       <h2 className="text-2xl sm:text-[25px] font-extrabold text-[#111913] text-left tracking-tight">
-        Gabung Bersama RescueBite!
+        {isSeller ? 'Daftar Mitra Toko' : 'Gabung Bersama RescueBite!'}
       </h2>
       <p className="text-xs sm:text-sm text-[#647466] text-left mt-1 mb-4">
-        Buat akun dan mulai nikmati makanan berkualitas dengan harga lebih hemat.
+        {isSeller
+          ? 'Mulai jual surplus makanan dan perluas jangkauan pelanggan tokomu.'
+          : 'Buat akun dan mulai nikmati makanan berkualitas dengan harga lebih hemat.'}
       </p>
 
       <form onSubmit={onSubmit} className="space-y-3">
@@ -68,7 +77,7 @@ export function CustomerRegisterForm({
             htmlFor="register-fullname"
             className="block text-[11px] font-bold text-[#1E2922] uppercase tracking-wider mb-1"
           >
-            NAMA LENGKAP
+            {isSeller ? 'NAMA LENGKAP PEMILIK / PENGELOLA' : 'NAMA LENGKAP'}
           </label>
           <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-[#DCE4D8] focus-within:border-[#237126] focus-within:ring-2 focus-within:ring-[#237126]/15 bg-white transition-all">
             <User className="w-4 h-4 text-[#8A9889] shrink-0" />
@@ -123,7 +132,7 @@ export function CustomerRegisterForm({
               placeholder="Minimal 8 karakter"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-sm text-[#191c1d] placeholder:text-[#A0ABA0] outline-hidden bg-transparent"
+              className="w-full text-sm text-[#191c1d] placeholder:text-[#A0ABA0] outline-hidden bg-transparent [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
             />
             <button
               type="button"
@@ -153,7 +162,7 @@ export function CustomerRegisterForm({
               placeholder="Masukkan kembali kata sandi"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full text-sm text-[#191c1d] placeholder:text-[#A0ABA0] outline-hidden bg-transparent"
+              className="w-full text-sm text-[#191c1d] placeholder:text-[#A0ABA0] outline-hidden bg-transparent [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
             />
             <button
               type="button"
@@ -255,6 +264,23 @@ export function CustomerRegisterForm({
             Masuk.
           </button>
         </p>
+
+        {/* Switch Role Option */}
+        {onSwitchRole && (
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={() => onSwitchRole(isSeller ? 'customer' : 'seller')}
+              className="text-xs text-[#526050] hover:text-[#111913] transition-colors cursor-pointer"
+            >
+              {isSeller ? (
+                <>Bukan Mitra Toko? <span className="text-[#237126] font-bold underline">Daftar sebagai Customer</span></>
+              ) : (
+                <>Punya bisnis kuliner? <span className="text-[#237126] font-bold underline">Daftar sebagai Mitra Toko</span></>
+              )}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

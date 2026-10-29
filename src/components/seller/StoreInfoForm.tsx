@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import {
   searchCities,
   getKecamatansForCity,
@@ -7,10 +8,20 @@ import {
   KecamatanItem,
   OSMSearchResult,
 } from '../../services/locationService';
+import { uploadImage } from '../../services/storageService';
 import { Coordinates } from '../../types';
 
 export interface StoreInfoFormProps {
-  initialName?: string;
+  storeName: string;
+  onStoreNameChange: (val: string) => void;
+  storeDesc: string;
+  onStoreDescChange: (val: string) => void;
+  storeWa: string;
+  onStoreWaChange: (val: string) => void;
+  storeEmail: string;
+  onStoreEmailChange: (val: string) => void;
+  avatarUrl?: string;
+  onAvatarUrlChange: (url: string) => void;
   currentCoordinates: Coordinates;
   addressValue: string;
   cityValue: string;
@@ -19,9 +30,11 @@ export interface StoreInfoFormProps {
   onCityChange: (val: string) => void;
   onDistrictChange: (val: string) => void;
   onCoordinatesChange: (lat: number, lng: number, zoom?: number) => void;
-  onStoreNameChange?: (name: string) => void;
   onShowToast?: (message: string) => void;
   onTriggerLoading?: (title?: string, subtitle?: string, durationMs?: number) => Promise<void>;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  isSaving?: boolean;
+  isLoading?: boolean;
 }
 
 /**
@@ -30,7 +43,16 @@ export interface StoreInfoFormProps {
  * Complies with .agents/docs/architecture.md, .agents/docs/typescript.md, and .agents/docs/security.md.
  */
 export function StoreInfoForm({
-  initialName = 'Toko Reza',
+  storeName,
+  onStoreNameChange,
+  storeDesc,
+  onStoreDescChange,
+  storeWa,
+  onStoreWaChange,
+  storeEmail,
+  onStoreEmailChange,
+  avatarUrl = '',
+  onAvatarUrlChange,
   currentCoordinates,
   addressValue,
   cityValue,
@@ -39,18 +61,11 @@ export function StoreInfoForm({
   onCityChange,
   onDistrictChange,
   onCoordinatesChange,
-  onStoreNameChange,
   onShowToast,
-  onTriggerLoading,
+  onSubmit,
+  isSaving = false,
+  isLoading = false,
 }: StoreInfoFormProps) {
-  const [storeName, setStoreName] = useState<string>(initialName);
-  const [storeDesc, setStoreDesc] = useState<string>(
-    'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et',
-  );
-  const [storeWa, setStoreWa] = useState<string>('+62812345678');
-  const [storeEmail, setStoreEmail] = useState<string>('TokoReza@gmail.com');
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-
   // Autocomplete UI states
   const [isSearchingOSM, setIsSearchingOSM] = useState<boolean>(false);
   const [osmSuggestions, setOsmSuggestions] = useState<OSMSearchResult[]>([]);
@@ -84,17 +99,51 @@ export function StoreInfoForm({
   }, []);
 
   // Handle Logo Upload
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [localLogoPreview, setLocalLogoPreview] = useState<string | null>(null);
+  const [logoImageError, setLogoImageError] = useState(false);
+
+  useEffect(() => {
+    setLogoImageError(false);
+  }, [avatarUrl]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setAvatarPreview(event.target.result as string);
-          if (onShowToast) onShowToast('Foto logo toko berhasil diperbarui!');
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      if (onShowToast) onShowToast('File harus berupa gambar (JPEG, PNG, atau WebP).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      if (onShowToast) onShowToast('Ukuran logo toko maksimal adalah 2 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setLogoImageError(false);
+    const previewUrl = URL.createObjectURL(file);
+    setLocalLogoPreview(previewUrl);
+
+    try {
+      const uploadRes = await uploadImage(file, 'stores');
+      onAvatarUrlChange(uploadRes.url);
+      try {
+        localStorage.setItem('rescuebyte_store_logo', uploadRes.url);
+        window.dispatchEvent(new Event('rescuebyte_store_updated'));
+      } catch {}
+      if (onShowToast) onShowToast('Foto logo toko berhasil diunggah!');
+    } catch (err) {
+      setLocalLogoPreview(null);
+      const msg = err instanceof Error ? err.message : 'Gagal mengunggah logo toko.';
+      if (onShowToast) onShowToast(msg);
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -193,60 +242,44 @@ export function StoreInfoForm({
     if (onShowToast) onShowToast(`Kecamatan dipilih: ${district.name}`);
   };
 
-  // Form Submit
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (onTriggerLoading) {
-      await onTriggerLoading(
-        'Menyimpan Profil Toko...',
-        'Sinkronisasi informasi toko dan lokasi operasional',
-        1000
-      );
-    }
-
-    if (onStoreNameChange) {
-      onStoreNameChange(storeName);
-    }
-
-    try {
-      localStorage.setItem('rescuebyte_store_coordinates', JSON.stringify(currentCoordinates));
-      localStorage.setItem('rescuebyte_store_name', storeName);
-      localStorage.setItem('rescuebyte_store_address', addressValue);
-    } catch (err) {
-      console.warn('Failed saving to localStorage', err);
-    }
-
-    if (onShowToast) onShowToast('Informasi profil dan lokasi toko berhasil disimpan!');
-  };
+  const currentDisplayLogo = localLogoPreview || (!logoImageError && avatarUrl ? avatarUrl : '');
 
   return (
-    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6">
+    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6 relative">
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-2xl">
+          <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Informasi Toko</h2>
 
-      <form id="form-info-toko" className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+      <form id="form-info-toko" className="flex flex-col gap-5" onSubmit={onSubmit} noValidate>
         {/* Avatar & Store Name Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <div className="flex flex-col items-center gap-2.5 shrink-0">
             <label
               htmlFor="store-logo-file"
-              className="group/avatar relative w-20.5 h-20.5 rounded-full border border-gray-300 flex items-center justify-center bg-brand-lime cursor-pointer transition-transform hover:scale-[1.03] shrink-0"
+              className={`group/avatar relative w-20.5 h-20.5 rounded-full border border-gray-300 flex items-center justify-center bg-brand-lime transition-transform shrink-0 overflow-hidden ${
+                isUploadingLogo ? 'cursor-wait' : 'cursor-pointer hover:scale-[1.03]'
+              }`}
               id="store-avatar-preview"
               tabIndex={0}
               role="button"
               aria-label="Upload logo toko"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if ((e.key === 'Enter' || e.key === ' ') && !isUploadingLogo) {
                   e.preventDefault();
                   fileInputRef.current?.click();
                 }
               }}
             >
-              {avatarPreview ? (
+              {currentDisplayLogo ? (
                 <img
-                  src={avatarPreview}
+                  src={currentDisplayLogo}
                   alt="Logo Toko"
                   className="w-full h-full object-cover rounded-full"
+                  onError={() => setLogoImageError(true)}
                 />
               ) : (
                 <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -256,6 +289,7 @@ export function StoreInfoForm({
                   <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
                 </svg>
               )}
+
               <div
                 className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] border-[1.5px] border-gray-400 flex items-center justify-center transition-all group-hover/avatar:scale-110 group-hover/avatar:border-gray-900 group-hover/avatar:bg-gray-50 z-10"
                 title="Pilih foto untuk logo toko"
@@ -268,28 +302,24 @@ export function StoreInfoForm({
               </div>
             </label>
 
-            <label
-              htmlFor="store-logo-file"
-              className="px-3.5 py-1 text-xs font-semibold text-white bg-gray-400 hover:bg-gray-500 rounded-full cursor-pointer transition-all select-none active:scale-98"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingLogo}
+              className="px-3.5 py-1 text-xs font-semibold text-white bg-gray-600 hover:bg-gray-700 rounded-full cursor-pointer transition-all select-none active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
-              Ubah Logo
-            </label>
+              {isUploadingLogo && <Loader2 className="w-3 h-3 animate-spin text-white" />}
+              <span>{isUploadingLogo ? 'Mengunggah...' : 'Ubah Logo'}</span>
+            </button>
             <input
               ref={fileInputRef}
               type="file"
               id="store-logo-file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="sr-only"
               aria-label="Upload logo toko"
               onChange={handleLogoUpload}
+              disabled={isUploadingLogo}
             />
           </div>
 
@@ -301,8 +331,9 @@ export function StoreInfoForm({
               name="namaToko"
               className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeName}
+              placeholder="Contoh: Toko Reza"
               required
-              onChange={(e) => setStoreName(e.target.value)}
+              onChange={(e) => onStoreNameChange(e.target.value)}
             />
           </div>
         </div>
@@ -316,7 +347,8 @@ export function StoreInfoForm({
             className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors resize-none leading-relaxed"
             rows={4}
             value={storeDesc}
-            onChange={(e) => setStoreDesc(e.target.value)}
+            placeholder="Deskripsi singkat mengenai toko dan makanan surplus yang disediakan..."
+            onChange={(e) => onStoreDescChange(e.target.value)}
           />
         </div>
 
@@ -330,8 +362,9 @@ export function StoreInfoForm({
               name="nomorWa"
               className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeWa}
+              placeholder="+62812345678"
               required
-              onChange={(e) => setStoreWa(e.target.value)}
+              onChange={(e) => onStoreWaChange(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -342,8 +375,9 @@ export function StoreInfoForm({
               name="emailToko"
               className="w-full px-4 py-3 rounded-2xl border border-gray-700 bg-white text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-black focus:border-black transition-colors"
               value={storeEmail}
+              placeholder="toko@email.com"
               required
-              onChange={(e) => setStoreEmail(e.target.value)}
+              onChange={(e) => onStoreEmailChange(e.target.value)}
             />
           </div>
         </div>
@@ -519,10 +553,12 @@ export function StoreInfoForm({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+            disabled={isSaving || isUploadingLogo || isLoading}
+            className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             id="btn-save-profile"
           >
-            Simpan Perubahan
+            {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+            <span>{isSaving ? 'Menyimpan Perubahan...' : 'Simpan Perubahan'}</span>
           </button>
         </div>
       </form>

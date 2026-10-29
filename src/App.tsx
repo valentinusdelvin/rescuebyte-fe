@@ -6,6 +6,7 @@ import { CustomerCart } from './pages/CustomerCart';
 import { CustomerCheckout } from './pages/CustomerCheckout';
 import { CustomerPayment } from './pages/CustomerPayment';
 import { CustomerOrderDetail } from './pages/CustomerOrderDetail';
+import { AuthRoleSelection } from './pages/AuthRoleSelection';
 import { CustomerAuth } from './pages/CustomerAuth';
 import { CustomerProfile } from './pages/CustomerProfile';
 import { Header } from './components/layout/Header';
@@ -26,6 +27,7 @@ import {
   getCurrentUser,
   subscribeToAuth,
 } from './services/authService';
+import { getStoreProfile } from './services/storeService';
 
 /**
  * Root Application Component
@@ -44,36 +46,44 @@ export function App() {
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'view-buat-dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-product-detail';
     }
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-cart';
     }
     if (hash.startsWith('#pembayaran') || hash.startsWith('#payment')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-payment';
     }
     if (hash.startsWith('#detail-pesanan') || hash.startsWith('#order-detail')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-order-detail';
     }
     if (hash.startsWith('#checkout')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-checkout';
     }
     if (hash.startsWith('#marketplace')) {
       if (!getCurrentUser()) {
-        return 'view-customer-auth';
+        return 'view-auth-role-selection';
       }
       return 'view-customer-marketplace';
     }
     if (hash.startsWith('#akun') || hash.startsWith('#profil-user') || hash.startsWith('#profil-customer') || hash.startsWith('#profile')) {
-      if (!getCurrentUser()) return 'view-customer-auth';
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-profile';
     }
-    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'view-customer-auth';
+    if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
+      return 'view-seller-auth';
+    }
+    if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
+      return 'view-customer-auth';
+    }
+    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
+      return 'view-auth-role-selection';
+    }
     // Default to Customer Landing Page
     return 'view-customer-home';
   });
@@ -101,34 +111,42 @@ export function App() {
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'Daganganku';
     if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Detail Produk';
     }
     if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Keranjang Saya';
     }
     if (hash.startsWith('#pembayaran') || hash.startsWith('#payment')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Pembayaran';
     }
     if (hash.startsWith('#detail-pesanan') || hash.startsWith('#order-detail')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Detail Pesanan';
     }
     if (hash.startsWith('#checkout')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Checkout';
     }
     if (hash.startsWith('#marketplace')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Marketplace';
     }
     if (hash.startsWith('#akun') || hash.startsWith('#profil-user') || hash.startsWith('#profil-customer') || hash.startsWith('#profile')) {
-      if (!getCurrentUser()) return 'Masuk / Daftar';
+      if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Informasi Akun';
     }
-    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) return 'Masuk / Daftar';
+    if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
+      return 'Masuk sebagai Mitra Toko';
+    }
+    if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
+      return 'Masuk sebagai Customer';
+    }
+    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
+      return 'Pilih Peran Akun';
+    }
     return 'Beranda Pelanggan';
   });
 
@@ -198,69 +216,91 @@ export function App() {
     }
   }, [showToast]);
 
+  // Sync store name from backend for seller portal
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user && (user.role_id === 3 || user.role === 'Seller' || localStorage.getItem('rescuebyte_user_role') === 'seller')) {
+      getStoreProfile()
+        .then((store) => {
+          if (store?.name) {
+            setStoreName(store.name);
+            localStorage.setItem('rescuebyte_store_name', store.name);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // Sync hash on navigation
-  const handleNavigate = (viewId: string, label: string = '', tab?: OrderStatusTab) => {
-    // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, or payment
-    if (
-      viewId === 'view-customer-marketplace' ||
-      viewId === 'view-customer-product-detail' ||
-      viewId === 'view-customer-cart' ||
-      viewId === 'view-customer-checkout' ||
-      viewId === 'view-customer-payment' ||
-      viewId === 'view-customer-order-detail'
-    ) {
-      const user = getCurrentUser();
-      if (!user) {
-        const message =
-          viewId === 'view-customer-marketplace'
-            ? 'Silakan masuk terlebih dahulu untuk mengakses Marketplace.'
-            : 'Silakan masuk terlebih dahulu untuk melanjutkan pesanan.';
-        showToast(message, 'warning');
-        setActiveView('view-customer-auth');
-        setActiveLabel('Masuk / Daftar');
-        window.history.replaceState(null, '', '#masuk');
-        setIsMobileOpen(false);
-        return;
+  const handleNavigate = useCallback(
+    (viewId: string, label: string = '', tab?: OrderStatusTab) => {
+      // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, or payment
+      if (
+        viewId === 'view-customer-marketplace' ||
+        viewId === 'view-customer-product-detail' ||
+        viewId === 'view-customer-cart' ||
+        viewId === 'view-customer-checkout' ||
+        viewId === 'view-customer-payment' ||
+        viewId === 'view-customer-order-detail'
+      ) {
+        const user = getCurrentUser();
+        if (!user) {
+          const message =
+            viewId === 'view-customer-marketplace'
+              ? 'Silakan masuk terlebih dahulu untuk mengakses Marketplace.'
+              : 'Silakan masuk terlebih dahulu untuk melanjutkan pesanan.';
+          showToast(message, 'warning');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
+          setIsMobileOpen(false);
+          return;
+        }
       }
-    }
 
-    setActiveView(viewId);
-    if (label) setActiveLabel(label);
-    if (tab) setOrderTab(tab);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+      setActiveView(viewId as ActiveViewId);
+      if (label) setActiveLabel(label);
+      if (tab) setOrderTab(tab);
+      window.scrollTo({ top: 0, behavior: 'instant' });
 
-    if (viewId === 'view-customer-home') {
-      window.history.replaceState(null, '', '#beranda-customer');
-    } else if (viewId === 'view-customer-marketplace') {
-      window.history.replaceState(null, '', '#marketplace');
-    } else if (viewId === 'view-customer-product-detail') {
-      window.history.replaceState(null, '', '#detail-produk');
-    } else if (viewId === 'view-customer-cart') {
-      window.history.replaceState(null, '', '#keranjang');
-    } else if (viewId === 'view-customer-checkout') {
-      window.history.replaceState(null, '', '#checkout');
-    } else if (viewId === 'view-customer-payment') {
-      window.history.replaceState(null, '', '#pembayaran');
-    } else if (viewId === 'view-customer-order-detail') {
-      window.history.replaceState(null, '', '#detail-pesanan');
-    } else if (viewId === 'view-customer-profile') {
-      window.history.replaceState(null, '', '#akun');
-    } else if (viewId === 'view-customer-auth') {
-      window.history.replaceState(null, '', '#masuk');
-    } else if (viewId === 'view-beranda') {
-      window.history.replaceState(null, '', '#beranda-seller');
-    } else if (viewId === 'view-profil') {
-      window.history.replaceState(null, '', '#profil-seller');
-    } else if (viewId === 'view-riwayat') {
-      window.history.replaceState(null, '', tab ? `#riwayat-seller?tab=${tab}` : '#riwayat-seller');
-    } else if (viewId === 'view-buat-dagangan') {
-      window.history.replaceState(null, '', '#buat-dagangan-seller');
-    } else if (viewId === 'view-daganganku') {
-      window.history.replaceState(null, '', '#daganganku-seller');
-    }
+      if (viewId === 'view-customer-home') {
+        window.history.replaceState(null, '', '#beranda-customer');
+      } else if (viewId === 'view-customer-marketplace') {
+        window.history.replaceState(null, '', '#marketplace');
+      } else if (viewId === 'view-customer-product-detail') {
+        window.history.replaceState(null, '', '#detail-produk');
+      } else if (viewId === 'view-customer-cart') {
+        window.history.replaceState(null, '', '#keranjang');
+      } else if (viewId === 'view-customer-checkout') {
+        window.history.replaceState(null, '', '#checkout');
+      } else if (viewId === 'view-customer-payment') {
+        window.history.replaceState(null, '', '#pembayaran');
+      } else if (viewId === 'view-customer-order-detail') {
+        window.history.replaceState(null, '', '#detail-pesanan');
+      } else if (viewId === 'view-customer-profile') {
+        window.history.replaceState(null, '', '#akun');
+      } else if (viewId === 'view-auth-role-selection') {
+        window.history.replaceState(null, '', '#auth');
+      } else if (viewId === 'view-customer-auth') {
+        window.history.replaceState(null, '', '#masuk-customer');
+      } else if (viewId === 'view-seller-auth') {
+        window.history.replaceState(null, '', '#masuk-mitra');
+      } else if (viewId === 'view-beranda') {
+        window.history.replaceState(null, '', '#beranda-seller');
+      } else if (viewId === 'view-profil') {
+        window.history.replaceState(null, '', '#profil-seller');
+      } else if (viewId === 'view-riwayat') {
+        window.history.replaceState(null, '', tab ? `#riwayat-seller?tab=${tab}` : '#riwayat-seller');
+      } else if (viewId === 'view-buat-dagangan') {
+        window.history.replaceState(null, '', '#buat-dagangan-seller');
+      } else if (viewId === 'view-daganganku') {
+        window.history.replaceState(null, '', '#daganganku-seller');
+      }
 
-    setIsMobileOpen(false);
-  };
+      setIsMobileOpen(false);
+    },
+    [showToast]
+  );
 
   // Sync with browser back/forward hash changes
   useEffect(() => {
@@ -289,9 +329,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-product-detail');
@@ -300,9 +340,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-cart');
@@ -311,9 +351,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk melakukan checkout.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-checkout');
@@ -322,9 +362,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses pembayaran.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-payment');
@@ -333,9 +373,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-order-detail');
@@ -344,9 +384,9 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-marketplace');
@@ -355,16 +395,22 @@ export function App() {
         const user = getCurrentUser();
         if (!user) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses Informasi Akun.', 'warning');
-          setActiveView('view-customer-auth');
-          setActiveLabel('Masuk / Daftar');
-          window.history.replaceState(null, '', '#masuk');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
           return;
         }
         setActiveView('view-customer-profile');
         setActiveLabel('Informasi Akun');
-      } else if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login')) {
+      } else if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
+        setActiveView('view-seller-auth');
+        setActiveLabel('Masuk sebagai Mitra Toko');
+      } else if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
         setActiveView('view-customer-auth');
-        setActiveLabel('Masuk / Daftar');
+        setActiveLabel('Masuk sebagai Customer');
+      } else if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
+        setActiveView('view-auth-role-selection');
+        setActiveLabel('Pilih Peran Akun');
       } else {
         // Customer view for #beranda-customer, #customer, or empty hash
         setActiveView('view-customer-home');
@@ -380,9 +426,9 @@ export function App() {
   useEffect(() => {
     const unsubscribe = subscribeToAuth((user) => {
       const hash = window.location.hash.toLowerCase();
-      if (
-        !user &&
-        (hash.startsWith('#marketplace') ||
+      if (!user) {
+        if (
+          hash.startsWith('#marketplace') ||
           hash.startsWith('#detail-produk') ||
           hash.startsWith('#detail') ||
           hash.startsWith('#mystery-box-detail') ||
@@ -394,14 +440,19 @@ export function App() {
           hash.startsWith('#detail-pesanan') ||
           hash.startsWith('#order-detail') ||
           hash.startsWith('#akun') ||
-          hash.startsWith('#profile'))
-      ) {
-        showToast('Silakan masuk terlebih dahulu untuk melanjutkan.', 'warning');
-        handleNavigate('view-customer-auth', 'Masuk / Daftar');
+          hash.startsWith('#profile') ||
+          hash.startsWith('#beranda-seller') ||
+          hash.startsWith('#profil-seller') ||
+          hash.startsWith('#riwayat-seller') ||
+          hash.startsWith('#buat-dagangan-seller') ||
+          hash.startsWith('#daganganku-seller')
+        ) {
+          handleNavigate('view-customer-home', 'Beranda Pelanggan');
+        }
       }
     });
     return unsubscribe;
-  }, [showToast]);
+  }, [handleNavigate]);
 
   return (
     <>
@@ -412,12 +463,12 @@ export function App() {
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
           onNavigateOrders={() => handleNavigate('view-riwayat', 'Riwayat Pesanan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
+          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateDetail={(item) => {
             const user = getCurrentUser();
             if (!user) {
               showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-              handleNavigate('view-customer-auth', 'Masuk / Daftar');
+              handleNavigate('view-auth-role-selection', 'Pilih Peran Akun');
               return;
             }
             setSelectedProduct(item);
@@ -429,7 +480,7 @@ export function App() {
         <CustomerMarketplace
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
+          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
           onNavigateDetail={(item) => {
             setSelectedProduct(item);
@@ -477,7 +528,7 @@ export function App() {
             handleNavigate('view-customer-checkout', 'Checkout');
           }}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateAuth={() => handleNavigate('view-customer-auth', 'Masuk / Daftar')}
+          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-cart' ? (
@@ -531,8 +582,15 @@ export function App() {
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onShowToast={showToast}
         />
+      ) : activeView === 'view-auth-role-selection' ? (
+        <AuthRoleSelection
+          onSelectCustomer={() => handleNavigate('view-customer-auth', 'Masuk sebagai Customer')}
+          onSelectSeller={() => handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko')}
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+        />
       ) : activeView === 'view-customer-auth' ? (
         <CustomerAuth
+          roleType="customer"
           initialMode={
             typeof window !== 'undefined' &&
               (window.location.hash.toLowerCase().includes('daftar') ||
@@ -542,6 +600,38 @@ export function App() {
           }
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
+          onSwitchRole={(nextRole) => {
+            if (nextRole === 'seller') {
+              handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
+            } else {
+              handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
+            }
+          }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-seller-auth' ? (
+        <CustomerAuth
+          roleType="seller"
+          initialMode={
+            typeof window !== 'undefined' &&
+              (window.location.hash.toLowerCase().includes('daftar') ||
+                window.location.hash.toLowerCase().includes('register'))
+              ? 'register'
+              : 'login'
+          }
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
+          onSwitchRole={(nextRole) => {
+            if (nextRole === 'seller') {
+              handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
+            } else {
+              handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
+            }
+          }}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-profile' ? (
@@ -557,7 +647,7 @@ export function App() {
         <>
           <Header
             storeName={storeName}
-            onNavigate={(view) => handleNavigate(view)}
+            onNavigate={(view: string) => handleNavigate(view)}
             onToggleMobileMenu={() => setIsMobileOpen((prev) => !prev)}
             onShowToast={showToast}
           />
@@ -567,7 +657,7 @@ export function App() {
               activeView={activeView}
               storeName={storeName}
               isMobileOpen={isMobileOpen}
-              onNavigate={(view, label) => handleNavigate(view, label)}
+              onNavigate={(view: string, label: string) => handleNavigate(view, label)}
               onCloseMobile={() => setIsMobileOpen(false)}
             />
 

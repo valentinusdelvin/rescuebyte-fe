@@ -10,6 +10,8 @@ type IndicatorKey = 'logo' | PillTabType | 'auth';
 
 export interface CustomerHeaderProps {
   activeTab?: TabType;
+  currentUser?: UserPayload | null;
+  onNavigateHome?: () => void;
   onNavigateSeller?: () => void;
   onNavigateProfile?: () => void;
   onNavigateOrders?: () => void;
@@ -36,6 +38,8 @@ const NAV_TABS: NavTabItem[] = [
  */
 export function CustomerHeader({
   activeTab = 'beranda',
+  currentUser: propCurrentUser,
+  onNavigateHome,
   onNavigateSeller,
   onNavigateProfile,
   onNavigateOrders,
@@ -44,7 +48,15 @@ export function CustomerHeader({
   onSelectTab,
   onShowToast,
 }: CustomerHeaderProps) {
-  const [currentUser, setCurrentUser] = useState<UserPayload | null>(() => getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<UserPayload | null>(
+    () => propCurrentUser ?? getCurrentUser()
+  );
+
+  useEffect(() => {
+    if (propCurrentUser !== undefined) {
+      setCurrentUser(propCurrentUser);
+    }
+  }, [propCurrentUser]);
   const [selectedTab, setSelectedTab] = useState<TabType>(activeTab);
   const [hoveredTab, setHoveredTab] = useState<IndicatorKey | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -107,6 +119,13 @@ export function CustomerHeader({
 
   const handleLogout = async () => {
     setIsProfileDropdownOpen(false);
+    if (onNavigateHome) {
+      onNavigateHome();
+    } else if (onSelectTab) {
+      onSelectTab('beranda');
+    } else {
+      window.location.hash = '#beranda-customer';
+    }
     try {
       await logoutUser();
       if (onShowToast) {

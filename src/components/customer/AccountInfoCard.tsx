@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, Calendar, MapPin, LocateFixed } from 'lucide-react';
-import { formatDate } from '../../../utils/date';
-import { reverseGeocodeOSM } from '../../../services/locationService';
+import { formatDate } from '../../utils/date';
+import { reverseGeocodeOSM } from '../../services/locationService';
 
 export interface AccountInfoCardProps {
   createdAt?: string;

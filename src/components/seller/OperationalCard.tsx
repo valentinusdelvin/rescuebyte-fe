@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DayKey, DayItem, DaysSchedule } from '../../types';
 
 export interface OperationalCardProps {
+  isActive?: boolean;
+  onActiveChange?: (active: boolean) => void;
+  jamBuka?: string;
+  onJamBukaChange?: (val: string) => void;
+  jamTutup?: string;
+  onJamTutupChange?: (val: string) => void;
+  days?: DaysSchedule;
+  onDayToggle?: (dayKey: DayKey) => void;
   onShowToast?: (message: string) => void;
+  isLoading?: boolean;
 }
 
 const DAY_LIST: DayItem[] = [
@@ -15,42 +24,57 @@ const DAY_LIST: DayItem[] = [
   { key: 'minggu', label: 'Minggu' },
 ];
 
+const DEFAULT_DAYS: DaysSchedule = {
+  senin: true,
+  selasa: true,
+  rabu: true,
+  kamis: true,
+  jumat: true,
+  sabtu: true,
+  minggu: true,
+};
+
 /**
  * OperationalCard Component
  * Manages store active status, operational hours, and working days.
- * Styled with Tailwind CSS classes.
+ * Styled with Tailwind CSS classes adhering to RescueByte Design Tokens.
  */
-export function OperationalCard({ onShowToast }: OperationalCardProps) {
-  const [isActive, setIsActive] = useState<boolean>(true);
-  const [jamBuka, setJamBuka] = useState<string>('08.00');
-  const [jamTutup, setJamTutup] = useState<string>('08.00');
-  const [days, setDays] = useState<DaysSchedule>({
-    senin: true,
-    selasa: true,
-    rabu: true,
-    kamis: true,
-    jumat: true,
-    sabtu: true,
-    minggu: true,
-  });
-
+export function OperationalCard({
+  isActive = true,
+  onActiveChange,
+  jamBuka = '08:00',
+  onJamBukaChange,
+  jamTutup = '20:00',
+  onJamTutupChange,
+  days = DEFAULT_DAYS,
+  onDayToggle,
+  onShowToast,
+  isLoading = false,
+}: OperationalCardProps) {
   const handleToggleStatus = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
-    setIsActive(checked);
+    if (onActiveChange) {
+      onActiveChange(checked);
+    }
     if (onShowToast) {
       onShowToast(checked ? 'Status toko diubah: Toko Aktif' : 'Status toko diubah: Toko Nonaktif');
     }
   };
 
   const handleDayChange = (dayKey: DayKey) => {
-    setDays((prev) => ({
-      ...prev,
-      [dayKey]: !prev[dayKey],
-    }));
+    if (onDayToggle) {
+      onDayToggle(dayKey);
+    }
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6">
+    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-100/60 flex flex-col gap-6 relative">
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-2xl">
+          <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Informasi Operasional</h2>
 
       <div className="flex flex-col gap-6">
@@ -91,8 +115,9 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
               className="w-full sm:w-36 text-center px-4 py-3 border border-gray-700 rounded-2xl font-bold text-black text-sm focus:outline-black focus:border-black bg-white"
               value={jamBuka}
               maxLength={5}
+              placeholder="08:00"
               aria-label="Jam Buka"
-              onChange={(e) => setJamBuka(e.target.value)}
+              onChange={(e) => onJamBukaChange?.(e.target.value)}
             />
             <span className="text-black font-extrabold text-lg" aria-hidden="true">-</span>
             <input
@@ -101,8 +126,9 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
               className="w-full sm:w-36 text-center px-4 py-3 border border-gray-700 rounded-2xl font-bold text-black text-sm focus:outline-black focus:border-black bg-white"
               value={jamTutup}
               maxLength={5}
+              placeholder="20:00"
               aria-label="Jam Tutup"
-              onChange={(e) => setJamTutup(e.target.value)}
+              onChange={(e) => onJamTutupChange?.(e.target.value)}
             />
           </div>
         </div>
@@ -121,7 +147,7 @@ export function OperationalCard({ onShowToast }: OperationalCardProps) {
                   type="checkbox"
                   id={`day-${key}`}
                   className="sr-only"
-                  checked={days[key]}
+                  checked={!!days[key]}
                   onChange={() => handleDayChange(key)}
                 />
                 <span

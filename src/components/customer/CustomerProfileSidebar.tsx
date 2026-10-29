@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { User, FileText, Lock, LogOut } from 'lucide-react';
 
 export interface CustomerProfileSidebarProps {
@@ -17,13 +18,28 @@ export function CustomerProfileSidebar({
   onLogout,
   onShowToast,
 }: CustomerProfileSidebarProps) {
+  const [imageError, setImageError] = useState(false);
+
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
+  if (avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(avatarUrl);
+    setImageError(false);
+  }
+
+  const hasValidAvatar = !!avatarUrl && !imageError;
+
   return (
     <aside className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-5">
       {/* Mini Profile Card */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-black/5 shadow-2xs flex items-center gap-3.5">
         <div className="w-12 h-12 rounded-full bg-[#f0eded] flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-150">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+          {hasValidAvatar ? (
+            <img
+              src={avatarUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
           ) : (
             <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400" aria-hidden="true">
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />

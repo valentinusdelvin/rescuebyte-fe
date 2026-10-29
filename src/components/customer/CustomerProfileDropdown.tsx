@@ -1,6 +1,7 @@
 import React from 'react';
 import { User as UserIcon } from 'lucide-react';
 import type { UserPayload } from '../../types';
+import { getRoleForEmail } from '../../services/authService';
 
 interface CustomerProfileDropdownProps {
   currentUser: UserPayload;
@@ -37,17 +38,44 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
   buttonRef,
   containerRef,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [currentUser.avatar_url]);
+
+  const hasAvatar = !!currentUser.avatar_url && !imageError;
+
+  const isSeller =
+    currentUser.role_id === 3 ||
+    (typeof currentUser.role === 'string' &&
+      ['seller', 'merchant', 'mitra', 'restaurant', 'restoran', 'store', 'toko'].some((r) =>
+        currentUser.role.toLowerCase().includes(r)
+      )) ||
+    getRoleForEmail(currentUser.email) === 'seller' ||
+    (() => {
+      try {
+        return localStorage.getItem('rescuebyte_user_role') === 'seller';
+      } catch {
+        return false;
+      }
+    })();
+
   return (
     <div className="relative z-30 shrink-0" ref={containerRef}>
-      {/* Avatar Circle toggling Profile Dropdown - Always Solid Black (#121613 / #1e2420) */}
+      {/* Avatar Circle toggling Profile Dropdown */}
       <button
         ref={buttonRef}
         type="button"
         onMouseEnter={onMouseEnter}
         onFocus={onFocus}
         onBlur={onBlur}
-        className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
-          isActiveOrHovered || isOpen ? 'bg-[#121613]' : 'bg-[#1e2420] hover:bg-[#161a17]'
+        className={`w-13 h-13 md:w-16 md:h-16 rounded-full border-2 border-black shadow-sm flex items-center justify-center shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-black transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden ${
+          hasAvatar
+            ? 'bg-white'
+            : isActiveOrHovered || isOpen
+            ? 'bg-[#121613]'
+            : 'bg-[#1e2420] hover:bg-[#161a17]'
         }`}
         style={{
           transform: isActiveOrHovered || isOpen ? `scale(${HOVER_SCALE_LOGO})` : 'scale(1)',
@@ -60,7 +88,16 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
         title={`Menu Akun: ${currentUser.name}`}
         aria-label={`Menu Akun ${currentUser.name}`}
       >
-        <UserIcon className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
+        {hasAvatar ? (
+          <img
+            src={currentUser.avatar_url}
+            alt={currentUser.name}
+            className="w-full h-full object-cover relative z-30"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <UserIcon className="w-6 h-6 md:w-7 md:h-7 text-white stroke-[2.2] relative z-30" />
+        )}
       </button>
 
       {/* Dropdown Menu Popover */}
@@ -83,46 +120,74 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
           />
 
           {/* User Info Header */}
-          <div className="px-4 pt-2.5 pb-2 border-b border-[#f0eded] mb-1">
-            <p className="text-xs font-bold text-[#1b1c1c] truncate">
-              {currentUser.name}
-            </p>
-            <p className="text-[11px] text-[#525252] truncate font-medium">
-              {currentUser.email}
-            </p>
+          <div className="px-4 pt-2.5 pb-2 border-b border-[#f0eded] mb-1 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#f0eded] flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-200">
+              {hasAvatar ? (
+                <img
+                  src={currentUser.avatar_url}
+                  alt={currentUser.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon className="w-4 h-4 text-gray-500" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-[#1b1c1c] truncate">
+                {currentUser.name}
+              </p>
+              <p className="text-[11px] text-[#525252] truncate font-medium">
+                {currentUser.email}
+              </p>
+            </div>
           </div>
 
           {/* Action Items */}
           <div className="flex flex-col gap-0.5">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onProfileClick}
-              className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
-              id="btn-dropdown-profile"
-            >
-              Akun Saya
-            </button>
+            {isSeller ? (
+              /* Restoran / Mitra Toko: Hanya Dashboard Restoran dan Log Out */
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onClose();
+                  onSellerClick();
+                }}
+                className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
+                id="btn-dropdown-seller-dashboard"
+              >
+                Dashboard Restoran
+              </button>
+            ) : (
+              /* Customer: Hanya Akun Saya, Pesanan Saya, dan Log Out */
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onClose();
+                    onProfileClick();
+                  }}
+                  className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
+                  id="btn-dropdown-profile"
+                >
+                  Akun Saya
+                </button>
 
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onOrdersClick}
-              className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
-              id="btn-dropdown-orders"
-            >
-              Pesanan Saya
-            </button>
-
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onSellerClick}
-              className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
-              id="btn-dropdown-seller-dashboard"
-            >
-              Dashboard Restoran
-            </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onClose();
+                    onOrdersClick();
+                  }}
+                  className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
+                  id="btn-dropdown-orders"
+                >
+                  Pesanan Saya
+                </button>
+              </>
+            )}
 
             <div className="h-px bg-[#f0eded] my-1 mx-2" />
 
