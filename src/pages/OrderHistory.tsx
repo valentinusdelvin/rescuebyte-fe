@@ -8,8 +8,10 @@ import {
   getMerchantOrders,
   confirmMerchantOrder,
   completeMerchantOrder,
+  cancelMerchantOrder,
   subscribeToMerchantOrders,
 } from '../services/orderService';
+import { SellerOrderDetailModal } from '../components/seller/SellerOrderDetailModal';
 
 export interface OrderHistoryProps {
   storeName?: string;
@@ -31,6 +33,7 @@ function formatRupiah(amount: number): string {
 /**
  * OrderHistory Page Component (Merchant View)
  * Displays store order history segmented by operational tabs matching Photo 2.
+ * Includes interactive confirmation modal matching reference design.
  * Fully compliant with design.md and antislop guidelines.
  */
 export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }: OrderHistoryProps) {
@@ -42,6 +45,10 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
   const [orders, setOrders] = useState<MerchantOrderItem[]>(() => getMerchantOrders(storeName));
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Modal State for order confirmation popup
+  const [selectedModalOrder, setSelectedModalOrder] = useState<MerchantOrderItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [prevStoreName, setPrevStoreName] = useState(storeName);
   if (storeName !== prevStoreName) {
@@ -101,17 +108,42 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
       });
   }, [orders, activeTab, searchQuery, filterType, sortOrder]);
 
-  const handleConfirm = async (order: MerchantOrderItem) => {
+  const handleOpenConfirmModal = (order: MerchantOrderItem) => {
+    setSelectedModalOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const handleModalConfirm = async (order: MerchantOrderItem) => {
     setProcessingId(order.id);
     try {
       await confirmMerchantOrder(order.id);
       setOrders(getMerchantOrders(storeName));
+      setIsModalOpen(false);
+      setSelectedModalOrder(null);
       if (onShowToast) {
-        onShowToast(`Pesanan ${order.orderNumber} berhasil dikonfirmasi!`, 'success');
+        onShowToast(`Pesanan ${order.orderNumber} berhasil dikonfirmasi dan siap diambil!`, 'success');
       }
     } catch (err) {
       console.warn('Gagal konfirmasi pesanan:', err);
       if (onShowToast) onShowToast('Gagal mengonfirmasi pesanan.', 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleModalCancel = async (order: MerchantOrderItem) => {
+    setProcessingId(order.id);
+    try {
+      await cancelMerchantOrder(order.id);
+      setOrders(getMerchantOrders(storeName));
+      setIsModalOpen(false);
+      setSelectedModalOrder(null);
+      if (onShowToast) {
+        onShowToast(`Pesanan ${order.orderNumber} telah dibatalkan.`, 'info');
+      }
+    } catch (err) {
+      console.warn('Gagal membatalkan pesanan:', err);
+      if (onShowToast) onShowToast('Gagal membatalkan pesanan.', 'error');
     } finally {
       setProcessingId(null);
     }
@@ -123,7 +155,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
       await completeMerchantOrder(order.id);
       setOrders(getMerchantOrders(storeName));
       if (onShowToast) {
-        onShowToast(`Pesanan ${order.orderNumber} telah siap diambil pelanggan!`, 'success');
+        onShowToast(`Pesanan ${order.orderNumber} telah diserahkan & selesai!`, 'success');
       }
     } catch (err) {
       console.warn('Gagal selesaikan pesanan:', err);
@@ -236,7 +268,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
             <div className="p-8 md:p-14 flex flex-col items-center text-center justify-center min-h-[360px]">
               <img
                 src={emptyOrdersIllustration}
-                alt="Ilustrasi mystery box belum ada pesanan"
+                alt="Ilustrasi belum ada pesanan"
                 className="w-48 sm:w-60 h-auto mb-6 object-contain"
               />
               <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
@@ -304,7 +336,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
                     {activeTab === 'diproses' && (
                       <button
                         type="button"
-                        onClick={() => handleConfirm(order)}
+                        onClick={() => handleOpenConfirmModal(order)}
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#3c6a00] hover:bg-[#325800] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
@@ -318,7 +350,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#1F2A24] hover:bg-[#2C3B33] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
-                        {processingId === order.id ? 'Memproses...' : 'Siap Diambil'}
+                        {processingId === order.id ? 'Memproses...' : 'Selesaikan Pesanan'}
                       </button>
                     )}
                     {activeTab === 'selesai' && (
@@ -340,6 +372,19 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
           )}
         </div>
       </div>
+
+      {/* Confirmation Popup Modal matching User's Image */}
+      <SellerOrderDetailModal
+        order={selectedModalOrder}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedModalOrder(null);
+        }}
+        onConfirm={handleModalConfirm}
+        onCancel={handleModalCancel}
+        onShowToast={onShowToast}
+      />
     </section>
   );
 }

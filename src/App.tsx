@@ -760,6 +760,7 @@ export function App() {
             <main className="flex-1 p-[32px_36px] max-md:p-[24px_20px] bg-surface-app overflow-y-auto min-w-0" id="main-content">
               {activeView === 'view-beranda' && (
                 <Dashboard
+                  storeName={storeName}
                   onShowToast={showToast}
                   onNavigateToOrders={(tabId) => handleNavigate('view-riwayat', 'Riwayat Pesanan', tabId)}
                 />
