@@ -206,6 +206,12 @@ export function CustomerAuth({
           }
         } else {
           localStorage.setItem('rescuebyte_user_role', 'customer');
+          localStorage.removeItem('rescuebyte_store_logo');
+          localStorage.removeItem('rescuebyte_store_name');
+          localStorage.removeItem('rescuebyte_store_email');
+          localStorage.removeItem('rescuebyte_store_address');
+          localStorage.removeItem('rescuebyte_store_coordinates');
+          window.dispatchEvent(new Event('rescuebyte_store_updated'));
           if (payload.user && payload.user.role_id !== 1) {
             payload.user.role_id = 1;
             const auth = getAuth();

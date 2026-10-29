@@ -122,20 +122,37 @@ export function extractApiErrorMessage(err: unknown, defaultMessage: string): st
  */
 export function saveAuth(payload: AuthPayload): void {
   try {
-    // Provide default avatar fallback if backend returns null
+    const rawAvatar = payload.user.avatar_url;
+    const normalizedAvatar = rawAvatar && !rawAvatar.includes('dicebear.com') ? rawAvatar : '';
+
     const normalizedPayload: AuthPayload = {
       ...payload,
       user: {
         ...payload.user,
-        avatar_url:
-          payload.user.avatar_url ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(payload.user.name)}`,
+        avatar_url: normalizedAvatar,
       },
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizedPayload));
     localStorage.setItem(ACCESS_TOKEN_KEY, normalizedPayload.access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, normalizedPayload.refresh_token);
+
+    const roleId = Number(normalizedPayload.user.role_id);
+    const roleStr = typeof normalizedPayload.user.role === 'string' ? normalizedPayload.user.role.toLowerCase() : '';
+    const isSeller = roleId === 3 || roleStr.includes('seller') || roleStr.includes('mitra') || roleStr.includes('merchant');
+
+    if (isSeller) {
+      localStorage.setItem('rescuebyte_user_role', 'seller');
+    } else {
+      localStorage.setItem('rescuebyte_user_role', 'customer');
+      localStorage.removeItem('rescuebyte_store_logo');
+      localStorage.removeItem('rescuebyte_store_name');
+      localStorage.removeItem('rescuebyte_store_email');
+      localStorage.removeItem('rescuebyte_store_address');
+      localStorage.removeItem('rescuebyte_store_coordinates');
+      window.dispatchEvent(new Event('rescuebyte_store_updated'));
+    }
+
     notifyAuthListeners(normalizedPayload.user);
   } catch (err) {
     console.error('Failed to save auth to localStorage:', err);
@@ -160,7 +177,11 @@ export function getAuth(): AuthPayload | null {
  */
 export function getCurrentUser(): UserPayload | null {
   const auth = getAuth();
-  return auth ? auth.user : null;
+  if (!auth?.user) return null;
+  if (auth.user.avatar_url && auth.user.avatar_url.includes('dicebear.com')) {
+    return { ...auth.user, avatar_url: '' };
+  }
+  return auth.user;
 }
 
 /**
@@ -186,6 +207,12 @@ export function clearAuth(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem('rescuebyte_user_role');
+    localStorage.removeItem('rescuebyte_store_logo');
+    localStorage.removeItem('rescuebyte_store_name');
+    localStorage.removeItem('rescuebyte_store_email');
+    localStorage.removeItem('rescuebyte_store_address');
+    localStorage.removeItem('rescuebyte_store_coordinates');
+    window.dispatchEvent(new Event('rescuebyte_store_updated'));
     notifyAuthListeners(null);
   } catch (err) {
     console.error('Failed to clear auth from localStorage:', err);

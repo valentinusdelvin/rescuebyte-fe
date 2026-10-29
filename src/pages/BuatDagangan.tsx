@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import { ProductDescriptionModal } from '../components/products/ProductDescriptionModal';
-import { addProduct } from '../services/productService';
+import { FormattedDescription } from '../components/common/FormattedDescription';
+import { createProduct } from '../services/productService';
+import { uploadImage } from '../services/storageService';
 import cloudTambahkanIcon from '../assets/cloud-tambahkan.svg';
 
 export interface BuatDaganganProps {
@@ -40,21 +43,20 @@ export function BuatDagangan({
 }: BuatDaganganProps) {
   // Form state
   const [productName, setProductName] = useState<string>('');
-  const [description, setDescription] = useState<string>(
-    'Berisi aneka makanan siap santap berkualitas dari surplus harian restoran. Disiapkan dengan standar kebersihan tinggi.'
-  );
-  const [normalPrice, setNormalPrice] = useState<number>(45000);
-  const [rescuePrice, setRescuePrice] = useState<number>(25000);
-  const [stock, setStock] = useState<number>(5);
-  const [maxStock, setMaxStock] = useState<number>(10);
+  const [description, setDescription] = useState<string>('');
+  const [normalPrice, setNormalPrice] = useState<number>(0);
+  const [rescuePrice, setRescuePrice] = useState<number>(0);
+  const [stock, setStock] = useState<number>(0);
 
   // Modal editor state
   const [isDescModalOpen, setIsDescModalOpen] = useState<boolean>(false);
 
   // Photo state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculations
@@ -66,7 +68,8 @@ export function BuatDagangan({
 
   // Handle file input
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
       if (onShowToast) onShowToast('File harus berupa gambar (JPEG, PNG, atau WebP)');
       return;
     }
@@ -75,13 +78,10 @@ export function BuatDagangan({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPhotoPreview(e.target?.result as string);
-      setPhotoName(file.name);
-      if (onShowToast) onShowToast(`Foto "${file.name}" berhasil diunggah!`);
-    };
-    reader.readAsDataURL(file);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoName(file.name);
+    if (onShowToast) onShowToast(`Foto "${file.name}" berhasil dipilih!`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,6 +106,7 @@ export function BuatDagangan({
   };
 
   const handleRemovePhoto = () => {
+    setPhotoFile(null);
     setPhotoPreview(null);
     setPhotoName('');
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -115,8 +116,8 @@ export function BuatDagangan({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!productName.trim()) {
-      if (onShowToast) onShowToast('Nama produk wajib diisi!');
+    if (!productName.trim() || productName.trim().length < 2) {
+      if (onShowToast) onShowToast('Nama produk minimal 2 karakter!');
       return;
     }
 
@@ -135,31 +136,84 @@ export function BuatDagangan({
       return;
     }
 
-    if (onTriggerLoading) {
-      await onTriggerLoading(
-        'Menyimpan Dagangan Baru...',
-        `Mendaftarkan ${productName.trim()} ke etalase toko`
-      );
-    }
+    setIsSubmitting(true);
 
-    addProduct({
-      name: productName.trim(),
-      description: description.trim(),
-      normalPrice,
-      rescuePrice,
-      stock,
-      maxStock: maxStock || stock,
-      status: 'aktif',
-      imageUrl: photoPreview || undefined,
-    });
+    try {
+      let uploadedImageUrl: string | undefined = undefined;
 
-    if (onShowToast) {
-      onShowToast(`Produk "${productName.trim()}" berhasil dibuat!`);
-    }
+      // 1. Upload photo if selected by user
+      if (photoFile) {
+        if (onTriggerLoading) {
+          await onTriggerLoading(
+            'Mengunggah Foto Produk...',
+            `Mengunggah berkas ${photoName} ke cloud storage`
+          );
+        }
+        try {
+          const uploadRes = await uploadImage(photoFile, 'products');
+          uploadedImageUrl = uploadRes.url;
+        } catch (uploadErr) {
+          const uploadMsg =
+            uploadErr instanceof Error ? uploadErr.message : 'Gagal mengunggah foto produk.';
+          if (onShowToast) onShowToast(uploadMsg);
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
-    // Navigate to Daganganku view
-    if (onNavigateToProducts) {
-      onNavigateToProducts();
+      // 2. Submit product to backend API POST /api/v1/products
+      if (onTriggerLoading) {
+        await onTriggerLoading(
+          'Menyimpan Dagangan Baru...',
+          `Mendaftarkan ${productName.trim()} ke backend RescueBite`
+        );
+      }
+
+      await createProduct({
+        name: productName.trim(),
+        description: description.trim(),
+        main_image_url: uploadedImageUrl,
+        image_urls: uploadedImageUrl ? [uploadedImageUrl] : [],
+        variants: [
+          {
+            name: 'Reguler',
+            sequence: 1,
+            normal_price: normalPrice,
+            rescue_price: rescuePrice,
+            current_stock: stock,
+            initial_stock: stock,
+          },
+        ],
+      });
+
+      if (onShowToast) {
+        onShowToast(`Produk "${productName.trim()}" berhasil dibuat di database!`);
+      }
+
+      // Reset form
+      setProductName('');
+      setDescription('');
+      setNormalPrice(0);
+      setRescuePrice(0);
+      setStock(0);
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      setPhotoName('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      // Navigate to Daganganku view
+      if (onNavigateToProducts) {
+        onNavigateToProducts();
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal membuat produk baru.';
+      if (msg.toLowerCase().includes('store not found') || msg.toLowerCase().includes('toko tidak ditemukan')) {
+        onShowToast?.('Profil toko belum terdaftar di server. Silakan lengkapi profil toko terlebih dahulu.');
+      } else {
+        onShowToast?.(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -184,7 +238,7 @@ export function BuatDagangan({
                 id="input-nama-produk"
                 name="namaProduk"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
-                placeholder="Contoh: Meal Mystery Box"
+                placeholder="Meal Mystery Box"
                 value={productName}
                 required
                 onChange={(e) => setProductName(e.target.value)}
@@ -211,9 +265,9 @@ export function BuatDagangan({
                 }}
               >
                 {description.trim() ? (
-                  <p className="line-clamp-4">{description}</p>
+                  <FormattedDescription content={description} className="line-clamp-4" />
                 ) : (
-                  <p className="text-gray-400 italic">Tuliskan deskripsi produk, standar kebersihan, isi menu, dll...</p>
+                  <p className="text-gray-400">Tuliskan deskripsi produk di sini...</p>
                 )}
               </div>
             </div>
@@ -282,7 +336,7 @@ export function BuatDagangan({
               </div>
             )}
 
-            {/* Porsi Stok Tambahan */}
+            {/* Stok Tersedia */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="stok-tersedia" className="text-xs font-bold text-gray-700">
@@ -296,20 +350,6 @@ export function BuatDagangan({
                   value={stock === 0 ? '' : formatWithDots(stock)}
                   placeholder="0"
                   onChange={(e) => setStock(parseFromDots(e.target.value))}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="stok-maksimal" className="text-xs font-bold text-gray-700">
-                  Kapasitas / Total Box
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  id="stok-maksimal"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors"
-                  value={maxStock === 0 ? '' : formatWithDots(maxStock)}
-                  placeholder="0"
-                  onChange={(e) => setMaxStock(parseFromDots(e.target.value))}
                 />
               </div>
             </div>
@@ -403,10 +443,12 @@ export function BuatDagangan({
           <div>
             <button
               type="submit"
-              className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center"
+              disabled={isSubmitting}
+              className="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold text-[0.98rem] shadow-sm transition-all cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               id="btn-simpan-dagangan"
             >
-              Simpan Perubahan
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+              <span>{isSubmitting ? 'Menyimpan Dagangan...' : 'Simpan Perubahan'}</span>
             </button>
           </div>
         </div>

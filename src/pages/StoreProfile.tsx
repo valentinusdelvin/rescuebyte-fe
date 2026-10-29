@@ -11,6 +11,7 @@ import {
   createStore,
 } from '../services/storeService';
 import { getCurrentUser } from '../services/authService';
+import { toIndoTime, toApiTime, isValidTimeFormat } from '../utils/time';
 
 const DEFAULT_COORDS: StoreLocation = {
   lat: -7.9526,
@@ -91,9 +92,10 @@ export function StoreProfile({
 
   // Operational Fields
   const [isActive, setIsActive] = useState<boolean>(true);
-  const [jamBuka, setJamBuka] = useState<string>('08:00');
-  const [jamTutup, setJamTutup] = useState<string>('20:00');
+  const [jamBuka, setJamBuka] = useState<string>('08.00');
+  const [jamTutup, setJamTutup] = useState<string>('22.00');
   const [days, setDays] = useState<DaysSchedule>(DEFAULT_DAYS);
+  const [isSavingOperational, setIsSavingOperational] = useState<boolean>(false);
 
   // Fetch current store profile from /api/v1/stores/me/profile on mount
   useEffect(() => {
@@ -131,10 +133,10 @@ export function StoreProfile({
           setIsActive(store.status.toUpperCase() === 'ACTIVE');
         }
         if (store.operational_start) {
-          setJamBuka(store.operational_start.replace('.', ':'));
+          setJamBuka(toIndoTime(store.operational_start));
         }
         if (store.operational_end) {
-          setJamTutup(store.operational_end.replace('.', ':'));
+          setJamTutup(toIndoTime(store.operational_end));
         }
         if (Array.isArray(store.operational_days) && store.operational_days.length > 0) {
           const daysObj: DaysSchedule = {
@@ -204,6 +206,73 @@ export function StoreProfile({
     }
   };
 
+  const handleSaveOperational = async () => {
+    if (!isValidTimeFormat(jamBuka) || !isValidTimeFormat(jamTutup)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+      return;
+    }
+
+    const opDaysList: number[] = [];
+    if (days.senin) opDaysList.push(1);
+    if (days.selasa) opDaysList.push(2);
+    if (days.rabu) opDaysList.push(3);
+    if (days.kamis) opDaysList.push(4);
+    if (days.jumat) opDaysList.push(5);
+    if (days.sabtu) opDaysList.push(6);
+    if (days.minggu) opDaysList.push(7);
+    if (opDaysList.length === 0) {
+      opDaysList.push(1);
+    }
+
+    setIsSavingOperational(true);
+    try {
+      if (hasExistingStore) {
+        await updateStoreOperational({
+          status: isActive ? 'ACTIVE' : 'INACTIVE',
+          operational_start: toApiTime(jamBuka),
+          operational_end: toApiTime(jamTutup),
+          operational_days: opDaysList,
+        });
+        onShowToast?.('Informasi operasional berhasil disimpan!');
+      } else {
+        onShowToast?.('Silakan simpan profil toko terlebih dahulu.');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan operasional toko.';
+      onShowToast?.(msg);
+    } finally {
+      setIsSavingOperational(false);
+    }
+  };
+
+  const handleLogoChange = async (newUrl: string) => {
+    setAvatarUrl(newUrl);
+    try {
+      localStorage.setItem('rescuebyte_store_logo', newUrl);
+      window.dispatchEvent(new Event('rescuebyte_store_updated'));
+    } catch {}
+
+    if (hasExistingStore) {
+      try {
+        await updateStoreProfile({
+          name: name.trim(),
+          description: description.trim(),
+          whatsapp_number: whatsapp.trim(),
+          email: email.trim(),
+          address: addressValue.trim(),
+          city: cityValue.trim(),
+          district: districtValue.trim(),
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          profile_picture_url: newUrl,
+        });
+        onShowToast?.('Logo toko berhasil disimpan!');
+      } catch (err) {
+        console.warn('Auto-save store logo error:', err);
+      }
+    }
+  };
+
   // Submit and save profile + operational details to /api/v1/stores/me/profile
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -232,6 +301,10 @@ export function StoreProfile({
       onShowToast?.('Kecamatan toko wajib diisi.');
       return;
     }
+    if (!isValidTimeFormat(jamBuka) || !isValidTimeFormat(jamTutup)) {
+      onShowToast?.('Hanya bisa memasukkan jam 00.00 - 23.59');
+      return;
+    }
 
     const opDaysList: number[] = [];
     if (days.senin) opDaysList.push(1);
@@ -244,11 +317,6 @@ export function StoreProfile({
     if (opDaysList.length === 0) {
       opDaysList.push(1);
     }
-
-    const formatTime = (t: string) => {
-      const clean = t.replace('.', ':').trim();
-      return clean.length >= 4 ? clean : '08:00';
-    };
 
     setIsSaving(true);
     try {
@@ -271,8 +339,8 @@ export function StoreProfile({
         try {
           await updateStoreOperational({
             status: isActive ? 'ACTIVE' : 'INACTIVE',
-            operational_start: formatTime(jamBuka),
-            operational_end: formatTime(jamTutup),
+            operational_start: toApiTime(jamBuka),
+            operational_end: toApiTime(jamTutup),
             operational_days: opDaysList,
           });
         } catch (opErr) {
@@ -302,8 +370,8 @@ export function StoreProfile({
           latitude: coordinates.lat,
           longitude: coordinates.lng,
           profile_picture_url: avatarUrl,
-          operational_start: formatTime(jamBuka),
-          operational_end: formatTime(jamTutup),
+          operational_start: toApiTime(jamBuka),
+          operational_end: toApiTime(jamTutup),
           operational_days: opDaysList,
         });
 
@@ -341,7 +409,7 @@ export function StoreProfile({
           storeEmail={email}
           onStoreEmailChange={setStoreEmail}
           avatarUrl={avatarUrl}
-          onAvatarUrlChange={setAvatarUrl}
+          onAvatarUrlChange={handleLogoChange}
           currentCoordinates={coordinates}
           addressValue={addressValue}
           cityValue={cityValue}
@@ -370,6 +438,8 @@ export function StoreProfile({
             onDayToggle={handleDayToggle}
             onShowToast={onShowToast}
             isLoading={isLoading}
+            isSaving={isSavingOperational}
+            onSave={handleSaveOperational}
           />
 
           <StoreLocationMap

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { FormattedDescription } from '../common/FormattedDescription';
 
 export interface ProductDescriptionModalProps {
   isOpen: boolean;
@@ -204,17 +205,13 @@ export function ProductDescriptionModal({
               rows={8}
             />
           ) : (
-            <div className="w-full min-h-50 p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800 space-y-2">
+            <div className="w-full min-h-50 p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800">
               {text.trim() ? (
-                <div>
-                  {text.split('\n').map((line, idx) => (
-                    <p key={idx} className={line.trim() ? 'mb-1 leading-relaxed' : 'h-2'}>
-                      {line}
-                    </p>
-                  ))}
-                </div>
+                <FormattedDescription content={text} />
               ) : (
-                <div className="text-gray-400 text-xs italic text-center py-10">Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.</div>
+                <div className="text-gray-400 text-xs italic text-center py-10">
+                  Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.
+                </div>
               )}
             </div>
           )}

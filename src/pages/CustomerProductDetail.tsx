@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ShoppingCart, Plus } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
+import { FormattedDescription } from '../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
 
@@ -58,7 +59,7 @@ export function CustomerProductDetail({
 
   // Use product prop or default to Figma mock data for TerasRasa Bakery
   const storeName = product?.storeName || 'TerasRasa Bakery';
-  const title = product ? `${product.category.replace(/^[^\w\s]+/, '').trim()} Reguler` : 'Mystery Bakery Box Reguler';
+  const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box Reguler';
   const description =
     product?.description ||
     'Nikmati kejutan aneka roti dan pastry berkualitas dengan harga spesial. Isi menyesuaikan stok harian toko, selalu fresh dan tetap lezat!';
@@ -68,8 +69,12 @@ export function CustomerProductDetail({
   const rating = product?.rating ?? 4.8;
   const reviewCount = product?.reviewCount ?? 320;
   const distanceText = product?.distanceText ?? '1.2 km';
-  const remainingBoxes = 5;
-  const pickupTime = product?.pickupTime ? product.pickupTime.replace(/WIB.*$/, 'WIB') : '15.00 – 18.00 WIB';
+  const remainingBoxes = product?.remainingBoxesText?.match(/\d+/)?.[0]
+    ? parseInt(product.remainingBoxesText.match(/\d+/)![0], 10)
+    : 5;
+  const pickupTime = product?.pickupTime
+    ? product.pickupTime.replace(/^Ambil:\s*/i, '').replace(/WIB.*$/, 'WIB')
+    : '15.00 – 18.00 WIB';
 
   // Gallery state
   const galleryImages = [
@@ -440,9 +445,9 @@ export function CustomerProductDetail({
                   <h1 className="font-display font-extrabold text-2xl sm:text-[26px] text-[#1b1c1c] leading-tight">
                     {title}
                   </h1>
-                  <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed mt-2">
-                    {description}
-                  </p>
+                  <div className="mt-2 text-xs sm:text-sm text-gray-600 font-normal leading-relaxed">
+                    <FormattedDescription content={description} />
+                  </div>
                 </div>
 
                 {/* Pricing Box */}
