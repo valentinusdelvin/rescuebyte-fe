@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, ChevronDown, Check, X } from 'lucide-react';
 import { OrderStatusTab, OrderTabItem } from '../types';
 import emptyOrdersIllustration from '../assets/pesanan-kosong.svg';
+import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
+import {
+  MerchantOrderItem,
+  getMerchantOrders,
+  confirmMerchantOrder,
+  completeMerchantOrder,
+  subscribeToMerchantOrders,
+} from '../services/orderService';
 
 export interface OrderHistoryProps {
+  storeName?: string;
   initialTab?: OrderStatusTab;
-  onShowToast?: (message: string) => void;
+  onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 const ORDER_TABS: OrderTabItem[] = [
@@ -15,21 +24,113 @@ const ORDER_TABS: OrderTabItem[] = [
   { id: 'batal', label: 'Dibatalkan' },
 ];
 
+function formatRupiah(amount: number): string {
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 /**
- * OrderHistory Page Component
- * Displays store order history segmented by operational tabs.
- * Styled with Tailwind CSS classes.
+ * OrderHistory Page Component (Merchant View)
+ * Displays store order history segmented by operational tabs matching Photo 2.
+ * Fully compliant with design.md and antislop guidelines.
  */
-export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHistoryProps) {
+export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }: OrderHistoryProps) {
   const validTabIds = ORDER_TABS.map((t) => t.id);
   const resolvedInitialTab = validTabIds.includes(initialTab) ? initialTab : 'diproses';
   const [activeTab, setActiveTab] = useState<OrderStatusTab>(resolvedInitialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('semua');
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
+  const [orders, setOrders] = useState<MerchantOrderItem[]>(() => getMerchantOrders(storeName));
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const [prevStoreName, setPrevStoreName] = useState(storeName);
+  if (storeName !== prevStoreName) {
+    setPrevStoreName(storeName);
+    setOrders(getMerchantOrders(storeName));
+  }
+
+  useEffect(() => {
+    return subscribeToMerchantOrders((latest) => {
+      setOrders(latest);
+    });
+  }, []);
 
   const handleTabChange = (tabId: OrderStatusTab) => {
     setActiveTab(tabId);
+  };
+
+  // Filter & Search Logic
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter((order) => {
+        // Tab matching
+        if (order.status !== activeTab) {
+          return false;
+        }
+
+        // Search query matching (nomor pesanan, nama pembeli, nama produk)
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchNumber = (order.orderNumber || '').toLowerCase().includes(q);
+          const matchCustomer = (order.customerName || '').toLowerCase().includes(q);
+          const matchProduct = (order.productName || '').toLowerCase().includes(q);
+          if (!matchNumber && !matchCustomer && !matchProduct) {
+            return false;
+          }
+        }
+
+        // Category filter matching
+        if (filterType === 'mystery-box') {
+          return (order.productName || '').toLowerCase().includes('mystery');
+        } else if (filterType === 'reguler') {
+          return !(order.productName || '').toLowerCase().includes('mystery');
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'terlama') {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        } else if (sortOrder === 'nominal-tinggi') {
+          return b.grandTotal - a.grandTotal;
+        } else if (sortOrder === 'nominal-rendah') {
+          return a.grandTotal - b.grandTotal;
+        }
+        // Default: terbaru
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [orders, activeTab, searchQuery, filterType, sortOrder]);
+
+  const handleConfirm = async (order: MerchantOrderItem) => {
+    setProcessingId(order.id);
+    try {
+      await confirmMerchantOrder(order.id);
+      setOrders(getMerchantOrders(storeName));
+      if (onShowToast) {
+        onShowToast(`Pesanan ${order.orderNumber} berhasil dikonfirmasi!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Gagal konfirmasi pesanan:', err);
+      if (onShowToast) onShowToast('Gagal mengonfirmasi pesanan.', 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleComplete = async (order: MerchantOrderItem) => {
+    setProcessingId(order.id);
+    try {
+      await completeMerchantOrder(order.id);
+      setOrders(getMerchantOrders(storeName));
+      if (onShowToast) {
+        onShowToast(`Pesanan ${order.orderNumber} telah siap diambil pelanggan!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Gagal selesaikan pesanan:', err);
+      if (onShowToast) onShowToast('Gagal memproses pesanan.', 'error');
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   return (
@@ -56,10 +157,10 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
                   id={`tab-${tab.id}`}
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
-                  className={`py-4 px-2 text-center text-xs sm:text-sm md:text-base font-bold border-b-2 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-[-2px] ${
+                  className={`py-4 px-2 text-center text-xs sm:text-sm md:text-base font-bold border-b-2 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#3c6a00] focus-visible:outline-offset-[-2px] ${
                     isActive
-                      ? 'border-[#15803d] text-[#15803d]'
-                      : 'border-transparent text-gray-800 hover:text-[#15803d]'
+                      ? 'border-[#3c6a00] text-[#3c6a00]'
+                      : 'border-transparent text-gray-800 hover:text-[#3c6a00]'
                   }`}
                   onClick={() => handleTabChange(tab.id)}
                 >
@@ -70,14 +171,14 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           </nav>
         </div>
 
-        {/* Filter & Search Bar */}
+        {/* Filter & Search Bar matching Photo 2 */}
         <div className="p-4 md:p-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-b border-gray-100">
           {/* Search Box */}
           <div className="relative flex-1 flex items-center">
             <Search className="absolute left-3.5 text-gray-400 pointer-events-none w-4.5 h-4.5" aria-hidden="true" />
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-black bg-white"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-[#3c6a00] bg-white transition-colors"
               placeholder="Cari Nomor Pesanan"
               aria-label="Cari Nomor Pesanan"
               value={searchQuery}
@@ -88,17 +189,16 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           {/* Filter Dropdown */}
           <div className="relative flex items-center min-w-[150px]">
             <select
-              className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs sm:text-sm font-semibold text-gray-700 hover:border-gray-300 focus:outline-black cursor-pointer shadow-xs"
+              className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs sm:text-sm font-semibold text-gray-700 hover:border-gray-300 focus:outline-[#3c6a00] cursor-pointer shadow-xs"
               aria-label="Pilih Filter Kategori"
               value={filterType}
               onChange={(e) => {
                 setFilterType(e.target.value);
-                if (onShowToast) onShowToast('Filter kategori diperbarui');
+                if (onShowToast) onShowToast('Filter kategori diperbarui', 'info');
               }}
             >
               <option value="semua">Pilih Filter</option>
               <option value="reguler">Pesanan Reguler</option>
-              <option value="instan">Pengiriman Instan</option>
               <option value="mystery-box">Mystery Box</option>
             </select>
             <ChevronDown className="absolute right-3 pointer-events-none text-gray-400 w-4 h-4" />
@@ -107,12 +207,12 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           {/* Sort Dropdown */}
           <div className="relative flex items-center min-w-[160px]">
             <select
-              className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs sm:text-sm font-semibold text-gray-700 hover:border-gray-300 focus:outline-black cursor-pointer shadow-xs"
+              className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 pr-8 text-xs sm:text-sm font-semibold text-gray-700 hover:border-gray-300 focus:outline-[#3c6a00] cursor-pointer shadow-xs"
               aria-label="Urutkan Tanggal Pesanan"
               value={sortOrder}
               onChange={(e) => {
                 setSortOrder(e.target.value);
-                if (onShowToast) onShowToast('Urutan tanggal diperbarui');
+                if (onShowToast) onShowToast('Urutan tanggal diperbarui', 'info');
               }}
             >
               <option value="terbaru">Tanggal Terbaru</option>
@@ -124,24 +224,120 @@ export function OrderHistory({ initialTab = 'diproses', onShowToast }: OrderHist
           </div>
         </div>
 
-        {/* Tab Panel Content / Empty State (placeholder dikosongkan seperti sekarang) */}
+        {/* Tab Panel Content / Orders List */}
         <div
           role="tabpanel"
           id={`panel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
-          className="p-8 md:p-14 flex flex-col items-center text-center justify-center min-h-[360px]"
+          className="min-h-[360px]"
         >
-          <img
-            src={emptyOrdersIllustration}
-            alt="Ilustrasi mystery box belum ada pesanan"
-            className="w-48 sm:w-60 h-auto mb-6 object-contain"
-          />
-          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
-            Belum Ada Pesanan Masuk
-          </h3>
-          <p className="text-xs md:text-sm text-gray-500 max-w-md leading-relaxed">
-            Belum ada pesanan pada status ini. Pesanan baru dari pelanggan akan otomatis ditampilkan di sini.
-          </p>
+          {filteredOrders.length === 0 ? (
+            /* Empty State */
+            <div className="p-8 md:p-14 flex flex-col items-center text-center justify-center min-h-[360px]">
+              <img
+                src={emptyOrdersIllustration}
+                alt="Ilustrasi mystery box belum ada pesanan"
+                className="w-48 sm:w-60 h-auto mb-6 object-contain"
+              />
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                Belum Ada Pesanan Masuk
+              </h3>
+              <p className="text-xs md:text-sm text-gray-500 max-w-md leading-relaxed">
+                Belum ada pesanan pada status ini. Pesanan baru dari pelanggan akan otomatis ditampilkan di sini.
+              </p>
+            </div>
+          ) : (
+            /* Order Rows strictly matching Photo 2 UI */
+            <div className="flex flex-col divide-y divide-gray-100">
+              {filteredOrders.map((order) => (
+                <article
+                  key={order.id}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafaf8] transition-colors"
+                >
+                  {/* Left: Thumbnail & Details */}
+                  <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200/80 shadow-2xs">
+                      <img
+                        src={order.productImage || cardMonsieurSpoon}
+                        alt={order.productName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = cardMonsieurSpoon;
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                      <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate leading-snug">
+                        {order.productName}
+                      </h4>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">
+                        {order.customerName}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="text-xs sm:text-sm font-bold text-[#ba1a1a]">
+                          Rp {formatRupiah(order.rescuePrice)}
+                        </span>
+                        {order.originalPrice > order.rescuePrice && (
+                          <span className="text-xs text-gray-400 line-through">
+                            Rp {formatRupiah(order.originalPrice)}
+                          </span>
+                        )}
+                        {order.discountPercent > 0 && (
+                          <span className="text-[10px] font-bold text-[#b45309] bg-[#fef3c7] px-1.5 py-0.5 rounded">
+                            {order.discountPercent}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle: Total Price (centered on desktop) */}
+                  <div className="sm:text-center shrink-0">
+                    <span className="font-bold text-sm sm:text-base text-gray-900">
+                      Rp {formatRupiah(order.grandTotal)}
+                    </span>
+                  </div>
+
+                  {/* Right: Action Button or Status Badge */}
+                  <div className="shrink-0 flex items-center justify-end">
+                    {activeTab === 'diproses' && (
+                      <button
+                        type="button"
+                        onClick={() => handleConfirm(order)}
+                        disabled={processingId === order.id}
+                        className="w-full sm:w-auto bg-[#3c6a00] hover:bg-[#325800] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {processingId === order.id ? 'Memproses...' : 'Konfirmasi Pesanan'}
+                      </button>
+                    )}
+                    {activeTab === 'konfirmasi' && (
+                      <button
+                        type="button"
+                        onClick={() => handleComplete(order)}
+                        disabled={processingId === order.id}
+                        className="w-full sm:w-auto bg-[#1F2A24] hover:bg-[#2C3B33] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {processingId === order.id ? 'Memproses...' : 'Siap Diambil'}
+                      </button>
+                    )}
+                    {activeTab === 'selesai' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full">
+                        <Check className="w-3.5 h-3.5" />
+                        Selesai
+                      </span>
+                    )}
+                    {activeTab === 'batal' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-full">
+                        <X className="w-3.5 h-3.5" />
+                        Dibatalkan
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

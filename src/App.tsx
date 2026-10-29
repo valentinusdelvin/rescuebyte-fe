@@ -775,6 +775,7 @@ export function App() {
               {activeView === 'view-riwayat' && (
                 <OrderHistory
                   key={orderTab}
+                  storeName={storeName}
                   initialTab={orderTab}
                   onShowToast={showToast}
                 />
