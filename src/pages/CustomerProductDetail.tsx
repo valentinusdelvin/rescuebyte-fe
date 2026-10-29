@@ -6,6 +6,7 @@ import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { FormattedDescription } from '../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
+import { getAllStores } from '../services/storeService';
 
 export interface CustomerProductDetailProps {
   product?: CustomerMysteryBox | null;
@@ -55,6 +56,28 @@ export function CustomerProductDetail({
 
   // Use product prop or default to Figma mock data for TerasRasa Bakery
   const storeName = product?.storeName || 'TerasRasa Bakery';
+
+  const [storeAvatarUrl, setStoreAvatarUrl] = useState<string | null>(() => {
+    return product?.storeAvatar || null;
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+    getAllStores().then((stores) => {
+      if (isCancelled || !stores) return;
+      const matched = stores.find(
+        (s) =>
+          (s.id && product?.storeId && (s.id === product.storeId || product.storeId.includes(s.id))) ||
+          (s.name && storeName && s.name.toLowerCase() === storeName.toLowerCase())
+      );
+      if (matched?.profile_picture_url) {
+        setStoreAvatarUrl(matched.profile_picture_url);
+      }
+    }).catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.storeId, storeName]);
   const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box';
   const description =
     product?.description ||
@@ -242,21 +265,24 @@ export function CustomerProductDetail({
   };
 
   // Active mystery box representation for modal
-  const activeBoxItem: CustomerMysteryBox = product || {
-    id: 'detail-teras-rasa',
-    storeName,
-    category: '🥐 Pastry & Bakery',
-    distanceText,
-    remainingBoxesText: `Tersisa ${remainingBoxes} box`,
-    discountPercent,
-    originalPrice,
-    rescuePrice,
-    pickupTime,
-    description,
-    tags: ['Sisa Stok Harian'],
-    rating,
-    reviewCount,
-    imageSrc: galleryImages[selectedImageIndex] || '',
+  const activeBoxItem: CustomerMysteryBox = {
+    ...(product || {
+      id: 'detail-teras-rasa',
+      storeName,
+      category: '🥐 Pastry & Bakery',
+      distanceText,
+      remainingBoxesText: `Tersisa ${remainingBoxes} box`,
+      discountPercent,
+      originalPrice,
+      rescuePrice,
+      pickupTime,
+      description,
+      tags: ['Sisa Stok Harian'],
+      rating,
+      reviewCount,
+      imageSrc: galleryImages[selectedImageIndex] || '',
+    }),
+    storeAvatar: storeAvatarUrl || product?.storeAvatar,
   };
 
   return (
@@ -414,8 +440,20 @@ export function CustomerProductDetail({
                     }
                   }}
                 >
-                  <div className="w-11 h-11 rounded-full bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                    {storeName.slice(0, 4)}
+                  <div className="w-11 h-11 rounded-full overflow-hidden bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 group-hover:scale-105 transition-transform border border-black/5">
+                    {storeAvatarUrl ? (
+                      <img
+                        src={storeAvatarUrl}
+                        alt={storeName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <span className={storeAvatarUrl ? 'hidden' : 'block'}>
+                      {storeName.slice(0, 2).toUpperCase()}
+                    </span>
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">

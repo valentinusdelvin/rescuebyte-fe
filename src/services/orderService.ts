@@ -255,7 +255,7 @@ export function createCustomerOrder(
   );
 
   const newOrder: CustomerOrderItem = {
-    id: `ord-${Date.now()}`,
+    id: `ord-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
     orderNumber: paymentData.orderId,
     status: initialStatus,
     statusLabel: getOrderStatusLabel(initialStatus),

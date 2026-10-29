@@ -5,7 +5,6 @@ import {
   Trash2,
   Package,
   Info,
-  Store,
   RefreshCw,
   Receipt,
   Lock,
@@ -23,6 +22,7 @@ import {
   subscribeToCart,
   getStoreInitials,
 } from '../services/cartService';
+import { getAllStores } from '../services/storeService';
 
 export type { CartItem, StoreCartGroup };
 
@@ -137,6 +137,50 @@ export function CustomerCart({
       });
     });
     return unsubscribe;
+  }, []);
+
+  // Enrich cartStores with real backend store profile pictures and operational times
+  useEffect(() => {
+    let isCancelled = false;
+    getAllStores()
+      .then((backendStores) => {
+        if (isCancelled || !backendStores || backendStores.length === 0) return;
+        setCartStores((currentStores) => {
+          let hasChanges = false;
+          const updated = currentStores.map((cartStore) => {
+            const matched = backendStores.find(
+              (bs) =>
+                (bs.id && cartStore.storeId && (bs.id === cartStore.storeId || cartStore.storeId.includes(bs.id))) ||
+                (bs.name && cartStore.storeName && bs.name.toLowerCase() === cartStore.storeName.toLowerCase())
+            );
+            if (matched) {
+              const newAvatar = matched.profile_picture_url || cartStore.storeAvatar;
+              const newPickup =
+                matched.operational_start && matched.operational_end
+                  ? `${matched.operational_start.slice(0, 5)} - ${matched.operational_end.slice(0, 5)} WIB`
+                  : cartStore.pickupTime;
+              if (newAvatar !== cartStore.storeAvatar || newPickup !== cartStore.pickupTime) {
+                hasChanges = true;
+                return {
+                  ...cartStore,
+                  storeAvatar: newAvatar,
+                  pickupTime: newPickup,
+                };
+              }
+            }
+            return cartStore;
+          });
+          if (hasChanges) {
+            saveCart(updated);
+            return updated;
+          }
+          return currentStores;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // Selection toggle handlers
@@ -385,13 +429,12 @@ export function CustomerCart({
                           role="checkbox"
                           aria-checked={isStoreAllSelected(store)}
                           onClick={() => toggleStoreSelection(store)}
-                          className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
-                            isStoreAllSelected(store)
+                          className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${isStoreAllSelected(store)
                               ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
                               : store.items.some((it) => selectedItemIds.has(it.id))
                                 ? 'bg-[#16a34a]/15 border-[#16a34a] text-[#16a34a]'
                                 : 'bg-white border-gray-300 hover:border-gray-400'
-                          }`}
+                            }`}
                           aria-label={`Pilih semua produk dari ${store.storeName}`}
                         >
                           {isStoreAllSelected(store) ? (
@@ -416,10 +459,20 @@ export function CustomerCart({
                           title={`Lihat halaman toko ${store.storeName}`}
                           className="flex items-center gap-3 min-w-0 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 rounded-xl p-0.5"
                         >
-                          <div className="w-10 h-10 rounded-full bg-[#1b261e] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs group-hover:scale-105 transition-transform">
-                            {store.storeAvatar && store.storeAvatar.length <= 2
-                              ? store.storeAvatar
-                              : getStoreInitials(store.storeName)}
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-[#1b261e] text-white flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs group-hover:scale-105 transition-transform border border-black/5">
+                            {store.storeAvatar && (store.storeAvatar.startsWith('http') || store.storeAvatar.startsWith('/')) ? (
+                              <img
+                                src={store.storeAvatar}
+                                alt={store.storeName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : null}
+                            <span className={store.storeAvatar && (store.storeAvatar.startsWith('http') || store.storeAvatar.startsWith('/')) ? 'hidden' : 'block'}>
+                              {getStoreInitials(store.storeName)}
+                            </span>
                           </div>
                           <div className="flex flex-col min-w-0">
                             <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c] whitespace-nowrap group-hover:text-emerald-800 group-hover:underline transition-colors">
@@ -474,11 +527,10 @@ export function CustomerCart({
                               role="checkbox"
                               aria-checked={selectedItemIds.has(item.id)}
                               onClick={() => toggleItemSelection(item.id)}
-                              className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
-                                selectedItemIds.has(item.id)
+                              className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${selectedItemIds.has(item.id)
                                   ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
                                   : 'bg-white border-gray-300 hover:border-gray-400'
-                              }`}
+                                }`}
                               aria-label={`Pilih ${item.name}`}
                             >
                               {selectedItemIds.has(item.id) && (
@@ -614,48 +666,33 @@ export function CustomerCart({
 
                   <div className="flex flex-col gap-3.5 mt-1">
                     {/* Item 1: Pesanan dikelompokkan per toko */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <Store className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Pesanan dikelompokkan per toko
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Setiap toko memiliki lokasi dan waktu pickup yang berbeda.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Pesanan dikelompokkan per toko
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Setiap toko memiliki lokasi dan waktu pickup yang berbeda.
+                      </p>
                     </div>
 
                     {/* Item 2: Stok tidak dijamin */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <Package className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Stok tidak dijamin
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Stok akan divalidasi ulang saat checkout.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Stok tidak dijamin
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Stok akan divalidasi ulang saat checkout.
+                      </p>
                     </div>
 
                     {/* Item 3: Mystery Box */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <RefreshCw className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-[#1b1c1c]">
-                          Mystery Box
-                        </span>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          Isi menyesuaikan stok harian toko. Tidak dapat memilih menu tertentu.
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#1b1c1c]">
+                        Mystery Box
+                      </span>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        Isi menyesuaikan stok harian toko. Tidak dapat memilih menu tertentu.
+                      </p>
                     </div>
                   </div>
                 </article>

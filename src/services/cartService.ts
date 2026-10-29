@@ -195,12 +195,17 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
           ...updatedItems[existingItemIndex],
           quantity: newQty,
         };
-        return { ...store, items: updatedItems };
+        return {
+          ...store,
+          storeAvatar: box.storeAvatar || store.storeAvatar,
+          items: updatedItems,
+        };
       }
 
       // Add new item to existing store
       return {
         ...store,
+        storeAvatar: box.storeAvatar || store.storeAvatar,
         items: [
           ...store.items,
           {
@@ -221,7 +226,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
 
   // If store doesn't exist yet, create a new StoreCartGroup
   if (!storeFound) {
-    const avatar = getStoreInitials(box.storeName);
+    const avatar = box.storeAvatar || getStoreInitials(box.storeName);
     const newStoreGroup: StoreCartGroup = {
       storeId: targetStoreId,
       storeName: box.storeName,

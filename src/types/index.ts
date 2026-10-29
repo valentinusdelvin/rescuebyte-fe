@@ -119,6 +119,7 @@ export interface CustomerMysteryBox {
   id: string;
   storeId?: string;
   storeName: string;
+  storeAvatar?: string;
   category: string;
   categoryBadge?: string;
   portionText?: string;

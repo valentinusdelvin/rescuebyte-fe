@@ -637,6 +637,7 @@ export function App() {
             setPaymentOrderData(orderData);
             handleNavigate('view-customer-order-detail', 'Detail Pesanan');
           }}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-orders' ? (

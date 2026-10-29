@@ -29,6 +29,7 @@ export interface CustomerCheckoutProps {
   onNavigateSeller?: () => void;
   onNavigatePayment?: (orderData: PaymentOrderData) => void;
   onNavigateOrderDetail?: (orderData: PaymentOrderData) => void;
+  onNavigateOrders?: () => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -68,6 +69,7 @@ export function CustomerCheckout({
   onNavigateSeller,
   onNavigatePayment,
   onNavigateOrderDetail,
+  onNavigateOrders,
   onShowToast,
 }: CustomerCheckoutProps) {
   // Customer Info State from current user or defaults
@@ -291,48 +293,115 @@ export function CustomerCheckout({
     setIsSubmitting(true);
     const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(10000 + Math.random() * 90000).toString();
-    const generatedCode = `RB${todayStr}-${randomSuffix}`;
 
-    const firstGroup = storeGroups[0];
-    const orderData: PaymentOrderData = {
-      orderId: generatedCode,
-      items: checkoutItems,
-      primaryStore: {
-        storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
-        storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
-        storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
-        rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
-        reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
-      },
-      pickupDate: orderDateFormatted,
-      pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
-      customerInfo: {
-        name: customerName,
-        phone: customerPhone,
-        email: customerEmail,
-      },
-      totalBoxes,
-      subtotal,
-      discountTotal,
-      serviceFee,
-      grandTotal,
-      source: payload?.source,
-      status: 'menunggu-konfirmasi',
-      createdAt: new Date().toISOString(),
-    };
+    // Opsi 2 Alur B:
+    // Jika checkout dari lebih dari 1 toko -> Split orders per toko dan arahkan ke Pesanan Saya
+    // Jika hanya 1 toko -> Buat 1 pesanan dan langsung arahkan ke Detail Pesanan
+    if (storeGroups.length > 1) {
+      storeGroups.forEach((group, idx) => {
+        let groupBoxes = 0;
+        let groupSub = 0;
+        let groupDisc = 0;
 
-    // Save order, deduct merchant stock, clear cart if source was cart
-    createCustomerOrder(orderData, 'menunggu-konfirmasi');
-    if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+        group.items.forEach((item) => {
+          groupBoxes += item.quantity;
+          const originalTotal = item.originalPrice * item.quantity;
+          const rescueTotal = item.rescuePrice * item.quantity;
+          groupSub += rescueTotal;
+          groupDisc += originalTotal - rescueTotal;
+        });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (onNavigateOrderDetail) {
-        onNavigateOrderDetail(orderData);
-      } else if (onNavigatePayment) {
-        onNavigatePayment(orderData);
+        const groupServiceFee = 2000;
+        const groupGrandTotal = groupSub + groupServiceFee;
+        const storeOrderCode = `RB${todayStr}-${randomSuffix}-${idx + 1}`;
+
+        const storeOrderData: PaymentOrderData = {
+          orderId: storeOrderCode,
+          items: group.items,
+          primaryStore: {
+            storeName: group.storeName,
+            storeAvatar: group.storeAvatar,
+            storeAddress: group.storeAddress,
+            rating: group.rating,
+            reviewCount: group.reviewCount,
+          },
+          pickupDate: orderDateFormatted,
+          pickupTimeSlot: group.operationalHours,
+          customerInfo: {
+            name: customerName,
+            phone: customerPhone,
+            email: customerEmail,
+          },
+          totalBoxes: groupBoxes,
+          subtotal: groupSub,
+          discountTotal: groupDisc,
+          serviceFee: groupServiceFee,
+          grandTotal: groupGrandTotal,
+          source: payload?.source,
+          status: 'menunggu-konfirmasi',
+          createdAt: new Date().toISOString(),
+        };
+
+        // Buat pesanan terpisah untuk tiap toko
+        createCustomerOrder(storeOrderData, 'menunggu-konfirmasi');
+      });
+
+      if (onShowToast) {
+        onShowToast(`Pesanan berhasil dibuat untuk ${storeGroups.length} toko! Membuka Pesanan Saya...`);
       }
-    }, 300);
+
+      setTimeout(() => {
+        setIsSubmitting(false);
+        if (onNavigateOrders) {
+          onNavigateOrders();
+        } else {
+          window.location.assign('#pesanan-saya');
+        }
+      }, 350);
+    } else {
+      // Single store checkout -> langsung ke detail pesanan
+      const firstGroup = storeGroups[0];
+      const singleOrderCode = `RB${todayStr}-${randomSuffix}`;
+
+      const orderData: PaymentOrderData = {
+        orderId: singleOrderCode,
+        items: checkoutItems,
+        primaryStore: {
+          storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
+          storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
+          storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
+          rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
+          reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
+        },
+        pickupDate: orderDateFormatted,
+        pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
+        customerInfo: {
+          name: customerName,
+          phone: customerPhone,
+          email: customerEmail,
+        },
+        totalBoxes,
+        subtotal,
+        discountTotal,
+        serviceFee,
+        grandTotal,
+        source: payload?.source,
+        status: 'menunggu-konfirmasi',
+        createdAt: new Date().toISOString(),
+      };
+
+      createCustomerOrder(orderData, 'menunggu-konfirmasi');
+      if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+
+      setTimeout(() => {
+        setIsSubmitting(false);
+        if (onNavigateOrderDetail) {
+          onNavigateOrderDetail(orderData);
+        } else if (onNavigatePayment) {
+          onNavigatePayment(orderData);
+        }
+      }, 300);
+    }
   };
 
   const handleHeaderTab = (tab: string) => {

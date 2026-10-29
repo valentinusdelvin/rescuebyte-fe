@@ -117,25 +117,27 @@ export function CustomerOrderDetail({
   const serviceFee = orderData?.serviceFee ?? 2000;
   const grandTotal = orderData?.grandTotal ?? (totalRescuePrice + serviceFee);
 
+  const orderCreatedAt = orderData?.createdAt;
+
   const completionTimestamp = useMemo(() => {
-    if (orderData?.createdAt) {
+    if (orderCreatedAt) {
       try {
-        const d = new Date(orderData.createdAt);
+        const d = new Date(orderCreatedAt);
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
       } catch {}
     }
     return '23 Okt 2026, 15:42 WIB';
-  }, [orderData?.createdAt]);
+  }, [orderCreatedAt]);
 
   const fullOrderDate = useMemo(() => {
-    if (orderData?.createdAt) {
+    if (orderCreatedAt) {
       try {
-        const d = new Date(orderData.createdAt);
+        const d = new Date(orderCreatedAt);
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
       } catch {}
     }
     return '23 Oktober 2026, 15:42 WIB';
-  }, [orderData?.createdAt]);
+  }, [orderCreatedAt]);
 
   const statusConfig = useMemo(() => {
     switch (activeStep) {
@@ -491,7 +493,7 @@ export function CustomerOrderDetail({
 
                           <h4 className="text-base font-bold text-[#1b1c1c] truncate">{itName}</h4>
                           <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                            {itQty} Box ({storeName})
+                            {itQty} Box ({item?.storeName || storeName})
                           </p>
 
                           <div className="flex items-baseline justify-between gap-2 mt-2 pt-2 border-t border-slate-50">
@@ -525,8 +527,12 @@ export function CustomerOrderDetail({
                 </div>
 
                 <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-[#1b1c1c] text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    {storeAvatar}
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[#1b1c1c] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    {storeAvatar && (storeAvatar.startsWith('http') || storeAvatar.startsWith('/')) ? (
+                      <img src={storeAvatar} alt={storeName} className="w-full h-full object-cover" />
+                    ) : (
+                      storeAvatar
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-baseline gap-2">
