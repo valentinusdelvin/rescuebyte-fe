@@ -110,6 +110,7 @@ export function App() {
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [paymentOrderData, setPaymentOrderData] = useState<PaymentOrderData | null>(null);
   const [selectedStoreName, setSelectedStoreName] = useState<string>('TerasRasa Bakery');
+  const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(undefined);
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
     const hash = window.location.hash.toLowerCase();
@@ -512,10 +513,11 @@ export function App() {
   }, [handleNavigate]);
 
   const handleNavigateStore = useCallback(
-    (targetStoreName?: string) => {
+    (targetStoreName?: string, targetStoreId?: string) => {
       if (targetStoreName) {
         setSelectedStoreName(targetStoreName);
       }
+      setSelectedStoreId(targetStoreId);
       handleNavigate('view-customer-store', 'Detail Toko');
     },
     [handleNavigate]
@@ -573,9 +575,7 @@ export function App() {
               items: [
                 {
                   id: product.id,
-                  name: product.category
-                    ? `${product.category.replace(/^[^\w\s]+/, '').trim()} Reguler`
-                    : 'Mystery Bakery Box Reguler',
+                  name: product.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
                   storeId: 'store-terasa',
                   storeName: product.storeName || 'TerasRasa Bakery',
                   storeAvatar: 'TR',
@@ -660,20 +660,7 @@ export function App() {
       ) : activeView === 'view-customer-store' ? (
         <CustomerStoreDetail
           storeName={selectedStoreName}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
-          onNavigateProductDetail={(item) => {
-            setSelectedProduct(item);
-            handleNavigate('view-customer-product-detail', 'Detail Produk');
-          }}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-store' ? (
-        <CustomerStoreDetail
-          storeName={selectedStoreName}
+          storeId={selectedStoreId}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}

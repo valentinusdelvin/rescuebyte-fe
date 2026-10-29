@@ -62,11 +62,27 @@ export interface GetMerchantProductsParams {
 
 const STORAGE_KEY = 'rescuebyte_merchant_products';
 
-const INITIAL_PRODUCTS: ProductItem[] = [];
+const INITIAL_PRODUCTS: ProductItem[] = [
+  {
+    id: '01a18829-c1da-71b4-afb9-2bac249a29c0',
+    name: 'Makanan rejak',
+    description:
+      'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin. Disiapkan langsung oleh chef dan aman dikonsumsi hingga 4 jam setelah pengambilan.',
+    normalPrice: 45000,
+    rescuePrice: 20000,
+    stock: 5,
+    maxStock: 10,
+    status: 'aktif',
+    isActive: true,
+    imageUrl:
+      'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/products/01a18829-ba1b-766b-8ac3-fe030c23a306.png',
+    createdAt: 'Dibuat 29 Okt 2026, 20:04',
+  },
+];
 
 /**
  * Get all merchant products from localStorage.
- * Automatically filters out legacy mock placeholder products.
+ * Automatically filters out legacy mock placeholder products and ensures fallback to real initial products.
  */
 export function getStoredProducts(): ProductItem[] {
   try {
@@ -75,7 +91,7 @@ export function getStoredProducts(): ProductItem[] {
       return INITIAL_PRODUCTS;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
+    if (Array.isArray(parsed) && parsed.length > 0) {
       const realProducts = parsed.filter(
         (p: ProductItem) =>
           p &&
@@ -83,10 +99,9 @@ export function getStoredProducts(): ProductItem[] {
           !['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6'].includes(p.id) &&
           !p.name.startsWith('Mystery ')
       );
-      if (realProducts.length !== parsed.length) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(realProducts));
+      if (realProducts.length > 0) {
+        return realProducts;
       }
-      return realProducts;
     }
     return INITIAL_PRODUCTS;
   } catch (err) {
@@ -165,16 +180,38 @@ export function formatRupiah(amount: number): string {
 }
 
 /**
- * Maps a backend ProductResponse to frontend ProductItem model.
+ * Maps a backend ProductResponse or PublicProductItem to frontend ProductItem model.
  */
-export function mapBackendProductToItem(p: ProductResponse): ProductItem {
-  const stock = p.total_current_stock ?? (p.variants?.[0]?.current_stock ?? 0);
-  const maxStock = p.total_initial_stock ?? (p.variants?.[0]?.initial_stock ?? stock);
-  const normalPrice = p.min_normal_price ?? (p.variants?.[0]?.normal_price ?? 0);
-  const rescuePrice = p.min_rescue_price ?? (p.variants?.[0]?.rescue_price ?? 0);
+export function mapBackendProductToItem(p: any): ProductItem {
+  const stock =
+    typeof p.stock === 'number'
+      ? p.stock
+      : p.total_current_stock ?? p.variants?.[0]?.current_stock ?? 0;
+
+  const maxStock =
+    typeof p.maxStock === 'number'
+      ? p.maxStock
+      : p.total_initial_stock ?? p.variants?.[0]?.initial_stock ?? stock;
+
+  const normalPrice =
+    typeof p.normal_price === 'number'
+      ? p.normal_price
+      : p.min_normal_price ?? p.variants?.[0]?.normal_price ?? 0;
+
+  const rescuePrice =
+    typeof p.rescue_price === 'number'
+      ? p.rescue_price
+      : p.min_rescue_price ?? p.variants?.[0]?.rescue_price ?? 0;
+
+  const isActive =
+    p.is_active !== undefined
+      ? Boolean(p.is_active)
+      : p.isActive !== undefined
+      ? Boolean(p.isActive)
+      : true;
 
   let status: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif' = 'aktif';
-  if (!p.is_active) {
+  if (!isActive) {
     status = 'nonaktif';
   } else if (stock === 0) {
     status = 'habis';
@@ -203,8 +240,8 @@ export function mapBackendProductToItem(p: ProductResponse): ProductItem {
     stock,
     maxStock,
     status,
-    isActive: p.is_active,
-    imageUrl: p.main_image_url || p.images?.[0]?.image_url,
+    isActive,
+    imageUrl: p.main_image_url || p.images?.[0]?.image_url || p.imageUrl,
     createdAt: formattedDate,
   };
 }
@@ -236,24 +273,71 @@ export async function createProduct(payload: CreateProductPayload): Promise<Prod
 
 /**
  * Fetch merchant's product list from backend via GET /api/v1/products/me/list.
- * Falls back gracefully to local cached products if network fails.
+ * Falls back gracefully to public products and local cached products if network fails.
  */
 export async function getMerchantProducts(params?: GetMerchantProductsParams): Promise<ProductItem[]> {
   try {
     const response = await api.get('/api/v1/products/me/list', { params });
     const rawList = response.data?.payload;
 
-    if (Array.isArray(rawList)) {
-      const mapped = rawList.map(mapBackendProductToItem);
+    const list = Array.isArray(rawList)
+      ? rawList
+      : Array.isArray(rawList?.products)
+      ? rawList.products
+      : Array.isArray(rawList?.items)
+      ? rawList.items
+      : null;
+
+    if (list && list.length > 0) {
+      const mapped = list.map(mapBackendProductToItem);
       saveAllProducts(mapped);
       return mapped;
     }
-
-    return getStoredProducts();
   } catch (err) {
-    console.warn('getMerchantProducts failed, using cached products:', err);
-    return getStoredProducts();
+    console.warn('getMerchantProducts failed, attempting fallback to public products:', err);
   }
+
+  // Fallback: fetch public products belonging to merchant store
+  try {
+    const storeName = (() => {
+      try {
+        return (
+          localStorage.getItem('rescuebyte_store_name') ||
+          localStorage.getItem('rescuebyte_selected_store') ||
+          'Toko Rejak'
+        );
+      } catch {
+        return 'Toko Rejak';
+      }
+    })();
+    const cleanStore = storeName.trim().toLowerCase();
+    const publicItems = await getPublicProducts();
+    const matched = publicItems.filter((p) => {
+      const pStore = (p.store_name || '').toLowerCase();
+      return (
+        pStore === cleanStore ||
+        pStore.includes(cleanStore) ||
+        cleanStore.includes(pStore) ||
+        (cleanStore.includes('rejak') && (pStore.includes('rejak') || p.name.toLowerCase().includes('rejak')))
+      );
+    });
+    if (matched.length > 0) {
+      const mapped = matched.map(mapBackendProductToItem);
+      const existing = getStoredProducts();
+      const merged = [...mapped];
+      existing.forEach((ep) => {
+        if (!merged.some((m) => m.id === ep.id || m.name.toLowerCase() === ep.name.toLowerCase())) {
+          merged.push(ep);
+        }
+      });
+      saveAllProducts(merged);
+      return merged;
+    }
+  } catch (err) {
+    console.warn('Fallback to public products failed:', err);
+  }
+
+  return getStoredProducts();
 }
 
 /**
@@ -305,6 +389,7 @@ export interface GetPublicProductsParams {
   latitude?: number;
   longitude?: number;
   search?: string;
+  store_id?: string;
   page?: number;
   limit?: number;
 }
@@ -315,7 +400,7 @@ export interface GetPublicProductsParams {
  */
 export async function getPublicProducts(params?: GetPublicProductsParams): Promise<PublicProductItem[]> {
   try {
-    const response = await api.get('/api/v1/products', { params });
+    const response = await api.get('/api/v1/products', { params, timeout: 4000 });
     const payload = response.data?.payload;
     if (payload && Array.isArray(payload.products)) {
       return payload.products as PublicProductItem[];

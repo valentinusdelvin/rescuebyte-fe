@@ -1,4 +1,5 @@
 import { CSSProperties } from 'react';
+import { CircleUser, Store, ShoppingBag, Package } from 'lucide-react';
 import { ActiveViewId } from '../../types';
 
 export interface SidebarProps {
@@ -86,20 +87,7 @@ export function Sidebar({
         {/* Sidebar Store Header */}
         <div className="flex items-center gap-3 py-1 px-1.5">
           <div className="flex items-center justify-center text-[#111827]">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="9" r="3.2" />
-              <path d="M6.168 18.849a6.5 6.5 0 0 1 11.664 0" />
-            </svg>
+            <CircleUser className="w-6 h-6" />
           </div>
           <span className="text-[1.15rem] font-bold tracking-[-0.01em] text-[#111827] truncate">{storeName}</span>
         </div>
@@ -112,21 +100,7 @@ export function Sidebar({
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-3 px-1">
               <span className="flex items-center justify-center text-[#111827]">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 9l2-5h14l2 5" />
-                  <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
-                  <path d="M9 22V12h6v10" />
-                  <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-                </svg>
+                <Store className="w-5.5 h-5.5" />
               </span>
               <span className="text-[1.25rem] font-bold text-[#111827] tracking-[-0.01em] font-sans">Tokoku</span>
             </div>
@@ -166,20 +140,7 @@ export function Sidebar({
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-3 px-1">
               <span className="flex items-center justify-center text-[#111827]">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
+                <ShoppingBag className="w-5.5 h-5.5" />
               </span>
               <span className="text-[1.25rem] font-bold text-[#111827] tracking-[-0.01em] font-sans">Pesanan</span>
             </div>
@@ -219,20 +180,7 @@ export function Sidebar({
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-3 px-1">
               <span className="flex items-center justify-center text-[#111827]">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="21 8 21 21 3 21 3 8" />
-                  <rect x="1" y="3" width="22" height="5" rx="1" />
-                  <line x1="10" y1="12" x2="14" y2="12" />
-                </svg>
+                <Package className="w-5.5 h-5.5" />
               </span>
               <span className="text-[1.25rem] font-bold text-[#111827] tracking-[-0.01em] font-sans">Dagangan</span>
             </div>

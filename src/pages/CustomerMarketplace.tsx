@@ -1,4 +1,19 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import {
+  Search,
+  MapPin,
+  ChevronDown,
+  LocateFixed,
+  Check,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Package,
+  Clock,
+  Flame,
+  X,
+  ShoppingCart,
+} from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
@@ -10,7 +25,6 @@ import {
   getStoredProducts,
 } from '../services/productService';
 
-// Optional existing assets (can be replaced/augmented anytime from assets)
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 
 export interface CustomerMarketplaceProps {
@@ -18,7 +32,7 @@ export interface CustomerMarketplaceProps {
   onNavigateSeller?: () => void;
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
-  onNavigateStore?: (storeName: string) => void;
+  onNavigateStore?: (storeName: string, storeId?: string) => void;
   onNavigateCart?: () => void;
   onNavigateProfile?: () => void;
   onNavigateOrders?: () => void;
@@ -55,217 +69,6 @@ function parsePriceInput(val: string): number | null {
   const digits = val.replace(/\D/g, '');
   return digits ? parseInt(digits, 10) : null;
 }
-
-/**
- * 12 Marketplace Mock Products matching the Figma design verbatim.
- * Designed with a clean placeholder slot when imageSrc is not present.
- */
-const MARKETPLACE_PRODUCTS: MarketplaceBoxItem[] = [
-  {
-    id: 'mp-1',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 55000,
-    rescuePrice: 18000,
-    pickupTime: '19:45 - 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-2',
-    storeName: 'Holland Bakery Ijen',
-    category: '🍞 Roti & Pastry Harian',
-    categoryBadge: '🍞 ROTI SURPRISE',
-    categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 3 Box',
-    distanceText: '1.2 km',
-    discountPercent: 65,
-    originalPrice: 25000,
-    rescuePrice: 8500,
-    pickupTime: '19:30 - 20:30 WIB',
-    description: 'Roti manis, lemper ayam, dan aneka jajanan pasar lembut dan fresh hari ini.',
-    tags: ['✓ Halal MUI', 'Tradisional'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-3',
-    storeName: 'Gourmet Delicatessen Malang',
-    category: '🥪 European Cold Cuts & Bread',
-    categoryBadge: '🥪 DELI SURPRISE',
-    categoryType: 'heavy',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '3.5 km',
-    discountPercent: 60,
-    originalPrice: 65000,
-    rescuePrice: 25000,
-    pickupTime: '20:00 - 21:30 WIB',
-    description: 'Aneka artisan sourdough, cheese sandwich, dan ham roll impor kualitas premium.',
-    tags: ['Non Halal', 'European Deli'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-4',
-    storeName: 'Monsieur Spoon Senopati',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 1 Box',
-    distanceText: '7.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: '19:45 - 21:00 WIB (45 mnt lagi)',
-    description: 'Artisan French Viennoiserie Surprise Box berisi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-5',
-    storeName: 'Artisan Viennoiserie Cafe',
-    category: '☕ Pastry & Specialty Coffee',
-    categoryBadge: '☕ CAFE SURPRISE',
-    categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '12.0 km',
-    discountPercent: 55,
-    originalPrice: 95000,
-    rescuePrice: 45000,
-    pickupTime: '20:30 - 22:00 WIB',
-    description: 'Paket brunch mystery: 2 pastry premium dan 1 kopi susu literan botolan segar.',
-    tags: ['✓ Halal MUI', 'Kopi & Roti'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-6',
-    storeName: 'Donat Kampung Sutami',
-    category: '🍩 Donat & Sweet Treats',
-    categoryBadge: '🍩 DONAT SURPRISE',
-    categoryType: 'snack',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 4 Box',
-    distanceText: '2.1 km',
-    discountPercent: 60,
-    originalPrice: 22000,
-    rescuePrice: 9000,
-    pickupTime: '18:30 - 20:00 WIB',
-    description: 'Kotak donat kentang tabur gula halus dan meises klasik 6 pcs masih empuk.',
-    tags: ['✓ Halal MUI', 'Snack Manis'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-7',
-    storeName: 'Bacon & Brew Bistro',
-    category: '🥓 Western Diner & Pastry',
-    categoryBadge: '🥓 DINER SURPRISE',
-    categoryType: 'heavy',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '18.5 km',
-    discountPercent: 62,
-    originalPrice: 40000,
-    rescuePrice: 15000,
-    pickupTime: '21:00 - 22:30 WIB',
-    description: 'Savory puff pastry dengan bacon bits dan creamy cheese melt hangat.',
-    tags: ['Non Halal', 'Western Food'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-8',
-    storeName: 'Dapur Croissant Sawojajar',
-    category: '🥐 Pastry & Danish',
-    categoryBadge: '🥐 CROISSANT SURPRISE',
-    categoryType: 'pastry',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '4.2 km',
-    discountPercent: 65,
-    originalPrice: 80000,
-    rescuePrice: 28000,
-    pickupTime: '19:00 - 20:30 WIB',
-    description: 'Surprise box berisi 3 almond croissant dan chocolate roll gurih.',
-    tags: ['✓ Halal MUI', 'Fresh Baked'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-9',
-    storeName: 'Cake & Tart Dinoyo',
-    category: '🍰 Cake Slice & Tart',
-    categoryBadge: '🍰 CAKE SURPRISE',
-    categoryType: 'snack',
-    city: 'Malang',
-    remainingBoxesText: 'Sisa 1 Box',
-    distanceText: '25.0 km',
-    discountPercent: 65,
-    originalPrice: 135000,
-    rescuePrice: 48000,
-    pickupTime: '20:00 - 21:00 WIB',
-    description: 'Aneka 2-3 slice whole cake signature seperti red velvet dan tiramisu segar.',
-    tags: ['✓ Halal MUI', 'Dessert Box'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-10',
-    storeName: 'Monsieur Spoon Jakarta',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
-    city: 'Jakarta Selatan',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '0.8 km',
-    discountPercent: 65,
-    originalPrice: 65000,
-    rescuePrice: 22000,
-    pickupTime: '19:45 - 21:00 WIB',
-    description: 'Artisan French Viennoiserie Surprise Box butter croissant & pain au chocolat.',
-    tags: ['✓ Halal MUI', 'Gluten & Dairy'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-11',
-    storeName: 'Roti Surabaya Gubeng',
-    category: '🍞 Roti & Pastry Harian',
-    categoryBadge: '🍞 ROTI SURPRISE',
-    categoryType: 'pastry',
-    city: 'Surabaya',
-    remainingBoxesText: 'Sisa 2 Box',
-    distanceText: '2.0 km',
-    discountPercent: 60,
-    originalPrice: 40000,
-    rescuePrice: 16000,
-    pickupTime: '19:00 - 20:30 WIB',
-    description: 'Paket aneka roti kasur dan roti sobek mentega manis lembut hari ini.',
-    tags: ['✓ Halal MUI', 'Keluarga'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'mp-12',
-    storeName: 'Bandung Pastry Express',
-    category: '🥐 Pastry & Bakery Premium',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    categoryType: 'pastry',
-    city: 'Bandung',
-    remainingBoxesText: 'Sisa 3 Box',
-    distanceText: '4.5 km',
-    discountPercent: 58,
-    originalPrice: 70000,
-    rescuePrice: 29000,
-    pickupTime: '19:30 - 21:00 WIB',
-    description: 'Aneka bolen pisang keju coklat dan pastry lapis legit mini khas Bandung.',
-    tags: ['✓ Halal MUI', 'Oleh-Oleh'],
-    imageSrc: cardMonsieurSpoon,
-  },
-];
 
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Malang': { lat: -7.9526, lng: 112.6146 },
@@ -313,6 +116,7 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
 
   return {
     id: p.id,
+    storeId: p.store_id,
     storeName: realStoreName,
     productName: realProductName,
     category: realProductName,
@@ -333,6 +137,61 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
     rating: 4.9,
     reviewCount: 42,
   };
+}
+
+export const MARKETPLACE_CACHE_KEY = 'rescuebyte_cached_marketplace_products';
+
+function getInitialMarketplaceProducts(): MarketplaceBoxItem[] {
+  // 1. Prioritize cached products from previous API fetch (instant 0ms load)
+  try {
+    const cached = localStorage.getItem(MARKETPLACE_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 2. Fallback to local stored merchant products if available
+  try {
+    const savedStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
+    const localItems = getStoredProducts().filter(
+      (lp) => lp.isActive && lp.status !== 'nonaktif'
+    );
+    if (localItems.length > 0) {
+      return localItems.map((lp) => {
+        const discount =
+          lp.normalPrice > 0
+            ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
+            : 0;
+        return {
+          id: lp.id,
+          storeName: savedStoreName,
+          productName: lp.name,
+          category: lp.name,
+          categoryBadge: lp.name,
+          categoryType: 'heavy',
+          city: 'Malang',
+          remainingBoxesText: `Sisa ${lp.stock} Box`,
+          distanceText: '2.1 km',
+          discountPercent: discount,
+          originalPrice: lp.normalPrice,
+          rescuePrice: lp.rescuePrice,
+          pickupTime: '08.00 – 23.59 WIB',
+          description:
+            lp.description ||
+            'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
+          tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
+          imageSrc: lp.imageUrl || cardMonsieurSpoon,
+          rating: 5.0,
+          reviewCount: 12,
+        };
+      });
+    }
+  } catch {}
+
+  return [];
 }
 
 const CITIES = ['Malang', 'Jakarta Selatan', 'Surabaya', 'Bandung', 'Yogyakarta', 'Semua Kota'];
@@ -412,7 +271,16 @@ export function CustomerMarketplace({
   onNavigateOrders,
   onShowToast,
 }: CustomerMarketplaceProps) {
-  // Coordinates State
+  // Cart Badge Synchronization
+  const [cartCount, setCartCount] = useState<number>(getCartCount);
+  useEffect(() => {
+    const unsubscribe = subscribeToCart((count) => {
+      setCartCount(count);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Coordinates State (reads cached coordinates if present)
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(() => {
     try {
       const saved = localStorage.getItem('rescuebyte_user_coords');
@@ -421,46 +289,17 @@ export function CustomerMarketplace({
     return DEFAULT_COORDS;
   });
 
-  // Dynamic Marketplace Products from Backend & Local Dagangan
-  const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(() => {
-    try {
-      const savedStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
-      const localItems = getStoredProducts().filter(
-        (lp) => lp.isActive && lp.status !== 'nonaktif'
-      );
-      return localItems.map((lp) => {
-        const discount =
-          lp.normalPrice > 0
-            ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
-            : 0;
-        return {
-          id: lp.id,
-          storeName: savedStoreName,
-          productName: lp.name,
-          category: lp.name,
-          categoryBadge: lp.name,
-          categoryType: 'heavy' as const,
-          city: 'Malang',
-          remainingBoxesText: `Sisa ${lp.stock} Box`,
-          distanceText: '2.1 km',
-          discountPercent: discount,
-          originalPrice: lp.normalPrice,
-          rescuePrice: lp.rescuePrice,
-          pickupTime: '08.00 – 23.59 WIB',
-          description:
-            lp.description ||
-            'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-          tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
-          imageSrc: lp.imageUrl || cardMonsieurSpoon,
-          rating: 5.0,
-          reviewCount: 12,
-        };
-      });
-    } catch {
-      return [];
-    }
+  // Dynamic Marketplace Products with Stale-While-Revalidate (instant 0ms render from cache)
+  const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(getInitialMarketplaceProducts);
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    const initial = getInitialMarketplaceProducts();
+    return initial.length === 0;
   });
-  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
+
+  const hasProductsRef = useRef(apiProducts.length > 0);
+  useEffect(() => {
+    hasProductsRef.current = apiProducts.length > 0;
+  }, [apiProducts.length]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -478,7 +317,9 @@ export function CustomerMarketplace({
   // Fetch products from backend GET /api/v1/products with coordinates
   const fetchMarketplaceProducts = useCallback(
     async (coords: { lat: number; lng: number }, query?: string) => {
-      setIsLoadingProducts(true);
+      if (!hasProductsRef.current) {
+        setIsLoadingProducts(true);
+      }
       try {
         const publicItems = await getPublicProducts({
           latitude: coords.lat,
@@ -531,7 +372,13 @@ export function CustomerMarketplace({
             };
           });
 
-        setApiProducts([...mappedApi, ...mappedLocal]);
+        const merged = [...mappedApi, ...mappedLocal];
+        if (merged.length > 0) {
+          setApiProducts(merged);
+          try {
+            localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(merged));
+          } catch {}
+        }
       } catch (err) {
         console.warn('Gagal mengambil produk marketplace:', err);
       } finally {
@@ -541,12 +388,12 @@ export function CustomerMarketplace({
     []
   );
 
-  // Initial products fetch on mount
+  // Initial instant products fetch on mount
   useEffect(() => {
     fetchMarketplaceProducts(userCoords);
   }, [fetchMarketplaceProducts, userCoords]);
 
-  // Request browser live location
+  // Request browser live location (quick non-blocking 3s timeout)
   const handleRequestLiveLocation = useCallback(() => {
     if (!navigator.geolocation) {
       if (onShowToast) onShowToast('Browser tidak mendukung geolokasi');
@@ -564,7 +411,6 @@ export function CustomerMarketplace({
         } catch {}
         setSelectedCity('Lokasi Saat Ini');
         setOpenDropdown(null);
-        fetchMarketplaceProducts(coords);
         if (onShowToast) onShowToast('📍 Lokasi terdeteksi, menampilkan Mystery Box terdekat');
       },
       (err) => {
@@ -574,48 +420,14 @@ export function CustomerMarketplace({
         setSelectedCity('Malang');
         const fallback = CITY_COORDINATES['Malang'];
         setUserCoords(fallback);
-        fetchMarketplaceProducts(fallback);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: false, timeout: 3000 }
     );
-  }, [onShowToast, fetchMarketplaceProducts]);
+  }, [onShowToast]);
 
-  // Trigger live location request on mount asynchronously
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserCoords(coords);
-        try {
-          localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
-        } catch {}
-        setSelectedCity('Lokasi Saat Ini');
-        fetchMarketplaceProducts(coords);
-      },
-      (err) => {
-        console.warn('Geolocation permission:', err.message);
-        setSelectedCity('Malang');
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }, [fetchMarketplaceProducts]);
-
-  // Modal & Cart States
+  // Modal State
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [cartCount, setCartCount] = useState<number>(getCartCount);
-
-  // Synchronize cart count across views
-  useEffect(() => {
-    const unsubscribe = subscribeToCart((count) => {
-      setCartCount(count);
-    });
-    return unsubscribe;
-  }, []);
 
   // Close dropdown on click outside or Escape
   useEffect(() => {
@@ -638,64 +450,64 @@ export function CustomerMarketplace({
     };
   }, []);
 
-  // Combine API & Local products with Figma Mock Marketplace products
+  // Marketplace products (sourced from backend API & merchant store)
   const allProducts = useMemo(() => {
-    const existingIds = new Set(apiProducts.map((p) => p.id));
-    const remainingMocks = MARKETPLACE_PRODUCTS.filter((m) => !existingIds.has(m.id));
-    return [...apiProducts, ...remainingMocks];
+    return apiProducts;
   }, [apiProducts]);
 
   // Filtered & Sorted products list
   const filteredProducts = useMemo(() => {
-    return allProducts.filter((item) => {
-      // Search Query filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchName =
-          item.storeName.toLowerCase().includes(query) ||
-          (item.productName && item.productName.toLowerCase().includes(query));
-        const matchDesc = item.description.toLowerCase().includes(query);
-        const matchCat = item.category.toLowerCase().includes(query);
-        const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
-        if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
-      }
+    return allProducts
+      .filter((item) => {
+        // Search Query filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const matchName =
+            item.storeName.toLowerCase().includes(query) ||
+            (item.productName && item.productName.toLowerCase().includes(query));
+          const matchDesc = item.description.toLowerCase().includes(query);
+          const matchCat = item.category.toLowerCase().includes(query);
+          const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
+          if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
+        }
 
-      // City filter (based on live loc or selected city)
-      if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini') {
-        if (item.city !== selectedCity) return false;
-      }
+        // City filter (based on live loc or selected city)
+        if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini') {
+          if (item.city !== selectedCity) return false;
+        }
 
-      // Price filter (Min - Max Range)
-      if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
-      if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
+        // Price filter (Min - Max Range)
+        if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
+        if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
 
-      // Distance filter
-      if (distanceFilter !== 'semua') {
-        const dist = parseFloat(item.distanceText) || 0;
-        if (distanceFilter === '<1km' && dist >= 1.0) return false;
-        if (distanceFilter === '<5km' && dist >= 5.0) return false;
-        if (distanceFilter === '<10km' && dist >= 10.0) return false;
-      }
+        // Distance filter
+        if (distanceFilter !== 'semua') {
+          const dist = parseFloat(item.distanceText) || 0;
+          if (distanceFilter === '<1km' && dist >= 1.0) return false;
+          if (distanceFilter === '<5km' && dist >= 5.0) return false;
+          if (distanceFilter === '<10km' && dist >= 10.0) return false;
+        }
 
-      return true;
-    }).sort((a, b) => {
-      if (sortField === 'jam_ambil') {
-        const timeA = parsePickupMinutes(a.pickupTime);
-        const timeB = parsePickupMinutes(b.pickupTime);
-        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
-      }
-      if (sortField === 'lokasi') {
-        const distA = parseFloat(a.distanceText) || 0;
-        const distB = parseFloat(b.distanceText) || 0;
-        return sortOrder === 'asc' ? distA - distB : distB - distA;
-      }
-      if (sortField === 'ulasan') {
-        const ratingA = a.rating || 4.8;
-        const ratingB = b.rating || 4.8;
-        return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
-      }
-      return 0;
-    });
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortField === 'jam_ambil') {
+          const timeA = parsePickupMinutes(a.pickupTime);
+          const timeB = parsePickupMinutes(b.pickupTime);
+          return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+        if (sortField === 'lokasi') {
+          const distA = parseFloat(a.distanceText) || 0;
+          const distB = parseFloat(b.distanceText) || 0;
+          return sortOrder === 'asc' ? distA - distB : distB - distA;
+        }
+        if (sortField === 'ulasan') {
+          const ratingA = a.rating || 4.8;
+          const ratingB = b.rating || 4.8;
+          return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
+        }
+        return 0;
+      });
   }, [
     allProducts,
     searchQuery,
@@ -716,7 +528,8 @@ export function CustomerMarketplace({
     }
   };
 
-  const handleConfirmOrder = (_box: CustomerMysteryBox, _quantity: number) => {
+  const handleConfirmOrder = (_box: CustomerMysteryBox, _quantity: number, _notes?: string) => {
+    setIsOrderModalOpen(false);
     if (onShowToast) {
       onShowToast('Pesanan berhasil dibuat!');
     }
@@ -742,7 +555,10 @@ export function CustomerMarketplace({
   };
 
   return (
-    <div className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between" id="marketplace-page-root">
+    <div
+      className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between"
+      id="marketplace-page-root"
+    >
       <div>
         {/* 1. Floating Pill Header (Active on Marketplace) */}
         <CustomerHeader
@@ -756,8 +572,6 @@ export function CustomerMarketplace({
           onOpenAuthModal={() => {
             if (onNavigateAuth) {
               onNavigateAuth();
-            } else {
-              setIsAuthModalOpen(true);
             }
           }}
         />
@@ -773,7 +587,7 @@ export function CustomerMarketplace({
                   <span>Jelajahi </span>
                   <span className="text-brand-green ml-1.5">Mystery Box</span>
                 </h1>
-                {/* 4 Diagonal Footprints (Jejak Kaki Hitam 100% Persis Gambar Referensi) */}
+                {/* 4 Diagonal Footprints (Jejak Kaki Hitam Sesuai Desain Referensi) */}
                 <svg
                   viewBox="0 0 49 89"
                   width="26"
@@ -807,14 +621,11 @@ export function CustomerMarketplace({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari makanan, toko atau kategori..."
-                  className="w-full bg-white border border-black/25 rounded-2xl pl-10 pr-4 py-3 text-xs sm:text-sm font-medium text-[#1b1c1c] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-2xs transition-all"
+                  className="w-full bg-white border border-black/25 rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-medium text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-2xs transition-all"
                   aria-label="Cari makanan, toko atau kategori"
                 />
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                  <Search className="w-4 h-4" />
                 </div>
                 {searchQuery && (
                   <button
@@ -823,7 +634,7 @@ export function CustomerMarketplace({
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs cursor-pointer p-1"
                     title="Hapus pencarian"
                   >
-                    ✕
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -833,42 +644,25 @@ export function CustomerMarketplace({
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(openDropdown === 'kota' ? null : 'kota')}
-                  className={`w-full bg-white border rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#1b1c1c] flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'kota'
-                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6]'
-                    : 'border-black/25 hover:border-black/45'
-                    }`}
+                  className={`w-full bg-white border rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#1b1c1c] flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${
+                    openDropdown === 'kota'
+                      ? 'border-[#3b82f6] ring-1 ring-[#3b82f6]'
+                      : 'border-black/25 hover:border-black/45'
+                  }`}
                   aria-expanded={openDropdown === 'kota'}
                   aria-haspopup="listbox"
                 >
                   <div className="flex items-center gap-1.5 truncate">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="shrink-0 text-black"
-                    >
-                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-700" />
                     <span className="truncate">
-                      {isLoadingLoc ? 'Mendeteksi...' : isLoadingProducts ? 'Memperbarui...' : selectedCity}
+                      {isLoadingLoc ? 'Mendeteksi...' : selectedCity}
                     </span>
                   </div>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className={`shrink-0 text-black transition-transform duration-200 ${openDropdown === 'kota' ? 'rotate-180' : ''
-                      }`}
-                  >
-                    <path d="M12 15l-5-5h10z" />
-                  </svg>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                      openDropdown === 'kota' ? 'rotate-180' : ''
+                    }`}
+                  />
                 </button>
 
                 {openDropdown === 'kota' && (
@@ -880,27 +674,13 @@ export function CustomerMarketplace({
                       className="w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold text-[#1b1c1c] hover:bg-gray-100 flex items-center justify-between border-b border-gray-100 cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-black shrink-0"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="22" y1="12" x2="18" y2="12" />
-                          <line x1="6" y1="12" x2="2" y2="12" />
-                          <line x1="12" y1="6" x2="12" y2="2" />
-                          <line x1="12" y1="22" x2="12" y2="18" />
-                        </svg>
+                        <LocateFixed className="w-4 h-4 text-emerald-700 shrink-0" />
                         <span>{isLoadingLoc ? 'Mendeteksi...' : 'Gunakan Live Loc'}</span>
                       </div>
                       {selectedCity === 'Lokasi Saat Ini' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black text-white">Aktif</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black text-white">
+                          Aktif
+                        </span>
                       )}
                     </button>
 
@@ -916,19 +696,15 @@ export function CustomerMarketplace({
                           try {
                             localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
                           } catch {}
-                          fetchMarketplaceProducts(coords);
                         }}
-                        className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${selectedCity === city
-                          ? 'bg-gray-100 text-[#1b1c1c] font-bold'
-                          : 'text-[#1b1c1c] hover:bg-gray-50'
-                          }`}
+                        className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                          selectedCity === city
+                            ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                            : 'text-[#1b1c1c] hover:bg-gray-50'
+                        }`}
                       >
                         <span>{city}</span>
-                        {selectedCity === city && (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
+                        {selectedCity === city && <Check className="w-3.5 h-3.5 text-emerald-700" />}
                       </button>
                     ))}
                   </div>
@@ -962,103 +738,92 @@ export function CustomerMarketplace({
                     ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
                     : 'Harga'}
                 </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'harga' ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'harga' ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {openDropdown === 'harga' && (
-                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-4 animate-in fade-in zoom-in-95 duration-150 min-w-[280px] sm:min-w-full">
-                  {/* 1. Semua Harga */}
+                <div className="absolute top-full left-0 w-72 sm:w-80 mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-4 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                    <span className="text-xs font-bold text-[#1b1c1c]">Rentang Harga (Rp)</span>
+                    {(appliedMinPrice !== null || appliedMaxPrice !== null) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedMinPrice(null);
+                          setAppliedMaxPrice(null);
+                          setMinPriceInput('');
+                          setMaxPriceInput('');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-[11px] font-semibold text-red-600 hover:text-red-700 cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 block mb-1">MINIMUM</label>
+                      <input
+                        type="text"
+                        placeholder="0"
+                        value={minPriceInput}
+                        onChange={(e) => setMinPriceInput(formatPriceInput(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 block mb-1">MAKSIMUM</label>
+                      <input
+                        type="text"
+                        placeholder="100.000"
+                        value={maxPriceInput}
+                        onChange={(e) => setMaxPriceInput(formatPriceInput(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-black"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preset quick buttons */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {[
+                      { label: '< Rp 25rb', min: null, max: 25000 },
+                      { label: 'Rp 25rb - 50rb', min: 25000, max: 50000 },
+                      { label: '> Rp 50rb', min: 50000, max: null },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setAppliedMinPrice(preset.min);
+                          setAppliedMaxPrice(preset.max);
+                          setMinPriceInput(preset.min ? formatRupiah(preset.min) : '');
+                          setMaxPriceInput(preset.max ? formatRupiah(preset.max) : '');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#1b1c1c] transition cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
-                      setAppliedMinPrice(null);
-                      setAppliedMaxPrice(null);
-                      setMinPriceInput('');
-                      setMaxPriceInput('');
+                      setAppliedMinPrice(parsePriceInput(minPriceInput));
+                      setAppliedMaxPrice(parsePriceInput(maxPriceInput));
                       setOpenDropdown(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-between cursor-pointer mb-1 ${
-                      appliedMinPrice === null && appliedMaxPrice === null
-                        ? 'bg-gray-100 text-[#1b1c1c] font-bold'
-                        : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
-                    }`}
+                    className="w-full py-2.5 rounded-xl bg-[#0b1510] text-[#bbf381] text-xs font-bold transition hover:bg-[#1a2c22] cursor-pointer"
                   >
-                    <span>Semua Harga</span>
-                    {appliedMinPrice === null && appliedMaxPrice === null && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
+                    Terapkan Filter
                   </button>
-
-                  <div className="border-t border-gray-100 my-2" />
-
-                  {/* 2. Rentang min x - max y */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                      Rentang Harga (Rp)
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 items-center">
-                      <div>
-                        <label className="text-[10px] text-gray-400 block mb-0.5">Min</label>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={minPriceInput}
-                            onChange={(e) => setMinPriceInput(formatPriceInput(e.target.value))}
-                            className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-400 block mb-0.5">Max</label>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="50.000"
-                            value={maxPriceInput}
-                            onChange={(e) => setMaxPriceInput(formatPriceInput(e.target.value))}
-                            className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Box Terapkan */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const min = parsePriceInput(minPriceInput);
-                        const max = parsePriceInput(maxPriceInput);
-                        setAppliedMinPrice(min);
-                        setAppliedMaxPrice(max);
-                        setOpenDropdown(null);
-                        if (onShowToast) {
-                          onShowToast('Rentang harga diterapkan');
-                        }
-                      }}
-                      className="w-full mt-3 py-2.5 bg-[#1e2420] hover:bg-black text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-98"
-                    >
-                      Terapkan
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -1078,25 +843,19 @@ export function CustomerMarketplace({
                 aria-expanded={openDropdown === 'jarak'}
               >
                 <span className="truncate">
-                  {distanceFilter === 'semua' ? 'Jarak' : DISTANCE_OPTIONS.find((o) => o.value === distanceFilter)?.label}
+                  {distanceFilter === 'semua'
+                    ? 'Jarak'
+                    : DISTANCE_OPTIONS.find((o) => o.value === distanceFilter)?.label}
                 </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'jarak' ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'jarak' ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {openDropdown === 'jarak' && (
-                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-1.5 overflow-hidden min-w-[200px] sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-1.5 overflow-hidden min-w-50 sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
                   {DISTANCE_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
@@ -1112,11 +871,7 @@ export function CustomerMarketplace({
                       }`}
                     >
                       <span>{opt.label}</span>
-                      {distanceFilter === opt.value && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      {distanceFilter === opt.value && <Check className="w-3.5 h-3.5 text-emerald-700" />}
                     </button>
                   ))}
                 </div>
@@ -1135,119 +890,107 @@ export function CustomerMarketplace({
                 }`}
                 aria-expanded={openDropdown === 'urutkan'}
               >
-                <div className="flex items-center gap-1.5 truncate">
+                <div className="flex items-center gap-1 truncate">
                   <span className="truncate">
-                    {sortField === 'jam_ambil'
-                      ? 'Jam Ambil'
-                      : sortField === 'lokasi'
-                      ? 'Lokasi'
-                      : 'Ulasan'}
+                    {SORT_OPTIONS.find((s) => s.id === sortField)?.label || 'Urutkan'}
                   </span>
-                  <span className="text-xs font-black text-brand-green">
+                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">
                     {sortOrder === 'asc' ? '↑' : '↓'}
                   </span>
                 </div>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`shrink-0 transition-transform duration-200 ${openDropdown === 'urutkan' ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'urutkan' ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {openDropdown === 'urutkan' && (
-                <div className="absolute top-full right-0 sm:left-0 sm:right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-2 overflow-hidden min-w-[280px] sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                    Pilih Urutan &amp; Arah
+                <div className="absolute top-full right-0 w-64 sm:w-72 mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-2 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="text-[11px] font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wide border-b border-gray-100">
+                    Urutkan Berdasarkan
                   </div>
-                  {SORT_OPTIONS.map((opt) => {
-                    const isSelected = sortField === opt.id;
-                    return (
-                      <div
-                        key={opt.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-                          } else {
-                            setSortField(opt.id);
-                            setSortOrder(opt.defaultOrder);
-                          }
-                        }}
-                        className={`w-full px-3.5 py-2.5 transition-colors flex items-center justify-between cursor-pointer group ${
-                          isSelected
-                            ? 'bg-[#f0f7f0] text-[#1b1c1c]'
-                            : 'text-[#1b1c1c] hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex flex-col min-w-0 pr-2">
-                          <span className={`text-xs sm:text-sm ${isSelected ? 'font-bold text-[#1b1c1c]' : 'font-medium'}`}>
-                            {opt.label}
-                          </span>
-                          <span className="text-[10px] text-gray-500 font-normal mt-0.5">
-                            {isSelected
-                              ? sortOrder === 'asc'
-                                ? opt.ascLabel
-                                : opt.descLabel
-                              : 'Klik untuk memilih'}
-                          </span>
-                        </div>
-
-                        {/* Interactive Asc/Desc toggle button (Arrow Only) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isSelected) {
-                              setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-                            } else {
-                              setSortField(opt.id);
-                              setSortOrder(opt.defaultOrder);
-                            }
-                          }}
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                            isSelected
-                              ? 'bg-brand-green text-white border-brand-green shadow-xs hover:bg-[#165022]'
-                              : 'bg-white text-gray-400 border-gray-200 group-hover:border-gray-300 group-hover:text-gray-600'
+                  <div className="py-1">
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = sortField === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`rounded-xl px-3 py-2 flex items-center justify-between transition-colors ${
+                            isSelected ? 'bg-[#f4f8f4]' : 'hover:bg-gray-50'
                           }`}
-                          title={isSelected ? (sortOrder === 'asc' ? 'Urutkan Menurun' : 'Urutkan Menaik') : 'Pilih pengurutan'}
-                          aria-label={isSelected ? (sortOrder === 'asc' ? 'Arah naik' : 'Arah turun') : 'Pilih arah'}
                         >
-                          {isSelected ? (
-                            sortOrder === 'asc' ? (
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="19" x2="12" y2="5" />
-                                <polyline points="5 12 12 5 19 12" />
-                              </svg>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              } else {
+                                setSortField(opt.id);
+                                setSortOrder(opt.defaultOrder);
+                              }
+                              setOpenDropdown(null);
+                            }}
+                            className="flex-1 text-left cursor-pointer"
+                          >
+                            <p
+                              className={`text-xs sm:text-sm font-semibold ${
+                                isSelected ? 'text-[#1b1c1c] font-bold' : 'text-[#1b1c1c]'
+                              }`}
+                            >
+                              {opt.label}
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                              {isSelected
+                                ? sortOrder === 'asc'
+                                  ? opt.ascLabel
+                                  : opt.descLabel
+                                : opt.defaultOrder === 'asc'
+                                ? opt.ascLabel
+                                : opt.descLabel}
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSortField(opt.id);
+                              setSortOrder(
+                                isSelected ? (sortOrder === 'asc' ? 'desc' : 'asc') : opt.defaultOrder
+                              );
+                              setOpenDropdown(null);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-gray-200 transition cursor-pointer text-[#1b1c1c]"
+                            title="Balik urutan (Naik / Turun)"
+                          >
+                            {isSelected ? (
+                              sortOrder === 'asc' ? (
+                                <ArrowUp className="w-3.5 h-3.5 text-emerald-700" />
+                              ) : (
+                                <ArrowDown className="w-3.5 h-3.5 text-emerald-700" />
+                              )
                             ) : (
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <polyline points="19 12 12 19 5 12" />
-                              </svg>
-                            )
-                          ) : (
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="m7 15 5 5 5-5" />
-                              <path d="m7 9 5-5 5 5" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
+                              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* 3. Product Cards Grid (3 Columns) */}
-          {filteredProducts.length > 0 ? (
+          {isLoadingProducts ? (
+            <div className="p-16 text-center bg-white rounded-3xl border border-slate-200">
+              <Package className="w-10 h-10 text-emerald-700 animate-pulse mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-700">Memuat Mystery Box...</p>
+              <p className="text-xs text-slate-400 mt-1">Mengambil paket surplus segar dari database</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="marketplace-grid">
               {filteredProducts.map((item) => (
                 <article
@@ -1255,7 +998,7 @@ export function CustomerMarketplace({
                   className="bg-white rounded-3xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col group"
                   id={`marketplace-card-${item.id}`}
                 >
-                  {/* Card Visual Header (Photo or Clean Structured Placeholder) */}
+                  {/* Card Visual Header */}
                   <div className="relative w-full h-52 overflow-hidden bg-[#24201c]">
                     {item.imageSrc ? (
                       <img
@@ -1263,106 +1006,70 @@ export function CustomerMarketplace({
                         alt={`Mystery Box ${item.productName || item.storeName}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = cardMonsieurSpoon;
+                        }}
                       />
                     ) : (
-                      /* Clean visual placeholder slot when image is not yet in assets */
                       <div className="w-full h-full bg-linear-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
                         <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-200/90 mb-1 border border-white/10 shadow-xs">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                            <path d="m3.3 7 8.7 5 8.7-5" />
-                            <path d="M12 22V12" />
-                          </svg>
+                          <Package className="w-7 h-7 text-amber-200/90" />
                         </div>
-                        <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Mystery Box</span>
+                        <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">
+                          Mystery Box
+                        </span>
                       </div>
                     )}
 
                     {/* Top Badges Overlay */}
                     <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-10">
                       <div className="flex items-center gap-1.5">
-                        {/* Stock Badge: Merah Muda jika > 2, Merah Tebal jika <= 2 */}
                         {(() => {
                           const stockMatch = item.remainingBoxesText.match(/\d+/);
                           const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
                           const isAboveTwo = stockCount > 2;
-                          const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
-                          const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
+                          const cleanStockText = item.remainingBoxesText
+                            .replace(/^[!\s]+/, '')
+                            .replace(/[!\s]+$/, '');
 
                           return isAboveTwo ? (
                             <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
-                              <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="shrink-0"
-                                aria-hidden="true"
-                              >
-                                <circle cx="12" cy="12" r="9" />
-                                <polyline points="12 6 12 12 15 14" />
-                              </svg>
+                              <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
                               <span>{cleanStockText}</span>
                             </span>
                           ) : (
                             <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
-                              {isSingleLast ? (
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3.2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="shrink-0"
-                                  aria-hidden="true"
-                                >
-                                  <line x1="12" y1="4.5" x2="12" y2="13.5" />
-                                  <line x1="12" y1="19" x2="12.01" y2="19" />
-                                </svg>
-                              ) : (
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                  className="shrink-0"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                                </svg>
-                              )}
+                              <Flame className="w-3 h-3 shrink-0" aria-hidden="true" />
                               <span>{cleanStockText}</span>
                             </span>
                           );
                         })()}
-                        <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs">
+
+                        {/* Distance Badge */}
+                        <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold shadow-xs">
                           {item.distanceText}
                         </span>
                       </div>
 
-                      <div>
-                        <span className="px-2.5 py-1 rounded-full bg-brand-green text-white text-[11px] font-black shadow-xs">
-                          -{item.discountPercent}%
-                        </span>
-                      </div>
+                      {/* Discount Badge */}
+                      <span className="px-2.5 py-1 rounded-full bg-[#3c6a00] text-white text-[11px] font-extrabold shadow-xs">
+                        -{item.discountPercent}%
+                      </span>
                     </div>
 
-                    {/* Bottom Dark Gradient with Product & Store Name Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
-                      <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
+                    {/* Gradient Overlay for bottom text readability */}
+                    <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
+
+                    {/* Title overlay at the bottom */}
+                    <div className="absolute bottom-3 inset-x-3.5 z-10 pointer-events-none">
+                      <span className="text-[11px] font-bold text-[#bbf381] tracking-wide block uppercase drop-shadow-sm truncate">
                         {cleanProductName(item.productName || item.categoryBadge || item.category)}
                       </span>
                       <h2
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (onNavigateStore) onNavigateStore(item.storeName);
+                          if (onNavigateStore) onNavigateStore(item.storeName, item.storeId);
                         }}
                         className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate pointer-events-auto cursor-pointer hover:text-[#bbf381] hover:underline transition-colors"
                         title={`Lihat halaman toko ${item.storeName}`}
@@ -1374,46 +1081,35 @@ export function CustomerMarketplace({
 
                   {/* Card Body Content */}
                   <div className="p-4 sm:p-5 flex flex-col flex-1">
-                    {/* Description */}
-                    <p className="text-xs sm:text-[13px] text-[#434844] line-clamp-2 leading-relaxed mb-3.5">
+                    <p className="text-xs text-gray-600 line-clamp-2 min-h-8 mb-4 leading-relaxed">
                       {item.description}
                     </p>
 
-                    {/* Pickup Time Bar */}
-                    <div className="w-full bg-[#F4F3F0] rounded-xl py-2.5 px-3.5 flex items-center gap-2 mt-auto">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#d94a38] shrink-0" aria-hidden="true">
-                        <circle cx="12" cy="13" r="8" />
-                        <path d="M12 9v4l2.5 2.5" />
-                        <path d="M5 3 2 6" />
-                        <path d="m22 6-3-3" />
-                        <path d="M10 2h4" />
-                      </svg>
-                      <div className="text-xs text-[#434844] truncate">
-                        <span className="font-normal text-[#5a625d]">Ambil: </span>
-                        <span className="font-bold text-[#1b1c1c]">
-                          {item.pickupTime.replace(/^Ambil:\s*/i, '')}
-                        </span>
-                      </div>
+                    {/* Pickup Time Container */}
+                    <div className="w-full bg-[#f4f2ee] rounded-xl px-3.5 py-2.5 flex items-center gap-2 mb-5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <span className="text-xs font-medium text-gray-700 truncate">
+                        Ambil: <strong className="font-bold text-[#1b1c1c]">{item.pickupTime}</strong>
+                      </span>
                     </div>
 
-                    {/* Card Footer: Price & Ambil Sekarang Button */}
-                    <div className="pt-3.5 mt-3.5 border-t border-[#f0eded] flex items-center justify-between gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-[#737874] line-through font-medium">
+                    {/* Price and CTA Button */}
+                    <div className="flex items-center justify-between gap-3 mt-auto pt-2 border-t border-gray-100">
+                      <div>
+                        <span className="text-[11px] text-gray-400 line-through block leading-none">
                           Rp {formatRupiah(item.originalPrice)}
                         </span>
-                        <span className="text-xl sm:text-[22px] font-black text-[#1b1c1c] font-display tracking-tight leading-none mt-0.5">
+                        <div className="text-lg sm:text-xl font-black text-[#1b1c1c] font-display mt-0.5">
                           Rp {formatRupiah(item.rescuePrice)}
-                        </span>
+                        </div>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleOpenOrder(item)}
-                        className="inline-flex items-center justify-center px-4 sm:px-5 py-2.5 rounded-xl bg-[#1f2a24] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
-                        id={`btn-ambil-${item.id}`}
+                        className="bg-[#1b1c1c] hover:bg-[#2e2f2f] text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0"
                       >
-                        <span>Pesan Sekarang</span>
+                        Pesan Sekarang
                       </button>
                     </div>
                   </div>
@@ -1421,28 +1117,30 @@ export function CustomerMarketplace({
               ))}
             </div>
           ) : (
-            /* Empty State when filters yield no results */
-            <div className="w-full py-16 px-4 bg-white rounded-3xl border border-black/10 text-center flex flex-col items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl mb-3">
-                🔍
+            /* Empty State */
+            <div className="text-center py-20 bg-white rounded-3xl border border-black/10 shadow-xs px-4">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <Search className="w-8 h-8" />
               </div>
-              <h3 className="font-bold text-lg text-[#1b1c1c]">Tidak ada Mystery Box yang cocok</h3>
-              <p className="text-xs sm:text-sm text-gray-500 max-w-md mt-1 mb-4">
-                Coba sesuaikan kata kunci pencarian atau ubah filter harga dan jarak di atas.
+              <h2 className="text-lg font-bold text-[#1b1c1c] mb-1">
+                Tidak ada Mystery Box yang cocok
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto mb-6">
+                Coba sesuaikan kata kunci pencarian, ubah filter jarak, atau pilih kota lain.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
+                  setSelectedCity('Lokasi Saat Ini');
                   setAppliedMinPrice(null);
                   setAppliedMaxPrice(null);
                   setMinPriceInput('');
                   setMaxPriceInput('');
                   setDistanceFilter('semua');
-                  setSortField('jam_ambil');
-                  setSortOrder('asc');
+                  fetchMarketplaceProducts(userCoords);
                 }}
-                className="px-5 py-2 bg-[#1e2420] text-white text-xs font-bold rounded-full hover:bg-black transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-brand-green text-white text-xs sm:text-sm font-bold shadow-xs hover:bg-[#325800] transition cursor-pointer"
               >
                 Reset Semua Filter
               </button>
@@ -1451,7 +1149,7 @@ export function CustomerMarketplace({
         </main>
       </div>
 
-      {/* 4. Floating Cart / Orders Quick Badge (Matching Figma design) */}
+      {/* Floating Cart Button (matching CustomerProductDetail design) */}
       <button
         type="button"
         onClick={() => {
@@ -1461,77 +1159,34 @@ export function CustomerMarketplace({
             window.location.hash = '#keranjang';
           }
         }}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
         title="Keranjang Pesanan"
         aria-label="Buka Keranjang Pesanan"
+        id="floating-cart-button"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3c6a00" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-        {/* Badge Count */}
-        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+        <ShoppingCart className="w-6 h-6 text-brand-green" strokeWidth={2.2} />
+        <span
+          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs"
+          id="cart-badge-count"
+        >
           {cartCount}
         </span>
       </button>
 
-      {/* 5. Customer Footer */}
-      <CustomerFooter
-        onNavigateSeller={onNavigateSeller}
-        onContactSupport={() => {
-          if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');
-        }}
-      />
+      {/* 4. Customer Footer */}
+      <CustomerFooter onNavigateSeller={onNavigateSeller} />
 
-      {/* 6. Checkout Order Modal */}
-      <CustomerOrderModal
-        item={selectedBox}
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        onConfirmOrder={handleConfirmOrder}
-      />
-
-      {/* 7. Quick Auth Modal */}
-      {isAuthModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-lg text-[#1b1c1c]">Masuk ke RescueBite</h3>
-            <p className="text-xs text-gray-500">
-              Masuk untuk memesan mystery box dan menyimpan pesanan favoritmu.
-            </p>
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                className="w-full py-2.5 px-4 bg-[#0b1510] text-white rounded-xl font-semibold text-sm hover:bg-[#202a24] transition-colors cursor-pointer"
-                onClick={() => {
-                  setIsAuthModalOpen(false);
-                  if (onShowToast) onShowToast('Selamat datang kembali, Reza Akbar!');
-                }}
-              >
-                Masuk sebagai Reza Akbar
-              </button>
-              <button
-                type="button"
-                className="w-full py-2.5 px-4 border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => setIsAuthModalOpen(false)}
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Order Modal Component */}
+      {selectedBox && (
+        <CustomerOrderModal
+          isOpen={isOrderModalOpen}
+          item={selectedBox}
+          onClose={() => setIsOrderModalOpen(false)}
+          onConfirmOrder={(item, qty, notes) => handleConfirmOrder(item, qty, notes)}
+        />
       )}
     </div>
   );
 }
+
+export default CustomerMarketplace;

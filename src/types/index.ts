@@ -80,6 +80,14 @@ export interface CheckoutPayload {
   items: CheckoutItem[];
 }
 
+export type CustomerOrderStatus =
+  | 'menunggu-pembayaran'
+  | 'menunggu-konfirmasi'
+  | 'diproses'
+  | 'siap-diambil'
+  | 'selesai'
+  | 'dibatalkan';
+
 export interface PaymentOrderData {
   orderId: string;
   items: CheckoutItem[];
@@ -103,10 +111,13 @@ export interface PaymentOrderData {
   serviceFee: number;
   grandTotal: number;
   source?: 'direct' | 'cart';
+  status?: CustomerOrderStatus;
+  createdAt?: string;
 }
 
 export interface CustomerMysteryBox {
   id: string;
+  storeId?: string;
   storeName: string;
   category: string;
   categoryBadge?: string;
@@ -122,6 +133,7 @@ export interface CustomerMysteryBox {
   rating?: number;
   reviewCount?: number | string;
   imageSrc: string;
+  imageUrls?: string[];
   isRadiusItem?: boolean;
 }
 

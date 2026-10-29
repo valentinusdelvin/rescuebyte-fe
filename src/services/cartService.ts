@@ -1,4 +1,4 @@
-import { CustomerMysteryBox, StoreCartGroup } from '../types';
+import { CustomerMysteryBox, StoreCartGroup, CartItem } from '../types';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import cardTousLesJours from '../assets/customer/card-tous-les-jours.jpg';
 import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
@@ -108,7 +108,15 @@ export function getStoredCart(): StoreCartGroup[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed;
+      return parsed.map((store) => ({
+        ...store,
+        items: Array.isArray(store.items)
+          ? store.items.map((item: CartItem) => ({
+              ...item,
+              name: item.name ? item.name.replace(/\s+Reguler$/i, '') : item.name,
+            }))
+          : [],
+      }));
     }
     return INITIAL_CART_STORES;
   } catch (err) {
@@ -197,7 +205,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
           ...store.items,
           {
             id: box.id,
-            name: `${box.category.replace(/^[^\w\s]+/, '').trim()} Reguler`,
+            name: box.category ? box.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
             categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['✓ Halal', 'Sisa Stok Harian'],
             originalPrice: box.originalPrice,
             rescuePrice: box.rescuePrice,
@@ -226,7 +234,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
       items: [
         {
           id: box.id,
-          name: `${box.category.replace(/^[^\w\s]+/, '').trim()} Reguler`,
+          name: box.category ? box.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
           categoryTags: box.tags && box.tags.length > 0 ? box.tags : ['✓ Halal', 'Sisa Stok Harian'],
           originalPrice: box.originalPrice,
           rescuePrice: box.rescuePrice,

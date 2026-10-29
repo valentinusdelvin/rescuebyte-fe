@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Store, ChevronDown, User, Globe, LogOut } from 'lucide-react';
 import rescueBiteLogo from '../../assets/logo.svg';
 import { logoutUser } from '../../services/authService';
 import { getStoreProfile } from '../../services/storeService';
@@ -163,11 +164,7 @@ export function Header({
           aria-label="Buka Menu Navigasi"
           onClick={onToggleMobileMenu}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <Menu className="w-6 h-6" />
         </button>
 
         {/* RescueBite Logo */}
@@ -211,18 +208,11 @@ export function Header({
                 onError={() => setLogoImageError(true)}
               />
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 9l2-5h14l2 5" />
-                <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
-                <path d="M9 22V12h6v10" />
-                <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-              </svg>
+              <Store className="w-4.5 h-4.5 text-[#111827]" aria-hidden="true" />
             )}
           </div>
           <span className="text-[1.15rem] font-bold tracking-[-0.01em] text-[#111827] max-w-40 truncate">{currentStoreName}</span>
-          <svg className={`text-[#6b7280] transition-transform duration-150 ${isDropdownOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
+          <ChevronDown className={`w-4 h-4 text-[#6b7280] transition-transform duration-150 ${isDropdownOpen ? 'rotate-180' : ''}`} />
 
           {/* Dropdown Menu */}
           <div className={`absolute top-[calc(100%+8px)] right-0 w-56 bg-white border border-[#e5e7eb] rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] p-2 z-110 flex-col ${isDropdownOpen ? 'flex' : 'hidden'}`} id="profile-dropdown">
@@ -236,12 +226,7 @@ export function Header({
                     onError={() => setLogoImageError(true)}
                   />
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 9l2-5h14l2 5" />
-                    <path d="M21 9v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
-                    <path d="M9 22V12h6v10" />
-                    <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-                  </svg>
+                  <Store className="w-5 h-5 text-[#111827]" aria-hidden="true" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
@@ -251,10 +236,7 @@ export function Header({
             </div>
             <hr className="border-0 h-px bg-[#e5e7eb] my-1.5" />
             <button type="button" className="flex items-center gap-2.5 py-2.25 px-3 rounded-lg text-[0.9rem] font-semibold text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#111827] text-left w-full transition-colors cursor-pointer" id="dropdown-goto-profil" onClick={handleGotoProfil}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <User className="w-4 h-4" />
               Profil Toko
             </button>
             <button
@@ -266,20 +248,12 @@ export function Header({
                 if (onNavigate) onNavigate('view-customer-home');
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
+              <Globe className="w-4 h-4" />
               Buka Web
             </button>
             <hr className="border-0 h-px bg-[#e5e7eb] my-1.5" />
             <button type="button" className="flex items-center gap-2.5 py-2.25 px-3 rounded-lg text-[0.9rem] font-semibold text-[#dc2626] hover:bg-[#fee2e2] hover:text-[#991b1b] transition-colors w-full text-left cursor-pointer" id="dropdown-logout-btn" onClick={handleLogout}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
+              <LogOut className="w-4 h-4" />
               Keluar
             </button>
           </div>

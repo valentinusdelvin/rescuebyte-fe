@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Copy,
   Check,
   CheckCircle2,
-  Clock,
   ShoppingBag,
   XCircle,
   Star,
@@ -20,21 +19,20 @@ import {
   X,
   LayoutGrid,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerProfileSidebar } from '../components/customer/CustomerProfileSidebar';
 import { getCurrentUser, logoutUser, clearAuth } from '../services/authService';
-import { PaymentOrderData, UserPayload } from '../types';
+import { PaymentOrderData, UserPayload, CustomerOrderStatus } from '../types';
+import {
+  CustomerOrderItem,
+  getCustomerOrders,
+  subscribeToOrders,
+} from '../services/orderService';
 
-export type CustomerOrderStatus =
-  | 'all'
-  | 'menunggu-pembayaran'
-  | 'menunggu-konfirmasi'
-  | 'diproses'
-  | 'siap-diambil'
-  | 'selesai'
-  | 'dibatalkan';
+export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 
 export interface CustomerOrderHistoryProps {
   onNavigateHome?: () => void;
@@ -45,120 +43,6 @@ export interface CustomerOrderHistoryProps {
   onNavigateSeller?: () => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
-
-interface OrderItem {
-  id: string;
-  orderNumber: string;
-  status: 'menunggu-pembayaran' | 'menunggu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'dibatalkan';
-  statusLabel: string;
-  storeName: string;
-  storeRating: number;
-  storeReviewCount: number;
-  storeDistance: string;
-  storeTags: string[];
-  productName: string;
-  productBoxCount: number;
-  productDescription: string;
-  pickupDate: string;
-  pickupTime: string;
-  originalPrice?: number;
-  finalPrice: number;
-  category: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
-}
-
-const MOCK_ORDERS: OrderItem[] = [
-  {
-    id: 'ord-1',
-    orderNumber: 'RB251026-00123',
-    status: 'menunggu-konfirmasi',
-    statusLabel: 'Menunggu Konfirmasi',
-    storeName: 'TerasRasa Bakery',
-    storeRating: 4.8,
-    storeReviewCount: 320,
-    storeDistance: '1.2 km',
-    storeTags: ['Roti & Pastry', 'Halal'],
-    productName: 'Mystery Bakery Box Reguler',
-    productBoxCount: 1,
-    productDescription: 'Roti, pastry, dan kue pilihan',
-    pickupDate: '26 Oktober 2026',
-    pickupTime: '16.00 - 18.00 WIB',
-    finalPrice: 22000,
-    category: 'bakery',
-  },
-  {
-    id: 'ord-2',
-    orderNumber: 'RB251025-00891',
-    status: 'diproses',
-    statusLabel: 'Diproses',
-    storeName: 'GreenBowl',
-    storeRating: 4.7,
-    storeReviewCount: 210,
-    storeDistance: '2.5 km',
-    storeTags: ['Makanan Sehat', 'Halal'],
-    productName: 'Mystery Meal Box',
-    productBoxCount: 2,
-    productDescription: 'Nasi, lauk, dan sayur pilihan',
-    pickupDate: '25 Oktober 2026',
-    pickupTime: '12.00 - 13.00 WIB',
-    finalPrice: 52000,
-    category: 'meal',
-  },
-  {
-    id: 'ord-3',
-    orderNumber: 'RB251024-00567',
-    status: 'siap-diambil',
-    statusLabel: 'Siap Diambil',
-    storeName: 'SnackTime',
-    storeRating: 4.5,
-    storeReviewCount: 95,
-    storeDistance: '3.1 km',
-    storeTags: ['Camilan & Snack', 'Halal'],
-    productName: 'Mystery Snack Box',
-    productBoxCount: 1,
-    productDescription: 'Snack dan camilan pilihan',
-    pickupDate: '24 Oktober 2026',
-    pickupTime: '17.00 - 18.00 WIB',
-    originalPrice: 45000,
-    finalPrice: 20000,
-    category: 'snack',
-  },
-  {
-    id: 'ord-4',
-    orderNumber: 'RB251023-00455',
-    status: 'selesai',
-    statusLabel: 'Selesai',
-    storeName: 'SayurKita',
-    storeRating: 4.6,
-    storeReviewCount: 180,
-    storeDistance: '2.8 km',
-    storeTags: ['Sayur & Buah', 'Halal'],
-    productName: 'Mystery Fresh Box',
-    productBoxCount: 1,
-    productDescription: 'Sayur dan buah segar pilihan',
-    pickupDate: '23 Oktober 2026',
-    pickupTime: '15.00 - 16.00 WIB',
-    finalPrice: 22000,
-    category: 'fresh',
-  },
-  {
-    id: 'ord-5',
-    orderNumber: 'RB251022-00312',
-    status: 'dibatalkan',
-    statusLabel: 'Dibatalkan',
-    storeName: 'DailyDeli',
-    storeRating: 4.4,
-    storeReviewCount: 120,
-    storeDistance: '4.2 km',
-    storeTags: ['Makanan Siap Saji', 'Halal'],
-    productName: 'Mystery Deli Box',
-    productBoxCount: 1,
-    productDescription: 'Makanan siap saji pilihan',
-    pickupDate: '22 Oktober 2026',
-    pickupTime: '14.00 - 15.00 WIB',
-    finalPrice: 20000,
-    category: 'deli',
-  },
-];
 
 function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -174,14 +58,21 @@ export function CustomerOrderHistory({
   onShowToast,
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
-  const [activeStatus, setActiveStatus] = useState<CustomerOrderStatus>('all');
+  const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
+  const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    return subscribeToOrders((latest) => {
+      setOrders(latest);
+    });
+  }, []);
+
   // Review modal state
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<CustomerOrderItem | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -212,9 +103,14 @@ export function CustomerOrderHistory({
     }
   };
 
-  const handleOpenOrderDetail = (order: OrderItem) => {
+  const handleOpenOrderDetail = (order: CustomerOrderItem) => {
+    if (order.orderData && onNavigateOrderDetail) {
+      onNavigateOrderDetail(order.orderData);
+      return;
+    }
     const paymentData: PaymentOrderData = {
       orderId: order.orderNumber,
+      status: order.status,
       items: [
         {
           id: order.id,
@@ -222,13 +118,13 @@ export function CustomerOrderHistory({
           storeId: 'store-1',
           storeName: order.storeName,
           storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
-          storeAddress: `${order.storeName}, Jakarta Selatan`,
+          storeAddress: `${order.storeName}, Area Terdekat`,
           rating: order.storeRating,
           reviewCount: order.storeReviewCount,
           distanceText: order.storeDistance,
           categoryTags: order.storeTags,
           originalPrice: order.originalPrice || order.finalPrice + 15000,
-          rescuePrice: order.finalPrice - 7000,
+          rescuePrice: order.finalPrice,
           discountPercent: 50,
           quantity: order.productBoxCount,
           pickupTime: order.pickupTime,
@@ -237,7 +133,7 @@ export function CustomerOrderHistory({
       primaryStore: {
         storeName: order.storeName,
         storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
-        storeAddress: `${order.storeName}, Jakarta Selatan`,
+        storeAddress: `${order.storeName}, Area Terdekat`,
         rating: order.storeRating,
         reviewCount: order.storeReviewCount,
       },
@@ -249,7 +145,7 @@ export function CustomerOrderHistory({
         email: userEmail,
       },
       totalBoxes: order.productBoxCount,
-      subtotal: order.finalPrice - 7000,
+      subtotal: order.finalPrice,
       discountTotal: 15000,
       serviceFee: 2000,
       grandTotal: order.finalPrice,
@@ -262,7 +158,7 @@ export function CustomerOrderHistory({
 
   // Filter logic
   const filteredOrders = useMemo(() => {
-    return MOCK_ORDERS.filter((order) => {
+    return orders.filter((order) => {
       const matchStatus =
         activeStatus === 'all'
           ? true
@@ -289,21 +185,21 @@ export function CustomerOrderHistory({
 
       return matchStatus && matchSearch;
     });
-  }, [activeStatus, searchQuery]);
+  }, [orders, activeStatus, searchQuery]);
 
   // Tab count calculations
   const counts = useMemo(() => {
     return {
-      all: MOCK_ORDERS.length,
-      menungguPembayaran: 1,
-      menungguKonfirmasi: MOCK_ORDERS.filter((o) => o.status === 'menunggu-konfirmasi').length,
-      siapDiambil: MOCK_ORDERS.filter((o) => o.status === 'siap-diambil').length,
-      selesai: MOCK_ORDERS.filter((o) => o.status === 'selesai').length,
-      dibatalkan: MOCK_ORDERS.filter((o) => o.status === 'dibatalkan').length,
+      all: orders.length,
+      menungguKonfirmasi: orders.filter((o) => o.status === 'menunggu-konfirmasi').length,
+      diproses: orders.filter((o) => o.status === 'diproses').length,
+      siapDiambil: orders.filter((o) => o.status === 'siap-diambil').length,
+      selesai: orders.filter((o) => o.status === 'selesai').length,
+      dibatalkan: orders.filter((o) => o.status === 'dibatalkan').length,
     };
-  }, []);
+  }, [orders]);
 
-  const handleOpenReview = (order: OrderItem) => {
+  const handleOpenReview = (order: CustomerOrderItem) => {
     setReviewOrder(order);
     setReviewRating(5);
     setReviewText('');
@@ -391,33 +287,7 @@ export function CustomerOrderHistory({
                   </span>
                 </button>
 
-                {/* 2. Menunggu Pembayaran */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('menunggu-pembayaran');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'menunggu-pembayaran'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Clock className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Menunggu Pembayaran</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'menunggu-pembayaran' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.menungguPembayaran}
-                  </span>
-                </button>
-
-                {/* 3. Menunggu Konfirmasi */}
+                {/* 2. Menunggu Konfirmasi */}
                 <button
                   type="button"
                   onClick={() => {
@@ -440,6 +310,32 @@ export function CustomerOrderHistory({
                     }`}
                   >
                     {counts.menungguKonfirmasi}
+                  </span>
+                </button>
+
+                {/* 3. Diproses */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveStatus('diproses');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
+                    activeStatus === 'diproses'
+                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-xs sm:text-sm font-bold truncate">Diproses</span>
+                  </div>
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      activeStatus === 'diproses' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {counts.diproses}
                   </span>
                 </button>
 

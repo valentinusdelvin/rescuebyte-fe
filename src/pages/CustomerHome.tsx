@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { User } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { MysteryBoxCard } from '../components/customer/MysteryBoxCard';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
@@ -607,10 +608,7 @@ export function CustomerHome({
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
             <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <User className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-[#1b1c1c]">Masuk ke RescueBite</h3>
             <p className="text-xs text-gray-500">

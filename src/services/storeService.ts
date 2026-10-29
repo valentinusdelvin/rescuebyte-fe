@@ -168,3 +168,41 @@ export async function createStore(data: CreateStorePayload): Promise<StoreProfil
   }
 }
 
+/**
+ * Fetch all public stores via GET /api/v1/stores
+ */
+export async function getAllStores(params?: { name?: string; page?: number; limit?: number }): Promise<StoreProfileData[]> {
+  try {
+    const response = await api.get('/api/v1/stores', { params });
+    const payload = response.data?.payload;
+    if (payload && Array.isArray(payload.stores)) {
+      return payload.stores as StoreProfileData[];
+    }
+    if (Array.isArray(payload)) {
+      return payload as StoreProfileData[];
+    }
+    return [];
+  } catch (err) {
+    console.warn('getAllStores failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single store by ID via GET /api/v1/stores/:id
+ */
+export async function getStoreById(id: string): Promise<StoreProfileData | null> {
+  try {
+    const response = await api.get(`/api/v1/stores/${id}`);
+    const payload = response.data?.payload;
+    if (payload) {
+      return payload as StoreProfileData;
+    }
+    return null;
+  } catch (err) {
+    console.warn(`getStoreById(${id}) failed:`, err);
+    return null;
+  }
+}
+
+

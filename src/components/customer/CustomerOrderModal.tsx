@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X, ArrowRight } from 'lucide-react';
 import { CustomerMysteryBox } from '../../types';
 
 export interface CustomerOrderModalProps {
@@ -89,10 +90,7 @@ export function CustomerOrderModal({
             onClick={onClose}
             aria-label="Tutup modal pesanan"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -247,10 +245,7 @@ export function CustomerOrderModal({
               ) : (
                 <>
                   <span>Amankan Box Sekarang</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>

@@ -8,7 +8,7 @@ export interface ActivityItem {
 
 const ACTIVITIES: ActivityItem[] = [
   { id: 'diproses', label: 'Perlu Diproses', count: 12 },
-  { id: 'konfirmasi', label: 'Menunggu Konfirmasi', count: 2 },
+  { id: 'konfirmasi', label: 'Dikonfirmasi', count: 2 },
   { id: 'kendala', label: 'Kendala Pesanan', count: 30 },
   { id: 'selesai', label: 'Pesanan Selesai', count: 60 },
   { id: 'batal', label: 'Dibatalkan', count: 1 },

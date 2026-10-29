@@ -1,15 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { ShoppingCart, Plus } from 'lucide-react';
+import { ShoppingCart, Plus, ChevronLeft, ChevronUp, ChevronDown, Package, Clock, User } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { FormattedDescription } from '../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
-
-// Existing local assets as initial gallery examples (fallback slot used if missing)
-import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import cardTousLesJours from '../assets/customer/card-tous-les-jours.jpg';
 
 export interface CustomerProductDetailProps {
   product?: CustomerMysteryBox | null;
@@ -20,7 +16,7 @@ export interface CustomerProductDetailProps {
   onNavigateCheckout?: (product: CustomerMysteryBox, quantity: number) => void;
   onNavigateSeller?: () => void;
   onNavigateAuth?: () => void;
-  onNavigateStore?: (storeName: string) => void;
+  onNavigateStore?: (storeName: string, storeId?: string) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -59,7 +55,7 @@ export function CustomerProductDetail({
 
   // Use product prop or default to Figma mock data for TerasRasa Bakery
   const storeName = product?.storeName || 'TerasRasa Bakery';
-  const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box Reguler';
+  const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box';
   const description =
     product?.description ||
     'Nikmati kejutan aneka roti dan pastry berkualitas dengan harga spesial. Isi menyesuaikan stok harian toko, selalu fresh dan tetap lezat!';
@@ -76,13 +72,29 @@ export function CustomerProductDetail({
     ? product.pickupTime.replace(/^Ambil:\s*/i, '').replace(/WIB.*$/, 'WIB')
     : '15.00 – 18.00 WIB';
 
-  // Gallery state
-  const galleryImages = [
-    product?.imageSrc || cardMonsieurSpoon,
-    cardTousLesJours,
-    cardMonsieurSpoon,
-  ];
+  // Photos Gallery: Only use actual uploaded product images (no fake placeholder fallback photos)
+  const galleryImages = useMemo(() => {
+    const list: string[] = [];
+    if (product?.imageUrls && Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+      product.imageUrls.forEach((img: string) => {
+        if (img && typeof img === 'string' && img.trim()) {
+          list.push(img.trim());
+        }
+      });
+    } else if (product?.imageSrc && typeof product.imageSrc === 'string' && product.imageSrc.trim()) {
+      list.push(product.imageSrc.trim());
+    }
+    return list;
+  }, [product]);
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Reset selected image when product changes
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [product?.id]);
+
+  const currentImage = galleryImages[selectedImageIndex] || galleryImages[0] || '';
 
   // Reservation quantity state (1 - 5)
   const [quantity, setQuantity] = useState(1);
@@ -135,7 +147,7 @@ export function CustomerProductDetail({
 
   const handleStoreClick = () => {
     if (onNavigateStore) {
-      onNavigateStore(storeName);
+      onNavigateStore(storeName, product?.storeId);
     } else {
       const msg = `Halaman toko "${storeName}" sedang dalam tahap perancangan desain.`;
       if (onShowToast) {
@@ -275,9 +287,7 @@ export function CustomerProductDetail({
               className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-600 hover:text-[#1b1c1c] transition-colors cursor-pointer group shrink-0"
             >
               <span className="w-7 h-7 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:bg-gray-100 transition-colors shadow-2xs">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
+                <ChevronLeft className="w-3.5 h-3.5" />
               </span>
               <span>Kembali ke Marketplace</span>
             </button>
@@ -312,85 +322,71 @@ export function CustomerProductDetail({
             <div className="lg:col-span-7 flex flex-col gap-6">
               {/* Gallery Section */}
               <div className="flex flex-col-reverse sm:flex-row gap-4 items-stretch sm:items-start">
-                {/* Vertical Thumbnails strip */}
-                <div className="flex sm:flex-col items-center justify-center gap-2.5 shrink-0">
-                  {/* Up button */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
-                    title="Foto sebelumnya"
-                    aria-label="Foto sebelumnya"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="18 15 12 9 6 15" />
-                    </svg>
-                  </button>
-
-                  {/* 3 Thumbnails */}
-                  {galleryImages.map((img, idx) => (
+                {/* Vertical Thumbnails strip (only show when multiple uploaded photos exist) */}
+                {galleryImages.length > 1 && (
+                  <div className="flex sm:flex-col items-center justify-center gap-2.5 shrink-0">
+                    {/* Up button */}
                     <button
-                      key={`thumb-${idx}`}
                       type="button"
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer relative bg-[#24201c] ${
-                        selectedImageIndex === idx
-                          ? 'border-brand-green ring-2 ring-brand-green/30 scale-102'
-                          : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'
-                      }`}
-                      aria-label={`Pilih foto ${idx + 1}`}
+                      onClick={() => setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
+                      className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
+                      title="Foto sebelumnya"
+                      aria-label="Foto sebelumnya"
                     >
-                      {img ? (
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+
+                    {/* Thumbnails */}
+                    {galleryImages.map((img, idx) => (
+                      <button
+                        key={`thumb-${idx}`}
+                        type="button"
+                        onClick={() => setSelectedImageIndex(idx)}
+                        className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer relative bg-[#24201c] ${
+                          selectedImageIndex === idx
+                            ? 'border-brand-green ring-2 ring-brand-green/30 scale-102'
+                            : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'
+                        }`}
+                        aria-label={`Pilih foto ${idx + 1}`}
+                      >
                         <img
                           src={img}
                           alt={`${title} thumbnail ${idx + 1}`}
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                      ) : (
-                        <div className="w-full h-full bg-[#2d251f] flex items-center justify-center text-amber-200">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    ))}
 
-                  {/* Down button */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedImageIndex((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
-                    title="Foto selanjutnya"
-                    aria-label="Foto selanjutnya"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                </div>
+                    {/* Down button */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageIndex((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
+                      className="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-gray-400 max-sm:hidden flex items-center justify-center shadow-2xs transition-all cursor-pointer"
+                      title="Foto selanjutnya"
+                      aria-label="Foto selanjutnya"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Main Large Hero Image */}
                 <div
                   ref={heroImageContainerRef}
                   className="flex-1 aspect-4/3 sm:aspect-square rounded-3xl overflow-hidden relative shadow-sm border border-black/10 bg-[#231f1c]"
                 >
-                  {galleryImages[selectedImageIndex] ? (
+                  {currentImage ? (
                     <img
                       ref={heroImageRef}
-                      src={galleryImages[selectedImageIndex]}
+                      src={currentImage}
                       alt={`Foto utama ${title}`}
                       className="w-full h-full object-cover transition-all duration-300 hover:scale-103"
                     />
                   ) : (
                     <div className="w-full h-full bg-linear-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative p-8">
                       <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-200 border border-white/10 mb-3 shadow-sm">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                          <path d="m3.3 7 8.7 5 8.7-5" />
-                          <path d="M12 22V12" />
-                        </svg>
+                        <Package className="w-10 h-10" />
                       </div>
                       <span className="text-sm font-bold text-white/80">Foto Produk Siap Dipasang</span>
                       <span className="text-xs text-white/40 mt-1">Gunakan asset lokal dari folder /assets</span>
@@ -492,11 +488,7 @@ export function CustomerProductDetail({
                   {/* Left: Stok */}
                   <div className="bg-[#fafaf8] border border-gray-150 rounded-2xl p-3.5 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#ffedd5] text-[#ea580c] flex items-center justify-center shrink-0">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                        <path d="m3.3 7 8.7 5 8.7-5" />
-                        <path d="M12 22V12" />
-                      </svg>
+                      <Package className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-[11px] text-gray-500 font-medium block">
@@ -511,10 +503,7 @@ export function CustomerProductDetail({
                   {/* Right: Pickup Time */}
                   <div className="bg-[#fafaf8] border border-gray-150 rounded-2xl p-3.5 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
+                      <Clock className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-[11px] text-gray-500 font-medium block">
@@ -707,10 +696,7 @@ export function CustomerProductDetail({
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
             <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <User className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-[#1b1c1c]">Masuk ke RescueBite</h3>
             <p className="text-xs text-gray-500">

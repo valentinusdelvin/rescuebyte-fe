@@ -1,20 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   User,
   ShoppingBag,
   Store,
   Calendar,
+  Clock,
   FileText,
   CreditCard,
-  ChevronDown,
   Info,
   Edit2,
   Trash2,
+  Lock,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CheckoutItem, CheckoutPayload, PaymentOrderData } from '../types';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
+import { createCustomerOrder } from '../services/orderService';
+import { getCurrentUser } from '../services/authService';
+import { getAllStores, StoreProfileData } from '../services/storeService';
 
 export interface CustomerCheckoutProps {
   payload?: CheckoutPayload | null;
@@ -28,8 +32,31 @@ export interface CustomerCheckoutProps {
   onShowToast?: (message: string) => void;
 }
 
+export interface StoreCheckoutGroup {
+  key: string;
+  storeId?: string;
+  storeName: string;
+  storeAvatar?: string;
+  storeAddress: string;
+  operationalHours: string;
+  rating: number;
+  reviewCount: number | string;
+  distanceText: string;
+  items: CheckoutItem[];
+}
+
 function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function getOrderDateFormatted(): string {
+  const now = new Date();
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+  return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
 }
 
 export function CustomerCheckout({
@@ -43,10 +70,11 @@ export function CustomerCheckout({
   onNavigateOrderDetail,
   onShowToast,
 }: CustomerCheckoutProps) {
-  // Customer Info State
-  const [customerName, setCustomerName] = useState('Reza Pratama');
-  const [customerPhone, setCustomerPhone] = useState('081234567890');
-  const [customerEmail, setCustomerEmail] = useState('reza.pratama@email.com');
+  // Customer Info State from current user or defaults
+  const currentUser = getCurrentUser();
+  const [customerName, setCustomerName] = useState(() => currentUser?.name || 'Reza Pratama');
+  const [customerPhone, setCustomerPhone] = useState(() => currentUser?.phone_number || '081234567890');
+  const [customerEmail] = useState(() => currentUser?.email || 'customer@rescuebite.com');
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
 
   // Items State (defaults to TerasRasa Bakery Mystery Box matching Image 2 if payload empty)
@@ -57,7 +85,7 @@ export function CustomerCheckout({
     return [
       {
         id: 'item-bakery-box-reguler',
-        name: 'Mystery Bakery Box Reguler',
+        name: 'Mystery Bakery Box',
         storeId: 'store-terasa',
         storeName: 'TerasRasa Bakery',
         storeAvatar: 'TR',
@@ -76,29 +104,119 @@ export function CustomerCheckout({
     ];
   });
 
-  // Pickup selection
-  const [selectedDate, setSelectedDate] = useState('Sab, 26 Okt 2025');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('15.00 - 16.00');
+  // Keep items synced if payload changes
+  const [prevPayload, setPrevPayload] = useState(payload);
+  if (payload !== prevPayload) {
+    setPrevPayload(payload);
+    if (payload && payload.items && payload.items.length > 0) {
+      setCheckoutItems(payload.items);
+    }
+  }
 
-  const timeSlots = [
-    '15.00 - 16.00',
-    '16.00 - 17.00',
-    '17.00 - 18.00',
-    '18.00 - 19.00',
-  ];
+  // Tanggal pickup sebagai tanggal pemesanan (hari ini)
+  const [orderDateFormatted] = useState(getOrderDateFormatted);
+
+  // Data toko dari database backend
+  const [dbStores, setDbStores] = useState<StoreProfileData[]>([]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function fetchStores() {
+      try {
+        const stores = await getAllStores();
+        if (!isCancelled && stores.length > 0) {
+          setDbStores(stores);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat daftar toko dari database:', err);
+      }
+    }
+    fetchStores();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Group items by store and resolve each store's address, avatar, and operational hours from database
+  const storeGroups = useMemo<StoreCheckoutGroup[]>(() => {
+    const groupMap = new Map<string, StoreCheckoutGroup>();
+
+    checkoutItems.forEach((item) => {
+      const rawStoreName = (item.storeName || '').trim();
+      const targetName = rawStoreName.toLowerCase();
+      const targetId = item.storeId;
+
+      // Find matching database store by id or name
+      const matchedStore =
+        dbStores.find((s) => {
+          if (targetId && s.id === targetId) return true;
+          const sName = (s.name || '').toLowerCase().trim();
+          return Boolean(
+            targetName &&
+              (sName === targetName || sName.includes(targetName) || targetName.includes(sName))
+          );
+        }) ||
+        (targetName.includes('rejak')
+          ? dbStores.find((s) => (s.name || '').toLowerCase().includes('rejak'))
+          : null) ||
+        (targetName.includes('gurinjay')
+          ? dbStores.find((s) => (s.name || '').toLowerCase().includes('gurinjay'))
+          : null);
+
+      const storeKey = matchedStore?.id || item.storeId || targetName || 'default-store';
+      const displayName = matchedStore?.name || rawStoreName || 'Toko Mitra';
+
+      const avatarUrl =
+        matchedStore?.profile_picture_url ||
+        (displayName.toLowerCase().includes('rejak')
+          ? 'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/stores/01a187eb-f43d-764d-ac5b-a363a4ddf871.png'
+          : displayName.toLowerCase().includes('gurinjay')
+          ? 'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/stores/01a188bf-7228-7825-8163-35bf31db6ba5.jpg'
+          : item.storeAvatar);
+
+      let fullAddress = item.storeAddress || 'Kota Malang, Jawa Timur';
+      if (matchedStore) {
+        const parts = [matchedStore.address, matchedStore.district, matchedStore.city].filter(Boolean);
+        if (parts.length > 0) {
+          fullAddress = parts.join(', ');
+        }
+      } else if (displayName.toLowerCase().includes('rejak')) {
+        fullAddress = 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur';
+      } else if (displayName.toLowerCase().includes('gurinjay')) {
+        fullAddress = 'Jalan Kebon Jeruk V, Tulusrejo, Lowokwaru, Kota Malang';
+      }
+
+      let operationalHours = item.pickupTime || '08.00 - 22.00 WIB';
+      if (matchedStore?.operational_start && matchedStore?.operational_end) {
+        const opStart = matchedStore.operational_start.slice(0, 5).replace(':', '.');
+        const opEnd = matchedStore.operational_end.slice(0, 5).replace(':', '.');
+        operationalHours = `${opStart} - ${opEnd} WIB`;
+      }
+
+      if (!groupMap.has(storeKey)) {
+        groupMap.set(storeKey, {
+          key: storeKey,
+          storeId: matchedStore?.id || item.storeId,
+          storeName: displayName,
+          storeAvatar: avatarUrl,
+          storeAddress: fullAddress,
+          operationalHours,
+          rating: item.rating || 4.9,
+          reviewCount: item.reviewCount || 42,
+          distanceText: item.distanceText || '0.9 km',
+          items: [item],
+        });
+      } else {
+        groupMap.get(storeKey)!.items.push(item);
+      }
+    });
+
+    return Array.from(groupMap.values());
+  }, [checkoutItems, dbStores]);
 
   // Payment Method: 'online' | 'cod'
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Primary store info (taken from first item)
-  const primaryStore = checkoutItems[0] || {
-    storeName: 'TerasRasa Bakery',
-    storeAvatar: 'TR',
-    storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-    rating: 4.8,
-    reviewCount: 320,
-  };
 
   // Stepper handlers
   const handleIncreaseQty = (itemId: string) => {
@@ -175,18 +293,19 @@ export function CustomerCheckout({
     const randomSuffix = Math.floor(10000 + Math.random() * 90000).toString();
     const generatedCode = `RB${todayStr}-${randomSuffix}`;
 
+    const firstGroup = storeGroups[0];
     const orderData: PaymentOrderData = {
       orderId: generatedCode,
       items: checkoutItems,
       primaryStore: {
-        storeName: primaryStore.storeName,
-        storeAvatar: primaryStore.storeAvatar,
-        storeAddress: primaryStore.storeAddress,
-        rating: primaryStore.rating,
-        reviewCount: primaryStore.reviewCount,
+        storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
+        storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
+        storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
+        rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
+        reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
       },
-      pickupDate: selectedDate,
-      pickupTimeSlot: selectedTimeSlot,
+      pickupDate: orderDateFormatted,
+      pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
       customerInfo: {
         name: customerName,
         phone: customerPhone,
@@ -198,7 +317,13 @@ export function CustomerCheckout({
       serviceFee,
       grandTotal,
       source: payload?.source,
+      status: 'menunggu-konfirmasi',
+      createdAt: new Date().toISOString(),
     };
+
+    // Save order, deduct merchant stock, clear cart if source was cart
+    createCustomerOrder(orderData, 'menunggu-konfirmasi');
+    if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -288,278 +413,262 @@ export function CustomerCheckout({
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                    EMAIL
-                  </label>
-                  <input
-                    type="email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    disabled={!isEditingCustomer}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-[#fbfbf9] text-xs sm:text-sm font-medium text-gray-900 focus:outline-none focus:border-gray-400 focus:bg-white disabled:opacity-85 transition-colors"
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                      EMAIL
+                    </label>
+                    <span className="text-[10px] text-gray-400 font-medium">Terkunci</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="email"
+                      value={customerEmail}
+                      readOnly
+                      disabled
+                      aria-readonly="true"
+                      title="Email akun terdaftar dan tidak dapat diubah saat checkout"
+                      className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 bg-gray-100/90 text-xs sm:text-sm font-medium text-gray-600 cursor-not-allowed select-none transition-colors"
+                    />
+                    <Lock className="w-3.5 h-3.5 text-gray-400 absolute right-3 pointer-events-none" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* CARD 2: Detail Pesanan */}
-            <section className="bg-white rounded-3xl p-5 sm:p-6 border border-black/10 shadow-xs flex flex-col gap-4">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-gray-700" />
-                  <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c]">
-                    Detail Pesanan
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (payload?.source === 'cart' && onNavigateCart) {
-                      onNavigateCart();
-                    } else if (onNavigateDetail) {
-                      onNavigateDetail();
-                    } else if (onNavigateCart) {
-                      onNavigateCart();
-                    }
-                  }}
-                  className="text-xs font-semibold text-gray-700 hover:text-black flex items-center gap-1.5 cursor-pointer select-none transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  <span>Ubah Pesanan</span>
-                </button>
-              </div>
-
-              <div className="flex flex-col divide-y divide-gray-100">
-                {checkoutItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="pt-4 first:pt-0 pb-4 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    {/* Left: Image & Info */}
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#24201c] shrink-0 border border-black/10 relative">
+            {/* STORE GROUPS: Per-store products directly followed by per-store pickup info */}
+            {storeGroups.map((group, groupIdx) => (
+              <section
+                key={group.key}
+                className="bg-white rounded-3xl p-5 sm:p-6 border border-black/10 shadow-xs flex flex-col gap-5"
+              >
+                {/* Store Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1e2a22] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-gray-200 shadow-2xs">
+                      {group.storeAvatar && group.storeAvatar.startsWith('http') ? (
                         <img
-                          src={item.imageSrc || cardMonsieurSpoon}
-                          alt={item.name}
+                          src={group.storeAvatar}
+                          alt={group.storeName}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
                         />
-                      </div>
-
-                      <div className="flex flex-col min-w-0">
-                        <h3 className="font-bold text-sm sm:text-base text-[#1b1c1c]">
-                          {item.name}
-                        </h3>
-
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs font-semibold text-gray-700">
-                            {item.storeName}
-                          </span>
-                          <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                            ✓ Terverifikasi
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                          <span className="text-amber-500 font-bold">★ {item.rating || 4.8}</span>
-                          <span className="text-gray-400">({item.reviewCount || 320} ulasan)</span>
-                          <span className="text-gray-300">•</span>
-                          <span>📍 {item.distanceText || '1.2 km'}</span>
-                        </div>
-
-                        {/* Category Badges */}
-                        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                          {item.categoryTags.map((tag, idx) => (
-                            <span
-                              key={`${tag}-${idx}`}
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                tag.includes('Halal')
-                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                      ) : (
+                        <span>{group.storeName.slice(0, 2).toUpperCase()}</span>
+                      )}
                     </div>
-
-                    {/* Right: Price & Stepper */}
-                    <div className="flex flex-col sm:items-end justify-between gap-1.5 shrink-0">
-                      <div className="flex items-center sm:flex-col sm:items-end gap-2 sm:gap-0">
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-bold text-base sm:text-lg text-[#e11d48]">
-                            Rp {formatRupiah(item.rescuePrice)}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
+                          {group.storeName}
+                        </h2>
+                        {storeGroups.length > 1 && (
+                          <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            Toko {groupIdx + 1}
                           </span>
-                          <span className="text-xs text-gray-500 font-medium">/box</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-gray-400 line-through">
-                            Rp {formatRupiah(item.originalPrice)}
-                          </span>
-                          <span className="bg-[#fef9c3] text-[#854d0e] text-[10px] font-bold px-1.5 py-0.2 rounded">
-                            {item.discountPercent}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Stepper */}
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-2.5 border border-gray-200">
-                          <button
-                            type="button"
-                            onClick={() => handleDecreaseQty(item.id)}
-                            className="w-6 h-6 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 cursor-pointer transition-colors"
-                            title="Kurangi box"
-                            aria-label="Kurangi box"
-                          >
-                            –
-                          </button>
-                          <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-4 text-center select-none">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleIncreaseQty(item.id)}
-                            className="w-6 h-6 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 cursor-pointer transition-colors"
-                            title="Tambah box"
-                            aria-label="Tambah box"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {checkoutItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer p-1"
-                            title="Hapus produk ini"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         )}
                       </div>
-
-                      <span className="text-[11px] text-gray-400">
-                        Maksimal 5 box per transaksi
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* CARD 3: Pengambilan Pesanan */}
-            <section className="bg-white rounded-3xl p-5 sm:p-6 border border-black/10 shadow-xs flex flex-col gap-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                <Store className="w-4 h-4 text-gray-700" />
-                <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c]">
-                  Pengambilan Pesanan
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                {/* Left: Store info */}
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-[#1e2a22] text-white flex items-center justify-center font-bold text-sm shrink-0 select-none">
-                      {primaryStore.storeAvatar || 'TR'}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-base text-[#1b1c1c]">
-                          {primaryStore.storeName}
-                        </h3>
-                        <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          ✓ Terverifikasi
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                        <span className="text-amber-500 font-bold">★ {primaryStore.rating || 4.8}</span>
-                        <span className="text-gray-400">({primaryStore.reviewCount || 320} ulasan)</span>
-                      </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-600 mt-1 flex items-start gap-1.5 leading-relaxed">
-                    <span>📍</span>
-                    <span>{primaryStore.storeAddress || 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur'}</span>
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (payload?.source === 'cart' && onNavigateCart) {
+                        onNavigateCart();
+                      } else if (onNavigateDetail) {
+                        onNavigateDetail();
+                      } else if (onNavigateCart) {
+                        onNavigateCart();
+                      }
+                    }}
+                    className="text-xs font-semibold text-gray-700 hover:text-black flex items-center gap-1.5 cursor-pointer select-none transition-colors shrink-0"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Ubah Pesanan</span>
+                  </button>
+                </div>
 
-                  <div className="mt-1">
-                    <span className="bg-[#e7f7ea] text-[#1b6b2c] border border-[#c6edcb] text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
-                      ✓ Ambil Langsung di Toko
+                {/* Product List for this store */}
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {group.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="pt-4 first:pt-0 pb-4 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      {/* Left: Image & Info (menampilkan NAMA TOKO dan NAMA PRODUK) */}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#24201c] shrink-0 border border-black/10 relative">
+                          <img
+                            src={item.imageSrc || cardMonsieurSpoon}
+                            alt={item.name?.replace(/\s+Reguler$/i, '')}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          {/* Nama Toko */}
+                          <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wide">
+                            {group.storeName}
+                          </span>
+
+                          {/* Nama Produk */}
+                          <h3 className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
+                            {item.name?.replace(/\s+Reguler$/i, '')}
+                          </h3>
+
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                            <span className="text-amber-500 font-bold">★ {item.rating || group.rating || 4.9}</span>
+                            <span className="text-gray-400">({item.reviewCount || group.reviewCount || 42} ulasan)</span>
+                            <span className="text-gray-300">•</span>
+                            <span>📍 {item.distanceText || group.distanceText || '0.9 km'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Price & Stepper */}
+                      <div className="flex flex-col sm:items-end justify-between gap-1.5 shrink-0">
+                        <div className="flex items-center sm:flex-col sm:items-end gap-2 sm:gap-0">
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-bold text-base sm:text-lg text-[#e11d48]">
+                              Rp {formatRupiah(item.rescuePrice)}
+                            </span>
+                            <span className="text-xs text-gray-500 font-medium">/box</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400 line-through">
+                              Rp {formatRupiah(item.originalPrice)}
+                            </span>
+                            <span className="bg-[#fef9c3] text-[#854d0e] text-[10px] font-bold px-1.5 py-0.2 rounded">
+                              {item.discountPercent}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stepper */}
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="bg-[#f4f4f2] rounded-xl p-1 flex items-center gap-2.5 border border-gray-200">
+                            <button
+                              type="button"
+                              onClick={() => handleDecreaseQty(item.id)}
+                              className="w-6 h-6 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 cursor-pointer transition-colors"
+                              title="Kurangi box"
+                              aria-label="Kurangi box"
+                            >
+                              –
+                            </button>
+                            <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] min-w-4 text-center select-none">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleIncreaseQty(item.id)}
+                              className="w-6 h-6 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 cursor-pointer transition-colors"
+                              title="Tambah box"
+                              aria-label="Tambah box"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {checkoutItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer p-1"
+                              title="Hapus produk ini"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dedicated Store Pickup Section for this store */}
+                <div className="bg-[#fbfbf9] rounded-2xl p-4 sm:p-5 border border-gray-200/90 flex flex-col gap-3.5 mt-1">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200/70">
+                    <Store className="w-4 h-4 text-gray-700" />
+                    <h3 className="font-bold text-xs sm:text-sm text-[#1b1c1c]">
+                      Pengambilan Pesanan: {group.storeName}
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                    {/* Left: Store info & address */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-[#1e2a22] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-gray-200 shadow-2xs select-none">
+                          {group.storeAvatar && group.storeAvatar.startsWith('http') ? (
+                            <img
+                              src={group.storeAvatar}
+                              alt={group.storeName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <span>{group.storeName.slice(0, 2).toUpperCase()}</span>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-[#1b1c1c]">
+                            {group.storeName}
+                          </h4>
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                            <span className="text-amber-500 font-bold">★ {group.rating}</span>
+                            <span className="text-gray-400">({group.reviewCount} ulasan)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-600 mt-1 flex items-start gap-1.5 leading-relaxed">
+                        <span className="shrink-0 text-gray-400">📍</span>
+                        <span>{group.storeAddress}</span>
+                      </p>
+                    </div>
+
+                    {/* Right: Pickup Date & Operational Hours */}
+                    <div className="flex flex-col gap-3">
+                      {/* Tanggal Pickup (Tanggal Pemesanan) */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
+                          Tanggal Pickup
+                        </label>
+                        <div className="flex items-center gap-2 w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-800 shadow-2xs">
+                          <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
+                          <span>{orderDateFormatted}</span>
+                        </div>
+                      </div>
+
+                      {/* Waktu Pickup (Jam Toko) */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
+                          Waktu Pickup
+                        </label>
+                        <div className="flex items-center gap-2 w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-800 shadow-2xs">
+                          <Clock className="w-4 h-4 text-gray-500 shrink-0" />
+                          <span>{group.operationalHours}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Clean Light Green Alert Banner (tanpa emoji sprout) */}
+                  <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 text-xs text-[#24521e] leading-relaxed">
+                    <span>
+                      Pesanan harus diambil langsung di lokasi {group.storeName} sesuai jadwal operasional yang tertera.
                     </span>
                   </div>
                 </div>
+              </section>
+            ))}
 
-                {/* Right: Pickup Date & Time Selection */}
-                <div className="flex flex-col gap-3">
-                  {/* Date selection */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
-                      Pilih Tanggal Pickup
-                    </label>
-                    <div className="relative">
-                      <label htmlFor="select-pickup-date" className="sr-only">Pilih Tanggal Pickup</label>
-                      <div className="flex items-center justify-between w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-[#fbfbf9] text-xs sm:text-sm font-semibold text-gray-800">
-                        <div className="flex items-center gap-2 flex-1">
-                          <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
-                          <select
-                            id="select-pickup-date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="bg-transparent border-none text-xs sm:text-sm font-semibold text-gray-800 focus:outline-none cursor-pointer w-full py-0.5"
-                          >
-                            <option value="Sab, 26 Okt 2025">Sab, 26 Okt 2025</option>
-                            <option value="Min, 27 Okt 2025">Min, 27 Okt 2025</option>
-                            <option value="Sen, 28 Okt 2025">Sen, 28 Okt 2025</option>
-                          </select>
-                        </div>
-                        <ChevronDown className="w-4 h-4 text-gray-400 pointer-events-none shrink-0" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Time slot buttons */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
-                      Pilih Waktu Pickup
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {timeSlots.map((slot) => {
-                        const isSelected = selectedTimeSlot === slot;
-                        return (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setSelectedTimeSlot(slot)}
-                            className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                              isSelected
-                                ? 'border-[#1f2620] bg-[#1f2620] text-white shadow-xs'
-                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            {slot}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Light Green Alert Banner */}
-              <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 flex items-center gap-2.5 text-xs text-[#24521e] mt-1">
-                <span className="text-base">🌱</span>
-                <span>
-                  Pesanan harus diambil langsung di lokasi toko sesuai jadwal yang dipilih.
-                </span>
-              </div>
-            </section>
-
-            {/* CARD 4: Ringkasan Pembayaran */}
+            {/* CARD: Ringkasan Pembayaran */}
             <section className="bg-white rounded-3xl p-5 sm:p-6 border border-black/10 shadow-xs flex flex-col gap-4">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                 <FileText className="w-4 h-4 text-gray-700" />
@@ -568,40 +677,43 @@ export function CustomerCheckout({
                 </h2>
               </div>
 
-              {/* Compact item preview box */}
-              <div className="bg-[#fbfbf9] border border-gray-150 rounded-2xl p-3 flex items-center gap-3">
-                <img
-                  src={checkoutItems[0]?.imageSrc || cardMonsieurSpoon}
-                  alt={checkoutItems[0]?.name || ''}
-                  className="w-11 h-11 rounded-xl object-cover border border-black/10 shrink-0"
-                />
-                <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] truncate">
-                    {checkoutItems[0]?.name}
-                  </span>
-                  <span className="text-[11px] text-gray-500">
-                    {checkoutItems[0]?.storeName}
-                  </span>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="bg-gray-100 text-gray-600 text-[9px] font-semibold px-1.5 py-0.2 rounded">
-                      Roti &amp; Pastry
-                    </span>
-                    <span className="bg-emerald-50 text-emerald-800 text-[9px] font-semibold px-1.5 py-0.2 rounded">
-                      Halal
-                    </span>
-                  </div>
-                </div>
+              {/* Item preview list for all products */}
+              <div className="flex flex-col gap-2">
+                {checkoutItems.map((item) => {
+                  const parentGroup = storeGroups.find((g) =>
+                    g.items.some((it) => it.id === item.id)
+                  );
+                  const sName = parentGroup?.storeName || item.storeName || 'Toko Mitra';
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-[#fbfbf9] border border-gray-150 rounded-2xl p-3 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={item.imageSrc || cardMonsieurSpoon}
+                          alt={item.name || ''}
+                          className="w-11 h-11 rounded-xl object-cover border border-black/10 shrink-0"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-xs sm:text-sm text-[#1b1c1c] truncate">
+                            {item.name?.replace(/\s+Reguler$/i, '')}
+                          </span>
+                          <span className="text-[11px] text-gray-500 font-medium truncate">
+                            {sName} • {item.quantity} box
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-bold text-xs sm:text-sm text-gray-900 shrink-0">
+                        Rp {formatRupiah(item.rescuePrice * item.quantity)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Breakdown lines */}
               <div className="flex flex-col gap-2 text-xs text-gray-600 pt-1">
-                <div className="flex items-center justify-between">
-                  <span>Harga per box</span>
-                  <span className="font-semibold text-gray-900">
-                    Rp {formatRupiah(checkoutItems[0]?.rescuePrice || 20000)}
-                  </span>
-                </div>
-
                 <div className="flex items-center justify-between">
                   <span>Jumlah box</span>
                   <span className="font-semibold text-gray-900">{totalBoxes} box</span>
@@ -612,17 +724,14 @@ export function CustomerCheckout({
                   <span className="font-semibold text-gray-900">Rp {formatRupiah(subtotal)}</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    Diskon{' '}
-                    <span className="bg-[#fef9c3] text-[#854d0e] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                      50%
+                {discountTotal > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span>Total Diskon</span>
+                    <span className="font-semibold text-[#e11d48]">
+                      - Rp {formatRupiah(discountTotal)}
                     </span>
-                  </span>
-                  <span className="font-semibold text-[#e11d48]">
-                    - Rp {formatRupiah(discountTotal)}
-                  </span>
-                </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1">
@@ -640,16 +749,15 @@ export function CustomerCheckout({
                 </span>
               </div>
 
-              {/* Impact Card */}
-              <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#24521e]">
-                <span className="text-base shrink-0 mt-0.5">🌱</span>
+              {/* Impact Card (tanpa logo sprout) */}
+              <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 text-xs text-[#24521e]">
                 <span className="leading-relaxed">
                   Dengan berbelanja di RescueBite, kamu ikut membantu mengurangi food waste dan mendukung bisnis lokal.
                 </span>
               </div>
             </section>
 
-            {/* CARD 5: Metode Pembayaran */}
+            {/* CARD: Metode Pembayaran */}
             <section className="bg-white rounded-3xl p-5 sm:p-6 border border-black/10 shadow-xs flex flex-col gap-4">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                 <CreditCard className="w-4 h-4 text-gray-700" />
@@ -662,20 +770,18 @@ export function CustomerCheckout({
                 {/* Option 1: Pembayaran Online */}
                 <div
                   onClick={() => setPaymentMethod('online')}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
-                    paymentMethod === 'online'
-                      ? 'border-[#1f2620] bg-white shadow-xs'
-                      : 'border-gray-200 bg-[#fbfbf9] hover:border-gray-300'
-                  }`}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${paymentMethod === 'online'
+                    ? 'border-[#1f2620] bg-white shadow-xs'
+                    : 'border-gray-200 bg-[#fbfbf9] hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5">
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          paymentMethod === 'online'
-                            ? 'border-[#1f2620] bg-[#1f2620]'
-                            : 'border-gray-300 bg-white'
-                        }`}
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'online'
+                          ? 'border-[#1f2620] bg-[#1f2620]'
+                          : 'border-gray-300 bg-white'
+                          }`}
                       >
                         {paymentMethod === 'online' && (
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -718,20 +824,18 @@ export function CustomerCheckout({
                 {/* Option 2: Bayar di Tempat */}
                 <div
                   onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
-                    paymentMethod === 'cod'
-                      ? 'border-[#1f2620] bg-white shadow-xs'
-                      : 'border-gray-200 bg-[#fbfbf9] hover:border-gray-300'
-                  }`}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${paymentMethod === 'cod'
+                    ? 'border-[#1f2620] bg-white shadow-xs'
+                    : 'border-gray-200 bg-[#fbfbf9] hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5">
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          paymentMethod === 'cod'
-                            ? 'border-[#1f2620] bg-[#1f2620]'
-                            : 'border-gray-300 bg-white'
-                        }`}
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'cod'
+                          ? 'border-[#1f2620] bg-[#1f2620]'
+                          : 'border-gray-300 bg-white'
+                          }`}
                       >
                         {paymentMethod === 'cod' && (
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />

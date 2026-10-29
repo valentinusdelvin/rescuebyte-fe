@@ -1,4 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
+import {
+  Check,
+  Clock,
+  ChevronDown,
+  Trash2,
+  Package,
+  Info,
+  Store,
+  RefreshCw,
+  Receipt,
+  Lock,
+  User,
+} from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
@@ -252,11 +265,11 @@ export function CustomerCart({
         .filter((item) => selectedItemIds.has(item.id))
         .map((item) => ({
           id: item.id,
-          name: item.name,
+          name: item.name?.replace(/\s+Reguler$/i, ''),
           storeId: store.storeId,
           storeName: store.storeName,
           storeAvatar: store.storeAvatar,
-          storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
+          storeAddress: undefined,
           rating: store.rating,
           reviewCount: store.reviewCount,
           distanceText: store.distanceText,
@@ -344,9 +357,7 @@ export function CustomerCart({
                           aria-label={`Pilih semua produk dari ${store.storeName}`}
                         >
                           {isStoreAllSelected(store) ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                            <Check className="w-3 h-3 stroke-[3.2]" />
                           ) : store.items.some((it) => selectedItemIds.has(it.id)) ? (
                             <span className="w-2.5 h-0.5 bg-[#16a34a] rounded-full" />
                           ) : null}
@@ -380,10 +391,7 @@ export function CustomerCart({
                         {/* Pickup Time Dropdown */}
                         <div className="relative inline-flex items-center bg-[#f8f8f6] hover:bg-[#f0f0ee] border border-gray-200/90 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 transition-colors">
                           <label htmlFor={`pickup-${store.storeId}`} className="sr-only">Waktu Pickup</label>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0 mr-1.5">
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
+                          <Clock className="w-3.5 h-3.5 text-gray-500 shrink-0 mr-1.5" />
                           <span className="text-gray-500 whitespace-nowrap mr-1 text-[11px] sm:text-xs">Waktu Pickup</span>
                           <select
                             id={`pickup-${store.storeId}`}
@@ -400,9 +408,7 @@ export function CustomerCart({
                               );
                             })}
                           </select>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 pointer-events-none ml-0.5">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
+                          <ChevronDown className="w-3 h-3 text-gray-400 pointer-events-none ml-0.5" />
                         </div>
 
                         {/* Hapus Semua Button */}
@@ -412,11 +418,7 @@ export function CustomerCart({
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer transition-colors"
                           title="Hapus semua pesanan toko ini"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          </svg>
+                          <Trash2 className="w-3.5 h-3.5" />
                           <span>Hapus Semua</span>
                         </button>
                       </div>
@@ -445,9 +447,7 @@ export function CustomerCart({
                               aria-label={`Pilih ${item.name}`}
                             >
                               {selectedItemIds.has(item.id) && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                                <Check className="w-3 h-3 stroke-[3.2]" />
                               )}
                             </button>
 
@@ -462,9 +462,7 @@ export function CustomerCart({
                                 />
                               ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-[#2a241e] to-[#1c1815] text-amber-200">
-                                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                                  </svg>
+                                  <Package className="w-5.5 h-5.5" />
                                 </div>
                               )}
                             </div>
@@ -472,7 +470,7 @@ export function CustomerCart({
                             {/* Details */}
                             <div className="flex flex-col min-w-0">
                               <h3 className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
-                                {item.name}
+                                {item.name?.replace(/\s+Reguler$/i, '')}
                               </h3>
 
                               {/* Tags */}
@@ -548,11 +546,7 @@ export function CustomerCart({
                               title="Hapus produk ini"
                               aria-label="Hapus produk ini"
                             >
-                              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                              </svg>
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
@@ -567,11 +561,7 @@ export function CustomerCart({
                 {/* 1. Card: Penting untuk Diketahui */}
                 <article className="bg-white rounded-3xl p-6 border border-black/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center gap-2">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
+                    <Info className="w-4.5 h-4.5 text-gray-700" />
                     <h2 className="font-bold text-sm sm:text-base text-[#1b1c1c]">
                       Penting untuk Diketahui
                     </h2>
@@ -581,10 +571,7 @@ export function CustomerCart({
                     {/* Item 1: Pesanan dikelompokkan per toko */}
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                          <polyline points="9 22 9 12 15 12 15 22" />
-                        </svg>
+                        <Store className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-xs text-[#1b1c1c]">
@@ -599,9 +586,7 @@ export function CustomerCart({
                     {/* Item 2: Stok tidak dijamin */}
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                        </svg>
+                        <Package className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-xs text-[#1b1c1c]">
@@ -616,10 +601,7 @@ export function CustomerCart({
                     {/* Item 3: Mystery Box */}
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-xl bg-[#e7f7ea] text-[#16a34a] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="23 4 23 10 17 10" />
-                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                        </svg>
+                        <RefreshCw className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-xs text-[#1b1c1c]">
@@ -636,13 +618,7 @@ export function CustomerCart({
                 {/* 2. Card: Ringkasan Pesanan */}
                 <article className="bg-white rounded-3xl p-6 border border-black/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center gap-2">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
+                    <Receipt className="w-4.5 h-4.5 text-gray-700" />
                     <h2 className="font-bold text-base text-[#1b1c1c]">
                       Ringkasan Pesanan
                     </h2>
@@ -671,11 +647,7 @@ export function CustomerCart({
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         Biaya Layanan
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
+                        <Info className="w-3 h-3 text-gray-400" />
                       </span>
                       <span className="font-semibold text-gray-900">Rp {formatRupiah(serviceFee)}</span>
                     </div>
@@ -690,10 +662,7 @@ export function CustomerCart({
 
                   {/* Impact Note Banner */}
                   <div className="bg-[#eef8ee] border border-[#d2edd2] rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#24521e]">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polyline points="23 4 23 10 17 10" />
-                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                    </svg>
+                    <RefreshCw className="w-4 h-4 shrink-0 mt-0.5" />
                     <span className="leading-relaxed">
                       Dengan berbelanja di RescueBite, kamu ikut membantu mengurangi food waste dan mendukung bisnis lokal.
                     </span>
@@ -708,10 +677,7 @@ export function CustomerCart({
                       className="w-full py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
                       id="btn-lanjut-checkout"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
+                      <Lock className="w-4 h-4" />
                       <span>Lanjut ke Checkout →</span>
                     </button>
                   </div>
@@ -757,10 +723,7 @@ export function CustomerCart({
         >
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
             <div className="w-12 h-12 mx-auto rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <User className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-[#1b1c1c]">Masuk ke RescueBite</h3>
             <p className="text-xs text-gray-500">

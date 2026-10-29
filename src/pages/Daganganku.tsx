@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Minus, Package, Eye, EyeOff } from 'lucide-react';
+import { Plus, Minus, Package, Eye, EyeOff, Search, ChevronDown, Trash2 } from 'lucide-react';
 import { ProductItem, ProductStatusTab } from '../types';
 import {
   getStoredProducts,
@@ -273,21 +273,7 @@ export function Daganganku({
         <div className="p-4 md:p-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-b border-gray-100">
           {/* Search Box */}
           <div className="relative flex-1 flex items-center">
-            <svg
-              className="absolute left-3.5 text-gray-400 pointer-events-none"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <Search className="absolute left-3.5 text-gray-400 pointer-events-none w-4.5 h-4.5" aria-hidden="true" />
             <input
               type="text"
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-black bg-white"
@@ -310,9 +296,7 @@ export function Daganganku({
               <option value="diskon_tinggi">Diskon Tertinggi</option>
               <option value="stok_sedikit">Stok Menipis</option>
             </select>
-            <svg className="absolute right-3 pointer-events-none text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <ChevronDown className="absolute right-3 pointer-events-none text-gray-400 w-4 h-4" />
           </div>
 
           {/* Sort Dropdown */}
@@ -328,9 +312,7 @@ export function Daganganku({
               <option value="harga_terendah">Harga Terendah</option>
               <option value="harga_tertinggi">Harga Tertinggi</option>
             </select>
-            <svg className="absolute right-3 pointer-events-none text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <ChevronDown className="absolute right-3 pointer-events-none text-gray-400 w-4 h-4" />
           </div>
         </div>
 
@@ -339,11 +321,7 @@ export function Daganganku({
           {filteredProducts.length === 0 ? (
             <div className="py-12 px-4 text-center flex flex-col items-center justify-center">
               <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 mb-3 border border-gray-100">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                  <path d="m3.3 7 8.7 5 8.7-5" />
-                  <path d="M12 22V12" />
-                </svg>
+                <Package className="w-9 h-9" />
               </div>
               <h3 className="text-base font-bold text-gray-900">Belum ada dagangan pada filter ini</h3>
               <p className="text-xs text-gray-500 max-w-sm mt-1">
@@ -490,10 +468,7 @@ export function Daganganku({
                     aria-label={`Hapus ${item.name}`}
                     onClick={() => handleRequestDelete(item)}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <Trash2 className="w-4.5 h-4.5" />
                   </button>
                 </article>
               );
