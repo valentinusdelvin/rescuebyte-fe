@@ -427,6 +427,23 @@ export async function checkoutOrderApi(data: CheckoutApiPayload): Promise<Checko
 /**
  * Fetch customer orders from GET /api/v1/orders
  */
+/**
+ * Fetch single order detail from GET /api/v1/orders/{id}
+ */
+export async function fetchOrderDetailApi(orderId: string): Promise<any | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token || !orderId) return null;
+
+  try {
+    const response = await api.get('/api/v1/orders/' + orderId);
+    const payload = response.data?.payload;
+    return payload?.order || payload || null;
+  } catch (err) {
+    console.warn('fetchOrderDetailApi failed:', err);
+    return null;
+  }
+}
+
 export async function fetchCustomerOrdersApi(params?: {
   page?: number;
   limit?: number;
@@ -522,116 +539,38 @@ export interface MerchantOrderItem {
   createdAt: string;
 }
 
-export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [
-  {
-    id: 'm-ord-1',
-    orderNumber: 'RB261030-10111',
-    status: 'diproses',
-    storeName: 'Toko Rejak',
-    customerName: 'Reza Pratama',
-    customerPhone: '081234567890',
-    productName: 'Mystery Bakery Box',
-    productImage: cardMonsieurSpoon,
-    totalBoxes: 1,
-    rescuePrice: 20000,
-    originalPrice: 40000,
-    discountPercent: 50,
-    grandTotal: 20000,
-    pickupDate: 'Hari ini',
-    pickupTime: '15.00 - 18.00 WIB',
-    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  },
-  {
-    id: 'm-ord-2',
-    orderNumber: 'RB261030-10112',
-    status: 'diproses',
-    storeName: 'Toko Rejak',
-    customerName: 'Reza Pratama',
-    customerPhone: '081234567890',
-    productName: 'Mystery Bakery Box',
-    productImage: cardMonsieurSpoon,
-    totalBoxes: 1,
-    rescuePrice: 20000,
-    originalPrice: 40000,
-    discountPercent: 50,
-    grandTotal: 20000,
-    pickupDate: 'Hari ini',
-    pickupTime: '15.00 - 18.00 WIB',
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: 'm-ord-3',
-    orderNumber: 'RB261030-10113',
-    status: 'diproses',
-    storeName: 'Toko Rejak',
-    customerName: 'Reza Pratama',
-    customerPhone: '081234567890',
-    productName: 'Mystery Bakery Box',
-    productImage: cardMonsieurSpoon,
-    totalBoxes: 1,
-    rescuePrice: 20000,
-    originalPrice: 40000,
-    discountPercent: 50,
-    grandTotal: 20000,
-    pickupDate: 'Hari ini',
-    pickupTime: '15.00 - 18.00 WIB',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-  },
-  {
-    id: 'm-ord-4',
-    orderNumber: 'RB261030-10114',
-    status: 'diproses',
-    storeName: 'Toko Rejak',
-    customerName: 'Reza Pratama',
-    customerPhone: '081234567890',
-    productName: 'Mystery Bakery Box',
-    productImage: cardMonsieurSpoon,
-    totalBoxes: 1,
-    rescuePrice: 20000,
-    originalPrice: 40000,
-    discountPercent: 50,
-    grandTotal: 20000,
-    pickupDate: 'Hari ini',
-    pickupTime: '15.00 - 18.00 WIB',
-    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: 'm-ord-5',
-    orderNumber: 'RB261030-10115',
-    status: 'diproses',
-    storeName: 'Toko Rejak',
-    customerName: 'Reza Pratama',
-    customerPhone: '081234567890',
-    productName: 'Mystery Bakery Box',
-    productImage: cardMonsieurSpoon,
-    totalBoxes: 1,
-    rescuePrice: 20000,
-    originalPrice: 40000,
-    discountPercent: 50,
-    grandTotal: 20000,
-    pickupDate: 'Hari ini',
-    pickupTime: '15.00 - 18.00 WIB',
-    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-  },
-];
+export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [];
 
 export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[] {
-  if (typeof window === 'undefined') return INITIAL_MERCHANT_ORDERS;
+  if (typeof window === 'undefined') return [];
 
   try {
     const raw = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
     let orders: MerchantOrderItem[] = raw ? JSON.parse(raw) : [];
 
-    if (!Array.isArray(orders) || orders.length === 0) {
-      orders = [...INITIAL_MERCHANT_ORDERS];
-      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
-    }
+    // Filter out dummy/placeholder orders completely
+    orders = orders.filter(
+      (o) =>
+        o &&
+        !o.id?.startsWith('m-ord-') &&
+        !o.orderNumber?.startsWith('RB261030-1011') &&
+        o.orderNumber !== 'RB261029-00125'
+    );
 
-    // Auto-sync customer orders into merchant queue
+    // Auto-sync real customer orders into merchant queue
     const customerOrders = getCustomerOrders();
-    let hasNewSync = false;
 
     customerOrders.forEach((co) => {
+      // Exclude placeholder mock customer orders
+      if (
+        PLACEHOLDER_ORDER_IDS.has(co.id) ||
+        PLACEHOLDER_STORE_NAMES.has(co.storeName) ||
+        co.orderNumber?.startsWith('RB25102') ||
+        co.orderNumber?.startsWith('RB261030-1011')
+      ) {
+        return;
+      }
+
       if (!orders.some((m) => m.orderNumber === co.orderNumber || m.id === co.id)) {
         const primaryItem = co.orderData?.items?.[0];
         const origPrice = primaryItem?.originalPrice || co.originalPrice || co.finalPrice * 2;
@@ -665,13 +604,10 @@ export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[
           pickupTime: co.pickupTime,
           createdAt: co.orderData?.createdAt || new Date().toISOString(),
         });
-        hasNewSync = true;
       }
     });
 
-    if (hasNewSync) {
-      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
-    }
+    localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
 
     if (currentStoreName && currentStoreName.trim()) {
       const targetStore = currentStoreName.toLowerCase().trim();
@@ -679,13 +615,13 @@ export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[
         const sName = (o.storeName || '').toLowerCase().trim();
         return sName === targetStore || sName.includes(targetStore) || targetStore.includes(sName);
       });
-      if (filtered.length > 0) return filtered;
+      return filtered;
     }
 
     return orders;
   } catch (err) {
     console.warn('Failed to get merchant orders:', err);
-    return INITIAL_MERCHANT_ORDERS;
+    return [];
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Check,
   Clock,
@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { PaymentOrderData } from '../types';
+import { PaymentOrderData, CustomerOrderStatus } from '../types';
+import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus } from '../services/orderService';
 
 import saladStopCard from '../assets/customer/card-saladstop.jpg';
 
@@ -51,42 +52,45 @@ export function CustomerOrderDetail({
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
 
-  // Active step in tracking timeline (1 to 5)
-  const [activeStep, setActiveStep] = useState<number>(() => {
-    if (orderData?.status === 'menunggu-pembayaran') return 1;
-    if (orderData?.status === 'menunggu-konfirmasi' || orderData?.status === 'dibayar') return 2;
-    if (orderData?.status === 'diproses') return 3;
-    if (orderData?.status === 'siap-diambil') return 4;
-    return 5;
+  
+  const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
+    const s = orderData?.status;
+    if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
+      return s;
+    }
+    return 'menunggu-konfirmasi';
   });
 
-  const TIMELINE_STEPS = useMemo(() => [
-    {
-      step: 1,
-      title: '1. Pesanan Dibuat',
-      desc: '23 Okt • 14:10 WIB',
-    },
-    {
-      step: 2,
-      title: '2. Pembayaran',
-      desc: activeStep >= 2 ? (activeStep >= 5 ? 'Lunas QRIS • 14:12 WIB' : '23 Okt • 14:12 WIB') : '23 Okt • 14:12 WIB',
-    },
-    {
-      step: 3,
-      title: '3. Dikonfirmasi',
-      desc: activeStep >= 3 ? 'Diterima Toko • 14:15 WIB' : '',
-    },
-    {
-      step: 4,
-      title: '4. Siap Diambil',
-      desc: activeStep >= 4 ? 'Di Rak Khusus • 15:00 WIB' : '',
-    },
-    {
-      step: 5,
-      title: '5. Selesai',
-      desc: activeStep >= 5 ? 'Diambil • 15:42 WIB' : '',
-    },
-  ], [activeStep]);
+  useEffect(() => {
+    if (orderData?.status) {
+      const s = orderData.status;
+      if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
+        setCurrentStatus(s);
+      }
+    }
+    const orderIdToFetch = (orderData as any)?.id || (orderData?.items?.[0] as any)?.id;
+    if (orderIdToFetch && typeof orderIdToFetch === 'string' && !orderIdToFetch.startsWith('ord-') && !orderIdToFetch.startsWith('item-')) {
+      fetchOrderDetailApi(orderIdToFetch).then((payload) => {
+        if (payload && payload.status) {
+          setCurrentStatus(mapBackendStatusToCustomerStatus(payload.status));
+        }
+      }).catch(() => {});
+    }
+  }, [orderData]);
+
+  // Active step in tracking timeline (1 to 5) determined purely by live database status
+  const activeStep = useMemo(() => {
+    if (currentStatus === 'menunggu-pembayaran') return 1;
+    if (currentStatus === 'menunggu-konfirmasi') return 2;
+    if (currentStatus === 'diproses') return 3;
+    if (currentStatus === 'siap-diambil') return 4;
+    if (currentStatus === 'selesai') return 5;
+    if (currentStatus === 'dibatalkan') return 1;
+    return 2;
+  }, [currentStatus]);
+
+
+
   const orderId = orderData?.orderId || 'RB251023-00455';
   const items = orderData?.items && orderData.items.length > 0 ? orderData.items : null;
   const primaryItem = items?.[0];
@@ -118,6 +122,46 @@ export function CustomerOrderDetail({
   const grandTotal = orderData?.grandTotal ?? (totalRescuePrice + serviceFee);
 
   const orderCreatedAt = orderData?.createdAt;
+
+  const orderTimeFormatted = useMemo(() => {
+    if (orderCreatedAt) {
+      try {
+        const d = new Date(orderCreatedAt);
+        const day = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+        return `${day} • ${time} WIB`;
+      } catch {}
+    }
+    return '';
+  }, [orderCreatedAt]);
+
+  const TIMELINE_STEPS = useMemo(() => [
+    {
+      step: 1,
+      title: '1. Pesanan Dibuat',
+      desc: orderTimeFormatted || 'Tercatat di sistem',
+    },
+    {
+      step: 2,
+      title: '2. Pembayaran',
+      desc: activeStep >= 2 ? (currentStatus === 'menunggu-konfirmasi' ? 'Terverifikasi' : 'Lunas') : '',
+    },
+    {
+      step: 3,
+      title: '3. Dikonfirmasi',
+      desc: activeStep >= 3 ? 'Diterima Toko' : '',
+    },
+    {
+      step: 4,
+      title: '4. Siap Diambil',
+      desc: activeStep >= 4 ? 'Di Rak Khusus' : '',
+    },
+    {
+      step: 5,
+      title: '5. Selesai',
+      desc: activeStep >= 5 ? 'Pesanan Selesai' : '',
+    },
+  ], [activeStep, orderTimeFormatted, currentStatus]);
 
   const completionTimestamp = useMemo(() => {
     if (orderCreatedAt) {
@@ -357,12 +401,9 @@ export function CustomerOrderDetail({
               {TIMELINE_STEPS.map((item) => {
                 const isCompleted = item.step <= activeStep;
                 return (
-                  <button
+                  <div
                     key={item.step}
-                    type="button"
-                    onClick={() => setActiveStep(item.step)}
-                    className="relative z-10 flex flex-col items-center text-center cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 rounded-xl p-1 transition"
-                    title={`Klik untuk melihat kondisi: ${item.title}`}
+                    className="relative z-10 flex flex-col items-center text-center select-none p-1 pointer-events-none"
                   >
                     <div
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-2 transition-all select-none ${
@@ -379,7 +420,7 @@ export function CustomerOrderDetail({
                     {item.desc ? (
                       <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
                     ) : null}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -669,7 +710,7 @@ export function CustomerOrderDetail({
                         if (orderData?.snapRedirectUrl) {
                           window.open(orderData.snapRedirectUrl, '_blank');
                         }
-                        setActiveStep(2);
+                        setCurrentStatus('menunggu-konfirmasi');
                         onShowToast?.('Pembayaran berhasil diverifikasi!', 'success');
                       }}
                       className="mt-3 w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99]"
