@@ -55,7 +55,9 @@ export function CustomerOrderHistory({
   onShowToast,
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
-  const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
+  const [orders, setOrders] = useState<CustomerOrderItem[]>(() =>
+    getCustomerOrders().filter((o) => !o.orderNumber?.startsWith('RB2610') && !o.orderNumber?.startsWith('RB2510'))
+  );
   const [storeAvatars, setStoreAvatars] = useState<Record<string, string>>({});
   const [storeAddresses, setStoreAddresses] = useState<Record<string, string>>({});
   const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');
@@ -101,7 +103,7 @@ export function CustomerOrderHistory({
     async function loadBackendOrders() {
       try {
         const backendOrders = await fetchCustomerOrdersApi();
-        if (!isCancelled && backendOrders && backendOrders.length > 0) {
+        if (!isCancelled && backendOrders !== null) {
           setOrders(backendOrders);
         }
       } catch (err) {

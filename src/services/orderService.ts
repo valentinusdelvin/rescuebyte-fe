@@ -125,7 +125,7 @@ export function getCustomerOrders(): CustomerOrderItem[] {
             o.id &&
             !PLACEHOLDER_ORDER_IDS.has(o.id) &&
             !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
-            !o.orderNumber?.startsWith('RB25102')
+            !o.orderNumber?.startsWith('RB25102') && !o.orderNumber?.startsWith('RB2610')
         )
         .map((o) => {
           const cleaned = { ...o };
@@ -491,22 +491,9 @@ export async function fetchCustomerOrdersApi(params?: {
         };
       });
 
-      // Merge with local orders, excluding mock placeholders
-      const existing = getCustomerOrders();
-      const merged = [...mappedOrders];
-      existing.forEach((localOrder) => {
-        if (
-          !PLACEHOLDER_ORDER_IDS.has(localOrder.id) &&
-          !PLACEHOLDER_STORE_NAMES.has(localOrder.storeName) &&
-          !localOrder.orderNumber?.startsWith('RB25102') &&
-          !merged.some((m) => m.orderNumber === localOrder.orderNumber || m.id === localOrder.id)
-        ) {
-          merged.push(localOrder);
-        }
-      });
-
-      saveCustomerOrders(merged);
-      return merged;
+      // Backend is the single source of truth - do not merge unverified client orders
+      saveCustomerOrders(mappedOrders);
+      return mappedOrders;
     }
     return null;
   } catch (err) {
@@ -783,4 +770,34 @@ export function subscribeToMerchantOrders(callback: (orders: MerchantOrderItem[]
     window.removeEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
     window.removeEventListener('storage', handleUpdate);
   };
+}
+
+export async function cancelMerchantOrder(orderId: string, reason?: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'batal';
+    saveMerchantOrders(orders);
+  }
+
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'dibatalkan';
+    cTarget.statusLabel = 'Dibatalkan Toko';
+    saveCustomerOrders(customerOrders);
+  }
+
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch('/api/v1/orders/' + target.id + '/status', {
+        status: 'CANCELLED',
+        cancellation_reason: reason || 'Dibatalkan oleh pihak toko mitra',
+      });
+    } catch (err) {
+      console.warn('Failed to cancel status in backend:', err);
+    }
+  }
+
+  return true;
 }
