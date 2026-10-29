@@ -153,7 +153,7 @@ export function App() {
       hash.startsWith('#riwayat-pesanan')
     ) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
-      return 'Pesanan Saya';
+      return 'Riwayat Pesanan';
     }
     if (
       hash.startsWith('#toko') ||
@@ -411,7 +411,7 @@ export function App() {
           return;
         }
         setActiveView('view-customer-orders');
-        setActiveLabel('Pesanan Saya');
+        setActiveLabel('Riwayat Pesanan');
       } else if (
         hash.startsWith('#pembayaran') ||
         hash.startsWith('#payment') ||
@@ -530,7 +530,7 @@ export function App() {
         <CustomerHome
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateStore={handleNavigateStore}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
@@ -552,7 +552,7 @@ export function App() {
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
           onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onNavigateDetail={(item) => {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
@@ -607,6 +607,11 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateStore={handleNavigateStore}
+          onNavigateDetail={(item) => {
+            setSelectedProduct(item);
+            handleNavigate('view-customer-product-detail', 'Detail Produk');
+          }}
           onNavigateCheckout={(items) => {
             setCheckoutPayload({
               source: 'cart',
@@ -652,9 +657,9 @@ export function App() {
           orderData={paymentOrderData}
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
-          onNavigateStore={handleNavigateStore}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateStore={handleNavigateStore}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-store' ? (
@@ -664,7 +669,7 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onNavigateProductDetail={(item) => {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
@@ -729,7 +734,7 @@ export function App() {
           onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
           onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
           onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Pesanan Saya')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onShowToast={showToast}
         />
       ) : (

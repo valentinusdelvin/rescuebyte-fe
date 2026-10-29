@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   MapPin,
   Clock,
@@ -6,10 +6,12 @@ import {
   Star,
   Mail,
   Phone,
-  AtSign,
-  Tag,
   MessageSquare,
   ChevronRight,
+  ChevronDown,
+  Check,
+  Tag,
+  AtSign,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
@@ -45,6 +47,7 @@ interface StoreProductItem {
   imageSrc: string;
   pickupTime: string;
   stock?: number;
+  remainingBoxes?: number;
   description?: string;
 }
 
@@ -134,6 +137,23 @@ const TOKO_REJAK_PRODUCTS: StoreProductItem[] = [
   },
 ];
 
+function formatPriceInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  return parseInt(digits, 10).toLocaleString('id-ID');
+}
+
+function parsePriceInput(val: string): number | null {
+  const digits = val.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : null;
+}
+
+const SORT_OPTIONS: { id: 'terbaru' | 'tertinggi' | 'terendah'; label: string }[] = [
+  { id: 'terbaru', label: 'Terbaru' },
+  { id: 'tertinggi', label: 'Rating Tertinggi' },
+  { id: 'terendah', label: 'Rating Terendah' },
+];
+
 export function CustomerStoreDetail({
   storeName,
   storeId,
@@ -148,6 +168,47 @@ export function CustomerStoreDetail({
   const [currentUser] = useState(() => getCurrentUser());
   const [activeTab, setActiveTab] = useState<'tentang' | 'produk' | 'ulasan'>('tentang');
   const [sortOrder, setSortOrder] = useState<'terbaru' | 'tertinggi' | 'terendah'>('terbaru');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Price filter states for "Semua Produk" tab
+  const [isPriceDropdownOpen, setIsPriceDropdownOpen] = useState(false);
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [appliedMinPrice, setAppliedMinPrice] = useState<number | null>(null);
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | null>(null);
+  const priceDropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentSortLabel =
+    SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || 'Terbaru';
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+      if (
+        priceDropdownRef.current &&
+        !priceDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsPriceDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSortOpen(false);
+        setIsPriceDropdownOpen(false);
+      }
+    };
+    if (isSortOpen || isPriceDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSortOpen, isPriceDropdownOpen]);
 
   // Resolve store name from prop, localStorage, or fallback to Toko Rejak
   const effectiveStoreName = useMemo(() => {
@@ -321,6 +382,14 @@ export function CustomerStoreDetail({
     };
   }, [effectiveStoreName, storeId]);
 
+  const filteredProducts = useMemo(() => {
+    return storeProducts.filter((item) => {
+      if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
+      if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
+      return true;
+    });
+  }, [storeProducts, appliedMinPrice, appliedMaxPrice]);
+
   // Dynamic reviews mentioning this store and area
   const storeReviews: StoreReviewItem[] = useMemo(() => {
     return [
@@ -430,7 +499,7 @@ export function CustomerStoreDetail({
   );
 
   return (
-    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-[#3c6a00]/20 selection:text-[#0b1510]">
+    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
       <div>
         <CustomerHeader
           activeTab="marketplace"
@@ -456,7 +525,7 @@ export function CustomerStoreDetail({
                 alt={storeData.name}
                 className="w-full h-full object-cover filter brightness-[0.6] scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
             </div>
 
             {/* Overlapping Floating Store Card */}
@@ -494,7 +563,7 @@ export function CustomerStoreDetail({
                       <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1b1c1c] tracking-tight truncate">
                         {storeData.name}
                       </h1>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-primary">
                         {storeData.status}
                       </span>
                     </div>
@@ -600,9 +669,9 @@ export function CustomerStoreDetail({
             </button>
           </nav>
 
-          {/* TAB 1: Tentang Toko (2x2 Grid + Reviews) */}
+          {/* TAB 1: Tentang Toko (2x2 Grid) */}
           {activeTab === 'tentang' && (
-            <>
+            <div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
                 {/* Card 1: Tentang Toko Description */}
                 <section className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col justify-between">
@@ -785,249 +854,378 @@ export function CustomerStoreDetail({
                   </div>
                 </section>
               </div>
-
-              {/* Section: Ulasan Pelanggan */}
-              <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs mb-8">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-[#1b1c1c]">
-                      Ulasan Pelanggan ({storeData.reviewCount})
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Ulasan nyata dari pelanggan yang telah berbelanja di {storeData.name}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <span className="text-xs text-slate-500 font-medium">Urutkan:</span>
-                    <select
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value as 'terbaru' | 'tertinggi' | 'terendah')}
-                      className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                    >
-                      <option value="terbaru">Terbaru</option>
-                      <option value="tertinggi">Rating Tertinggi</option>
-                      <option value="terendah">Rating Terendah</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sortedReviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-3 mb-2.5">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={rev.avatar}
-                              alt={rev.name}
-                              className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                            />
-                            <div>
-                              <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">{rev.name}</p>
-                              <span className="text-[10px] text-slate-400 font-medium">{rev.role}</span>
-                            </div>
-                          </div>
-                          <span className="text-[11px] text-slate-400">{rev.date}</span>
-                        </div>
-
-                        <div className="flex items-center gap-0.5 mb-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-3.5 h-3.5 ${star <= rev.rating
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'fill-slate-200 text-slate-200'
-                                }`}
-                            />
-                          ))}
-                        </div>
-
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                          {rev.comment}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </>
+            </div>
           )}
 
-          {/* TAB 2: Semua Produk */}
-          {activeTab === 'produk' && (
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#1b1c1c]">
-                    Semua Produk dari {storeData.name}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                    Pilih dan selamatkan paket makanan lezat berkualitas dengan harga hemat hari ini.
-                  </p>
+                    {activeTab === 'produk' && (
+            <div className="space-y-6 mb-12">
+              {/* Filter Row: Hanya Filter Harga */}
+              <div className="flex items-center gap-3">
+                <div ref={priceDropdownRef} className="relative w-full sm:w-72">
+                  <button
+                    type="button"
+                    onClick={() => setIsPriceDropdownOpen(!isPriceDropdownOpen)}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${
+                      isPriceDropdownOpen
+                        ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                        : appliedMinPrice !== null || appliedMaxPrice !== null
+                          ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                          : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                    }`}
+                    aria-expanded={isPriceDropdownOpen}
+                  >
+                    <span className="truncate">
+                      {appliedMinPrice !== null && appliedMaxPrice !== null
+                        ? `Rp ${formatRupiah(appliedMinPrice)} - ${formatRupiah(appliedMaxPrice)}`
+                        : appliedMinPrice !== null
+                          ? `≥ Rp ${formatRupiah(appliedMinPrice)}`
+                          : appliedMaxPrice !== null
+                            ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
+                            : 'Harga'}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 shrink-0 text-black transition-transform duration-200 ${
+                        isPriceDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isPriceDropdownOpen && (
+                    <div className="absolute top-full left-0 w-full min-w-[280px] mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-4 animate-in fade-in zoom-in-95 duration-150">
+                      {/* 1. Semua Harga */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedMinPrice(null);
+                          setAppliedMaxPrice(null);
+                          setMinPriceInput('');
+                          setMaxPriceInput('');
+                          setIsPriceDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-between cursor-pointer mb-1 ${
+                          appliedMinPrice === null && appliedMaxPrice === null
+                            ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                            : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                      >
+                        <span>Semua Harga</span>
+                        {appliedMinPrice === null && appliedMaxPrice === null && (
+                          <Check className="w-4 h-4 text-[#1b1c1c]" />
+                        )}
+                      </button>
+
+                      <div className="border-t border-gray-100 my-2" />
+
+                      {/* 2. Rentang min x - max y */}
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                          Rentang Harga (Rp)
+                        </span>
+                        <div className="grid grid-cols-2 gap-2 items-center">
+                          <div>
+                            <label className="text-[10px] text-gray-400 block mb-0.5">Min</label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0"
+                                value={minPriceInput}
+                                onChange={(e) => setMinPriceInput(formatPriceInput(e.target.value))}
+                                className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400 block mb-0.5">Max</label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">Rp</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="50.000"
+                                value={maxPriceInput}
+                                onChange={(e) => setMaxPriceInput(formatPriceInput(e.target.value))}
+                                className="w-full pl-8 pr-2 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green/30"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tombol Terapkan */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const min = parsePriceInput(minPriceInput);
+                            const max = parsePriceInput(maxPriceInput);
+                            setAppliedMinPrice(min);
+                            setAppliedMaxPrice(max);
+                            setIsPriceDropdownOpen(false);
+                          }}
+                          className="w-full mt-2 py-2 bg-[#1f2a24] hover:bg-[#2c3b33] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Terapkan
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl self-start sm:self-auto">
-                  Total {storeProducts.length} Produk
-                </span>
+
+                {(appliedMinPrice !== null || appliedMaxPrice !== null) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedMinPrice(null);
+                      setAppliedMaxPrice(null);
+                      setMinPriceInput('');
+                      setMaxPriceInput('');
+                    }}
+                    className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline transition cursor-pointer self-center"
+                  >
+                    Reset Filter
+                  </button>
+                )}
               </div>
 
-              {storeProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {storeProducts.map((prod) => (
-                    <div
-                      key={prod.id}
-                      className="border border-slate-200/80 rounded-3xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition bg-white"
+              {/* Product Cards Grid: Tepat seperti CustomerMarketplace.tsx & image 2 */}
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                  {filteredProducts.map((item) => (
+                    <article
+                      key={item.id}
+                      onClick={() => handleSelectProduct(item)}
+                      className="bg-white rounded-3xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col group cursor-pointer"
                     >
-                      <div>
-                        <div className="relative rounded-2xl overflow-hidden aspect-video sm:aspect-[4/3] mb-3 bg-slate-100">
-                          <img
-                            src={prod.imageSrc}
-                            alt={prod.name}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-2.5 right-2.5 bg-[#22c55e] text-white text-xs font-black px-2 py-0.5 rounded-lg shadow-sm">
-                            -{prod.discountPercent}%
+                      {/* Top Media Banner Area */}
+                      <div className="relative aspect-16/10 w-full overflow-hidden bg-gray-100">
+                        <img
+                          src={item.imageSrc}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+
+                        {/* Top Row Badges */}
+                        <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {(item.remainingBoxes ?? item.stock ?? 1) > 2 ? (
+                              <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
+                                <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                <span>Sisa {item.remainingBoxes ?? item.stock ?? 1} Box</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
+                                <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                <span>Sisa {item.remainingBoxes ?? item.stock ?? 1} Box</span>
+                              </span>
+                            )}
+                            <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs">
+                              {storeData.distance}
+                            </span>
                           </div>
-                          {typeof prod.stock === 'number' && (
-                            <div className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded-lg shadow-sm">
-                              Sisa {prod.stock} Box
-                            </div>
-                          )}
-                        </div>
 
-                        <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wide mb-1">
-                          {prod.category}
-                        </div>
-                        <h3 className="text-base font-bold text-[#1b1c1c] line-clamp-2">
-                          {prod.name}
-                        </h3>
-                        {prod.description && (
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
-                            {prod.description}
-                          </p>
-                        )}
-
-                        <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 p-2 rounded-xl">
-                          <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                          <span className="truncate">Ambil: {prod.pickupTime}</span>
-                        </div>
-
-                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-baseline justify-between">
                           <div>
-                            <span className="text-[11px] text-slate-400 line-through block">
-                              Rp {formatRupiah(prod.originalPrice)}
-                            </span>
-                            <span className="text-lg font-black text-[#1b1c1c]">
-                              Rp {formatRupiah(prod.rescuePrice)}
+                            <span className="px-2.5 py-1 rounded-full bg-brand-green text-white text-[11px] font-black shadow-xs">
+                              -{item.discountPercent}%
                             </span>
                           </div>
+                        </div>
+
+                        {/* Bottom Dark Gradient with Category & Product Name Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
+                          <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
+                            {item.category}
+                          </span>
+                          <h3 className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate">
+                            {item.name}
+                          </h3>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleSelectProduct(prod)}
-                        className="mt-4 w-full py-2.5 rounded-xl bg-[#0b1510] hover:bg-[#1a2c22] text-[#bbf381] text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-2 shadow-xs"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>Pesan Sekarang</span>
-                      </button>
-                    </div>
+                      {/* Card Body Content */}
+                      <div className="p-4 sm:p-5 flex flex-col flex-1">
+                        <p className="text-xs sm:text-[13px] text-[#434844] line-clamp-2 leading-relaxed mb-3.5">
+                          {item.description}
+                        </p>
+
+                        {/* Pickup Time Bar */}
+                        <div className="w-full bg-[#F4F3F0] rounded-xl py-2.5 px-3.5 flex items-center gap-2 mt-auto">
+                          <Clock className="w-3.5 h-3.5 text-[#d94a38] shrink-0" aria-hidden="true" />
+                          <div className="text-xs text-[#434844] truncate">
+                            <span className="font-normal text-[#5a625d]">Ambil: </span>
+                            <span className="font-bold text-[#1b1c1c]">{item.pickupTime}</span>
+                          </div>
+                        </div>
+
+                        {/* Card Footer: Price & Pesan Sekarang Button */}
+                        <div className="pt-3.5 mt-3.5 border-t border-[#f0eded] flex items-center justify-between gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-[#737874] line-through font-medium">
+                              Rp {formatRupiah(item.originalPrice)}
+                            </span>
+                            <span className="text-xl sm:text-[22px] font-black text-[#1b1c1c] font-display tracking-tight leading-none mt-0.5">
+                              Rp {formatRupiah(item.rescuePrice)}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectProduct(item);
+                            }}
+                            className="inline-flex items-center justify-center px-4 sm:px-5 py-2.5 rounded-xl bg-[#1f2a24] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+                          >
+                            <span>Pesan Sekarang</span>
+                          </button>
+                        </div>
+                      </div>
+                    </article>
                   ))}
                 </div>
               ) : (
-                <div className="p-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <div className="py-16 text-center bg-white rounded-3xl border border-black/10 p-8">
                   <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-700">Belum ada produk aktif</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    Toko ini belum menambahkan paket surplus makanan untuk hari ini. Silakan periksa kembali nanti.
+                  <h3 className="text-base sm:text-lg font-bold text-[#1b1c1c] mb-1">
+                    Tidak Ada Produk yang Cocok
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-5">
+                    Coba ubah rentang harga untuk melihat produk surplus yang tersedia di toko ini.
                   </p>
-                  {onNavigateMarketplace && (
-                    <button
-                      type="button"
-                      onClick={onNavigateMarketplace}
-                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition cursor-pointer"
-                    >
-                      <span>Jelajahi Marketplace</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedMinPrice(null);
+                      setAppliedMaxPrice(null);
+                      setMinPriceInput('');
+                      setMaxPriceInput('');
+                    }}
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#1f2a24] hover:bg-[#2c3b33] text-white text-xs font-bold transition cursor-pointer"
+                  >
+                    Reset Filter Harga
+                  </button>
                 </div>
               )}
-            </section>
+            </div>
           )}
 
-          {/* TAB 3: Ulasan */}
-          {activeTab === 'ulasan' && (
+          {/* Section: Ulasan Pelanggan */}
+          {(activeTab === 'tentang' || activeTab === 'ulasan') && (
             <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs mb-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-[#1b1c1c]">
-                    Ulasan Pelanggan ({storeData.reviewCount})
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Ulasan nyata dari pelanggan yang telah berbelanja di {storeData.name}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="text-xs text-slate-500 font-medium">Urutkan:</span>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as 'terbaru' | 'tertinggi' | 'terendah')}
-                    className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                  >
-                    <option value="terbaru">Terbaru</option>
-                    <option value="tertinggi">Rating Tertinggi</option>
-                    <option value="terendah">Rating Terendah</option>
-                  </select>
-                </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-[#1b1c1c]">
+                  Ulasan Pelanggan ({storeData.reviewCount})
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ulasan nyata dari pelanggan yang telah menyelamatkan makanan di toko ini
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sortedReviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-3 mb-2.5">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={rev.avatar}
-                            alt={rev.name}
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                          />
-                          <div>
-                            <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">{rev.name}</p>
-                            <span className="text-[10px] text-slate-400 font-medium">{rev.role}</span>
-                          </div>
-                        </div>
-                        <span className="text-[11px] text-slate-400">{rev.date}</span>
-                      </div>
+              {/* Custom Sorting Filter Dropdown */}
+              <div className="relative flex items-center gap-2 self-start sm:self-auto" ref={sortDropdownRef}>
+                <span className="text-xs text-slate-500 font-medium">Urutkan:</span>
+                <button
+                  type="button"
+                  id="sort-reviews-button"
+                  onClick={() => setIsSortOpen((prev) => !prev)}
+                  aria-haspopup="listbox"
+                  aria-expanded={isSortOpen}
+                  className={`bg-white border text-xs font-semibold text-slate-800 rounded-xl px-3.5 py-2 flex items-center gap-2 shadow-2xs transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
+                    isSortOpen
+                      ? 'border-emerald-600 ring-1 ring-emerald-600'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <span>{currentSortLabel}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
+                      isSortOpen ? 'rotate-180 text-emerald-700' : ''
+                    }`}
+                  />
+                </button>
 
-                      <div className="flex items-center gap-0.5 mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`w-3.5 h-3.5 ${star <= rev.rating
+                {isSortOpen && (
+                  <div
+                    role="listbox"
+                    aria-labelledby="sort-reviews-button"
+                    className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-30 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = sortOrder === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => {
+                            setSortOrder(opt.id);
+                            setIsSortOpen(false);
+                          }}
+                          className={`w-full px-3.5 py-2.5 text-left text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-[#EEF8EE] text-emerald-800 font-bold'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-4">
+              {currentSortLabel}
+            </div>
+
+            {/* Grid of Reviews */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sortedReviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={rev.avatar}
+                          alt={rev.name}
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                        />
+                        <div>
+                          <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">{rev.name}</p>
+                          <span className="text-[10px] text-slate-400 font-medium">{rev.role}</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-slate-400">{rev.date}</span>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 mb-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-3.5 h-3.5 ${
+                            star <= rev.rating
                               ? 'fill-amber-400 text-amber-400'
                               : 'fill-slate-200 text-slate-200'
-                              }`}
-                          />
-                        ))}
-                      </div>
-
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                        {rev.comment}
-                      </p>
+                          }`}
+                        />
+                      ))}
                     </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {rev.comment}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </section>
+                </div>
+              ))}
+            </div>
+          </section>
           )}
         </main>
       </div>

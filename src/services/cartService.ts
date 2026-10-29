@@ -21,7 +21,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-bakery-box',
         name: 'Mystery Bakery Box',
-        categoryTags: ['Roti & Pastry', '✓ Halal', 'Tanpa Babi'],
+        categoryTags: ['Roti & Pastry', 'Halal', 'Tanpa Babi'],
         originalPrice: 40000,
         rescuePrice: 20000,
         discountPercent: 50,
@@ -31,7 +31,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-pastry-box',
         name: 'Mystery Pastry Box',
-        categoryTags: ['Pastry', 'Kue', '✓ Halal'],
+        categoryTags: ['Pastry', 'Kue', 'Halal'],
         originalPrice: 36000,
         rescuePrice: 18000,
         discountPercent: 50,
@@ -53,7 +53,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-meal-box',
         name: 'Mystery Meal Box',
-        categoryTags: ['Makanan Berat', 'Lauk', '✓ Halal'],
+        categoryTags: ['Makanan Berat', 'Lauk', 'Halal'],
         originalPrice: 50000,
         rescuePrice: 25000,
         discountPercent: 50,
@@ -75,7 +75,7 @@ export const INITIAL_CART_STORES: StoreCartGroup[] = [
       {
         id: 'item-fresh-box',
         name: 'Mystery Fresh Box',
-        categoryTags: ['Sayur & Buah', 'Organik', '✓ Halal'],
+        categoryTags: ['Sayur & Buah', 'Organik', 'Halal'],
         originalPrice: 30000,
         rescuePrice: 15000,
         discountPercent: 50,

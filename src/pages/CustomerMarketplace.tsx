@@ -87,8 +87,8 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
     typeof p.discount_percentage === 'number' && p.discount_percentage > 0
       ? p.discount_percentage
       : normalPrice > 0
-      ? Math.round(((normalPrice - rescuePrice) / normalPrice) * 100)
-      : 0;
+        ? Math.round(((normalPrice - rescuePrice) / normalPrice) * 100)
+        : 0;
 
   let pickup = '';
   if (p.pickup_time) {
@@ -132,7 +132,7 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
     description:
       p.description ||
       'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-    tags: [realStoreName, realProductName, '✓ Halal MUI', 'Surplus Harian'],
+    tags: [realStoreName, realProductName, 'Halal MUI', 'Surplus Harian'],
     imageSrc: p.main_image_url || cardMonsieurSpoon,
     rating: 4.9,
     reviewCount: 42,
@@ -285,7 +285,7 @@ export function CustomerMarketplace({
     try {
       const saved = localStorage.getItem('rescuebyte_user_coords');
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch { }
     return DEFAULT_COORDS;
   });
 
@@ -365,7 +365,7 @@ export function CustomerMarketplace({
               description:
                 lp.description ||
                 'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-              tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
+              tags: [savedStoreName, lp.name, 'Halal MUI', 'Toko Mitra'],
               imageSrc: lp.imageUrl || cardMonsieurSpoon,
               rating: 5.0,
               reviewCount: 12,
@@ -408,7 +408,7 @@ export function CustomerMarketplace({
         setUserCoords(coords);
         try {
           localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
-        } catch {}
+        } catch { }
         setSelectedCity('Lokasi Saat Ini');
         setOpenDropdown(null);
         if (onShowToast) onShowToast('📍 Lokasi terdeteksi, menampilkan Mystery Box terdekat');
@@ -696,6 +696,7 @@ export function CustomerMarketplace({
                           try {
                             localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
                           } catch {}
+                          fetchMarketplaceProducts(coords);
                         }}
                         className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${
                           selectedCity === city
@@ -720,23 +721,22 @@ export function CustomerMarketplace({
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'harga' ? null : 'harga')}
-                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
-                  openDropdown === 'harga'
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'harga'
                     ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
                     : appliedMinPrice !== null || appliedMaxPrice !== null
-                    ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
-                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                }`}
+                      ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                      : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
                 aria-expanded={openDropdown === 'harga'}
               >
                 <span className="truncate">
                   {appliedMinPrice !== null && appliedMaxPrice !== null
                     ? `Rp ${formatRupiah(appliedMinPrice)} - ${formatRupiah(appliedMaxPrice)}`
                     : appliedMinPrice !== null
-                    ? `≥ Rp ${formatRupiah(appliedMinPrice)}`
-                    : appliedMaxPrice !== null
-                    ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
-                    : 'Harga'}
+                      ? `≥ Rp ${formatRupiah(appliedMinPrice)}`
+                      : appliedMaxPrice !== null
+                        ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
+                        : 'Harga'}
                 </span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
@@ -833,13 +833,12 @@ export function CustomerMarketplace({
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'jarak' ? null : 'jarak')}
-                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
-                  openDropdown === 'jarak'
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'jarak'
                     ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
                     : distanceFilter !== 'semua'
-                    ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
-                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                }`}
+                      ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                      : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
                 aria-expanded={openDropdown === 'jarak'}
               >
                 <span className="truncate">
@@ -864,11 +863,10 @@ export function CustomerMarketplace({
                         setDistanceFilter(opt.value);
                         setOpenDropdown(null);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${
-                        distanceFilter === opt.value
+                      className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${distanceFilter === opt.value
                           ? 'bg-gray-100 text-[#1b1c1c] font-bold'
                           : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
-                      }`}
+                        }`}
                     >
                       <span>{opt.label}</span>
                       {distanceFilter === opt.value && <Check className="w-3.5 h-3.5 text-emerald-700" />}
@@ -883,11 +881,10 @@ export function CustomerMarketplace({
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'urutkan' ? null : 'urutkan')}
-                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${
-                  openDropdown === 'urutkan'
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'urutkan'
                     ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
                     : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
-                }`}
+                  }`}
                 aria-expanded={openDropdown === 'urutkan'}
               >
                 <div className="flex items-center gap-1 truncate">
@@ -998,8 +995,21 @@ export function CustomerMarketplace({
                   className="bg-white rounded-3xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col group"
                   id={`marketplace-card-${item.id}`}
                 >
-                  {/* Card Visual Header */}
-                  <div className="relative w-full h-52 overflow-hidden bg-[#24201c]">
+                  {/* Card Visual Header (Photo or Clean Structured Placeholder) */}
+                  <div
+                    onClick={() => handleOpenOrder(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenOrder(item);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Lihat detail produk ${item.productName || item.storeName}`}
+                    title={`Lihat detail ${item.productName || item.categoryBadge || item.storeName}`}
+                    className="relative w-full h-52 overflow-hidden bg-[#24201c] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2a24] focus-visible:ring-offset-2"
+                  >
                     {item.imageSrc ? (
                       <img
                         src={item.imageSrc}

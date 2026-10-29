@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
   Check,
-  CheckCircle2,
   Clock,
   UserCheck,
   MapPin,
@@ -9,13 +8,13 @@ import {
   Star,
   RefreshCw,
   ArrowLeft,
-  Copy,
-  Sparkles,
   Info,
-  ShieldCheck,
   X,
   MessageSquare,
-  ShoppingBag,
+  Sparkles,
+  Calendar,
+  Tag,
+  ClipboardList,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
@@ -46,15 +45,48 @@ export function CustomerOrderDetail({
   onNavigateSeller,
   onShowToast,
 }: CustomerOrderDetailProps) {
-  const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [selectedRating, setSelectedRating] = useState<number>(5);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
 
-  // Order status and details
-  const orderStatus = orderData?.status || 'menunggu-konfirmasi';
+  // Active step in tracking timeline (1 to 5)
+  const [activeStep, setActiveStep] = useState<number>(() => {
+    if (orderData?.status === 'menunggu-pembayaran') return 1;
+    if (orderData?.status === 'menunggu-konfirmasi' || orderData?.status === 'dibayar') return 2;
+    if (orderData?.status === 'diproses') return 3;
+    if (orderData?.status === 'siap-diambil') return 4;
+    return 5;
+  });
+
+  const TIMELINE_STEPS = useMemo(() => [
+    {
+      step: 1,
+      title: '1. Pesanan Dibuat',
+      desc: '23 Okt • 14:10 WIB',
+    },
+    {
+      step: 2,
+      title: '2. Pembayaran',
+      desc: activeStep >= 2 ? (activeStep >= 5 ? 'Lunas QRIS • 14:12 WIB' : '23 Okt • 14:12 WIB') : '23 Okt • 14:12 WIB',
+    },
+    {
+      step: 3,
+      title: '3. Dikonfirmasi',
+      desc: activeStep >= 3 ? 'Diterima Toko • 14:15 WIB' : '',
+    },
+    {
+      step: 4,
+      title: '4. Siap Diambil',
+      desc: activeStep >= 4 ? 'Di Rak Khusus • 15:00 WIB' : '',
+    },
+    {
+      step: 5,
+      title: '5. Selesai',
+      desc: activeStep >= 5 ? 'Diambil • 15:42 WIB' : '',
+    },
+  ], [activeStep]);
   const orderId = orderData?.orderId || 'RB251023-00455';
   const items = orderData?.items && orderData.items.length > 0 ? orderData.items : null;
   const primaryItem = items?.[0];
@@ -105,16 +137,91 @@ export function CustomerOrderDetail({
     return '23 Oktober 2026, 15:42 WIB';
   }, [orderData?.createdAt]);
 
-  const handleCopyOrderId = () => {
-    try {
-      navigator.clipboard.writeText(orderId);
-      setCopiedOrderId(true);
-      onShowToast?.(`ID Pesanan #${orderId} berhasil disalin!`, 'success');
-      setTimeout(() => setCopiedOrderId(false), 2000);
-    } catch {
-      onShowToast?.('Gagal menyalin ID Pesanan.', 'error');
+  const statusConfig = useMemo(() => {
+    switch (activeStep) {
+      case 1:
+        return {
+          badgeText: 'Perlu Dibayar',
+          badgeClass: 'border border-[#d94a38] text-[#d94a38] bg-[#fdeceb]',
+          title: 'Selesaikan Pembayaran Pesananmu',
+          description: (
+            <>
+              Pesanan paket surplus dari{' '}
+              <strong className="text-slate-800 font-semibold">{storeName}</strong> sudah berhasil dibuat. Selesaikan
+              pembayaranmu sebelum batas waktu berakhir agar mitra toko dapat segera memproses dan menyiapkan makananmu.
+            </>
+          ),
+          timeLabel: 'Batas Pembayaran',
+          timeValue: '23 Okt 2026, 14:25 WIB',
+          timelineNote: 'Pesanan telah dibuat dan menunggu penyelesaian pembayaran dari pelanggan.',
+        };
+      case 2:
+        return {
+          badgeText: 'Pembayaran Diterima',
+          badgeClass: 'bg-[#dcfce7] text-[#14532d] border border-emerald-200/60',
+          title: 'Pesanan Berhasil Dibayar',
+          description: (
+            <>
+              Pembayaran sebesar <strong className="text-slate-800 font-semibold">Rp {formatRupiah(grandTotal)}</strong>{' '}
+              telah diverifikasi oleh sistem. Pesananmu sedang diteruskan ke pihak{' '}
+              <strong className="text-slate-800 font-semibold">{storeName}</strong> untuk segera dikonfirmasi.
+            </>
+          ),
+          timeLabel: 'Waktu Pembayaran',
+          timeValue: '23 Okt 2026, 14:12 WIB',
+          timelineNote: `Pembayaran terverifikasi dan pesanan sedang diteruskan ke ${storeName}.`,
+        };
+      case 3:
+        return {
+          badgeText: 'Menunggu Konfirmasi',
+          badgeClass: 'bg-[#fef3c7] text-[#92400e] border border-amber-200/60',
+          title: 'Menunggu Konfirmasi dari Toko',
+          description: (
+            <>
+              Pihak <strong className="text-slate-800 font-semibold">{storeName}</strong> sedang memeriksa ketersediaan
+              stok surplus dan mulai menyiapkan paket pesananmu. Status pesanan akan otomatis diperbarui begitu paket
+              siap diambil.
+            </>
+          ),
+          timeLabel: 'Waktu Konfirmasi',
+          timeValue: '23 Okt 2026, 14:15 WIB',
+          timelineNote: 'Mitra toko sedang memeriksa ketersediaan dan menyiapkan paket surplus pesananmu.',
+        };
+      case 4:
+        return {
+          badgeText: 'Siap Diambil di Lokasi',
+          badgeClass: 'bg-[#dcfce7] text-[#14532d] border border-emerald-200/60',
+          title: 'Pesanan Siap Diambil!',
+          description: (
+            <>
+              Paket makanan surplusmu sudah selesai disiapkan di gerai{' '}
+              <strong className="text-slate-800 font-semibold">{storeName}</strong>. Silakan datang ke toko sesuai jadwal
+              pengambilan dan tunjukkan nomor pesanan ini ke staf kasir.
+            </>
+          ),
+          timeLabel: 'Jadwal Pengambilan',
+          timeValue: 'Hari ini, 15:00 - 16:30 WIB',
+          timelineNote: 'Paket makanan surplus sudah siap di rak khusus. Silakan datang ke toko untuk mengambilnya.',
+        };
+      case 5:
+      default:
+        return {
+          badgeText: '100% Berhasil Diselamatkan',
+          badgeClass: 'bg-[#86efac] text-[#14532d]',
+          title: 'Pesanan Telah Berhasil Diambil!',
+          description: (
+            <>
+              Terima kasih telah menyelamatkan {totalBoxes} porsi makanan surplus bermutu tinggi dari{' '}
+              <strong className="text-slate-800 font-semibold">{storeName}</strong>. Kontribusimu langsung memutus
+              rantai emisi gas rumah kaca di area Jakarta Selatan.
+            </>
+          ),
+          timeLabel: 'Waktu Selesai',
+          timeValue: completionTimestamp,
+          timelineNote: `Seluruh 5 tahap telah selesai dan diverifikasi oleh sistem loket ${storeName}.`,
+        };
     }
-  };
+  }, [activeStep, storeName, grandTotal, totalBoxes, completionTimestamp]);
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +253,7 @@ export function CustomerOrderDetail({
               onClick={onNavigateHome}
               className="hover:text-[#1b1c1c] transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              Beranda
+              Profil
             </button>
             <span aria-hidden="true" className="text-slate-400">&gt;</span>
             <button
@@ -158,178 +265,47 @@ export function CustomerOrderDetail({
             </button>
             <span aria-hidden="true" className="text-slate-400">&gt;</span>
             <span className="text-slate-800 font-medium">Detail Pesanan</span>
-            <span aria-hidden="true" className="text-slate-400">&gt;</span>
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                orderStatus === 'selesai'
-                  ? 'bg-[#dcfce7] text-[#15803d]'
-                  : orderStatus === 'siap-diambil'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : orderStatus === 'diproses'
-                  ? 'bg-blue-100 text-blue-800'
-                  : orderStatus === 'dibatalkan'
-                  ? 'bg-rose-100 text-rose-800'
-                  : 'bg-amber-100 text-amber-800'
-              }`}
-            >
-              {orderStatus === 'selesai'
-                ? 'Selesai'
-                : orderStatus === 'siap-diambil'
-                ? 'Siap Diambil'
-                : orderStatus === 'diproses'
-                ? 'Diproses'
-                : orderStatus === 'dibatalkan'
-                ? 'Dibatalkan'
-                : 'Menunggu Konfirmasi'}
-            </span>
           </nav>
 
           {/* Page Heading & Transaction Meta */}
-          <section className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-            <div>
-              <p className="text-[11px] font-bold tracking-wider text-emerald-700 uppercase mb-1">
-                Informasi & Status Pesanan
-              </p>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1b1c1c] tracking-tight">
-                Detail Pesanan
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs sm:text-sm text-slate-500">
-                <button
-                  type="button"
-                  onClick={handleCopyOrderId}
-                  className="font-medium text-slate-700 hover:text-emerald-700 inline-flex items-center gap-1 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-                  title="Klik untuk menyalin ID pesanan"
-                >
-                  <span>#{orderId}</span>
-                  {copiedOrderId ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
-                  )}
-                </button>
-                <span aria-hidden="true" className="text-slate-300">•</span>
+          <section className="mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1b1c1c] tracking-tight">
+              Detail Pesanan
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs sm:text-sm text-slate-500">
+              <span className="font-semibold text-slate-700">#{orderId}</span>
+              <span aria-hidden="true" className="text-slate-300">•</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
                 <span>{fullOrderDate}</span>
-                <span aria-hidden="true" className="text-slate-300">•</span>
-                <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-                  QRIS Terverifikasi
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center self-start md:self-auto">
-              {orderStatus === 'selesai' ? (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#bbf381] text-[#0e2000] border border-[#a0d668] shadow-xs">
-                  <CheckCircle2 className="w-4 h-4 text-[#2c5000]" aria-hidden="true" />
-                  Pesanan Selesai
-                </span>
-              ) : orderStatus === 'siap-diambil' ? (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
-                  <ShoppingBag className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-                  Siap Diambil
-                </span>
-              ) : orderStatus === 'diproses' ? (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-xs">
-                  <Clock className="w-4 h-4 text-blue-600" aria-hidden="true" />
-                  Sedang Diproses
-                </span>
-              ) : orderStatus === 'dibatalkan' ? (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-xs">
-                  <X className="w-4 h-4 text-rose-600" aria-hidden="true" />
-                  Pesanan Dibatalkan
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs">
-                  <Clock className="w-4 h-4 text-amber-600" aria-hidden="true" />
-                  Menunggu Konfirmasi
-                </span>
-              )}
+              </span>
             </div>
           </section>
 
-          {/* Status Progress Banner */}
-          <section
-            className={`border rounded-3xl p-5 sm:p-7 shadow-xs mb-8 ${
-              orderStatus === 'selesai'
-                ? 'bg-gradient-to-r from-[#edf9ef] via-[#f2faf3] to-[#edf9ef] border-emerald-200/90'
-                : orderStatus === 'siap-diambil'
-                ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-300'
-                : orderStatus === 'diproses'
-                ? 'bg-gradient-to-r from-blue-50 via-sky-50 to-blue-50 border-blue-200'
-                : orderStatus === 'dibatalkan'
-                ? 'bg-gradient-to-r from-rose-50 via-red-50 to-rose-50 border-rose-200'
-                : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-amber-200'
-            }`}
-          >
+          {/* Status Banner */}
+          <section className="bg-linear-to-r from-[#edf9ef] via-[#f2faf3] to-[#edf9ef] border border-emerald-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="flex items-start gap-4">
-                <div
-                  className={`w-12 h-12 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-xs ${
-                    orderStatus === 'selesai'
-                      ? 'bg-[#22c55e]'
-                      : orderStatus === 'siap-diambil'
-                      ? 'bg-emerald-600'
-                      : orderStatus === 'diproses'
-                      ? 'bg-blue-600'
-                      : orderStatus === 'dibatalkan'
-                      ? 'bg-rose-600'
-                      : 'bg-amber-500'
-                  }`}
-                >
-                  {orderStatus === 'selesai' ? (
-                    <Check className="w-6 h-6 stroke-[3]" aria-hidden="true" />
-                  ) : orderStatus === 'siap-diambil' ? (
-                    <ShoppingBag className="w-6 h-6" aria-hidden="true" />
-                  ) : orderStatus === 'diproses' ? (
-                    <RefreshCw className="w-6 h-6 animate-spin" aria-hidden="true" />
-                  ) : orderStatus === 'dibatalkan' ? (
-                    <X className="w-6 h-6" aria-hidden="true" />
-                  ) : (
-                    <Clock className="w-6 h-6" aria-hidden="true" />
-                  )}
+                <div className="w-12 h-12 rounded-2xl bg-primary-light text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Check className="w-6 h-6 stroke-3" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        orderStatus === 'selesai'
-                          ? 'bg-[#86efac] text-[#14532d]'
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                    >
-                      Penyelamatan Pangan
-                    </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/90 border border-slate-200 text-slate-700">
-                      Ambil di Loket Toko
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${statusConfig.badgeClass}`}>
+                      {statusConfig.badgeText}
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-[#1b1c1c]">
-                    {orderStatus === 'selesai'
-                      ? 'Pesanan Telah Berhasil Diambil!'
-                      : orderStatus === 'siap-diambil'
-                      ? 'Pesanan Siap Diambil di Toko!'
-                      : orderStatus === 'diproses'
-                      ? 'Pesanan Sedang Dipersiapkan Mitra'
-                      : orderStatus === 'dibatalkan'
-                      ? 'Pesanan Dibatalkan'
-                      : 'Menunggu Konfirmasi dari Mitra Toko'}
+                    {statusConfig.title}
                   </h2>
                   <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-                    {orderStatus === 'selesai'
-                      ? `Terima kasih telah menyelamatkan ${totalBoxes} porsi makanan surplus bermutu dari ${storeName}.`
-                      : orderStatus === 'siap-diambil'
-                      ? `Mystery Box kamu sudah siap di loket ${storeName}. Silakan tunjukkan nomor pesanan #${orderId} kepada kasir.`
-                      : orderStatus === 'diproses'
-                      ? `Mitra ${storeName} sedang memilah dan mengemas box pesananmu dengan standar mutu terbaik.`
-                      : orderStatus === 'dibatalkan'
-                      ? `Pesanan telah dibatalkan.`
-                      : `Pesanan telah diteruskan ke mitra ${storeName}. Mitra akan segera mengonfirmasi ketersediaan paket.`}
+                    {statusConfig.description}
                   </p>
                 </div>
               </div>
 
               {/* Verified Recipient & Timestamp Card */}
-              <div className="w-full lg:w-auto bg-white/90 border border-slate-200/90 rounded-2xl p-4 shadow-xs shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[230px]">
+              <div className="w-full lg:w-auto bg-white/90 border border-emerald-100 rounded-2xl p-4 shadow-xs shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-57.5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
                     <UserCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
@@ -344,8 +320,8 @@ export function CustomerOrderDetail({
                     <Clock className="w-4 h-4 text-emerald-700" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-slate-500 font-medium">Waktu Transaksi</p>
-                    <p className="text-sm font-bold text-[#1b1c1c]">{completionTimestamp}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">{statusConfig.timeLabel}</p>
+                    <p className="text-sm font-bold text-[#1b1c1c]">{statusConfig.timeValue}</p>
                   </div>
                 </div>
               </div>
@@ -354,19 +330,11 @@ export function CustomerOrderDetail({
 
           {/* Order Tracking Timeline */}
           <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-[#1b1c1c]">Jejak Status Pesanan</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Seluruh 5 tahap telah selesai dan diverifikasi oleh sistem loket {storeName}
-                </p>
-              </div>
-              <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
-                  <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  Log Verifikasi Lengkap
-                </span>
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-[#1b1c1c]">Jejak Status Pesanan</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {statusConfig.timelineNote}
+              </p>
             </div>
 
             {/* Step Progress Track */}
@@ -374,111 +342,44 @@ export function CustomerOrderDetail({
               {/* Connector line for large screens */}
               <div
                 aria-hidden="true"
-                className="hidden sm:block absolute top-4 left-[10%] right-[10%] h-1 bg-slate-200 z-0 overflow-hidden"
-              >
-                <div
-                  className="h-full bg-[#22c55e] transition-all duration-500"
-                  style={{
-                    width:
-                      orderStatus === 'selesai'
-                        ? '100%'
-                        : orderStatus === 'siap-diambil'
-                        ? '75%'
-                        : orderStatus === 'diproses'
-                        ? '50%'
-                        : '25%',
-                  }}
-                />
-              </div>
+                className="hidden sm:block absolute top-3.5 sm:top-4 left-[10%] right-[10%] h-1 bg-[#1e2a22] z-0"
+              />
+              <div
+                aria-hidden="true"
+                className="hidden sm:block absolute top-3.5 sm:top-4 left-[10%] h-1 bg-[#16a34a] z-0 transition-all duration-300"
+                style={{
+                  width: `${((activeStep - 1) / 4) * 80}%`,
+                }}
+              />
 
-              {/* Step 1 */}
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
-                </div>
-                <p className="text-xs font-bold text-[#1b1c1c]">1. Pesanan Dibuat</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Diterima Sistem</p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
-                </div>
-                <p className="text-xs font-bold text-[#1b1c1c]">2. Pembayaran</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Lunas QRIS</p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shadow-xs mb-2 ${
-                    ['diproses', 'siap-diambil', 'selesai'].includes(orderStatus)
-                      ? 'bg-[#22c55e] text-white'
-                      : orderStatus === 'menunggu-konfirmasi'
-                      ? 'bg-amber-500 text-white animate-pulse'
-                      : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {['diproses', 'siap-diambil', 'selesai'].includes(orderStatus) ? (
-                    <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
-                  ) : (
-                    <span className="text-xs font-bold">3</span>
-                  )}
-                </div>
-                <p className="text-xs font-bold text-[#1b1c1c]">3. Dikonfirmasi</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {['diproses', 'siap-diambil', 'selesai'].includes(orderStatus)
-                    ? 'Diterima Toko'
-                    : 'Menunggu Toko'}
-                </p>
-              </div>
-
-              {/* Step 4 */}
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shadow-xs mb-2 ${
-                    ['siap-diambil', 'selesai'].includes(orderStatus)
-                      ? 'bg-[#22c55e] text-white'
-                      : orderStatus === 'diproses'
-                      ? 'bg-blue-600 text-white animate-pulse'
-                      : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {['siap-diambil', 'selesai'].includes(orderStatus) ? (
-                    <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
-                  ) : (
-                    <span className="text-xs font-bold">4</span>
-                  )}
-                </div>
-                <p className="text-xs font-bold text-[#1b1c1c]">4. Siap Diambil</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {['siap-diambil', 'selesai'].includes(orderStatus)
-                    ? 'Di Loket Toko'
-                    : 'Sedang Disiapkan'}
-                </p>
-              </div>
-
-              {/* Step 5 */}
-              <div className="relative z-10 flex flex-col items-center text-center col-span-2 sm:col-span-1">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shadow-xs mb-2 ${
-                    orderStatus === 'selesai'
-                      ? 'bg-[#22c55e] text-white'
-                      : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {orderStatus === 'selesai' ? (
-                    <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
-                  ) : (
-                    <span className="text-xs font-bold">5</span>
-                  )}
-                </div>
-                <p className="text-xs font-bold text-[#1b1c1c]">5. Selesai</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {orderStatus === 'selesai' ? 'Sudah Diambil' : 'Pengambilan'}
-                </p>
-              </div>
+              {TIMELINE_STEPS.map((item) => {
+                const isCompleted = item.step <= activeStep;
+                return (
+                  <button
+                    key={item.step}
+                    type="button"
+                    onClick={() => setActiveStep(item.step)}
+                    className="relative z-10 flex flex-col items-center text-center cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 rounded-xl p-1 transition"
+                    title={`Klik untuk melihat kondisi: ${item.title}`}
+                  >
+                    <div
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-2 transition-all select-none ${
+                        isCompleted
+                          ? 'bg-[#16a34a] text-white shadow-xs'
+                          : 'bg-[#1e2a22] text-transparent'
+                      }`}
+                    >
+                      {isCompleted && (
+                        <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
+                      )}
+                    </div>
+                    <p className="text-xs font-bold text-[#1b1c1c]">{item.title}</p>
+                    {item.desc ? (
+                      <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           </section>
 
@@ -541,7 +442,7 @@ export function CustomerOrderDetail({
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Barang yang Diselamatkan</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
                     {totalBoxes} Kotak Diclaim
                   </span>
                 </div>
@@ -621,10 +522,6 @@ export function CustomerOrderDetail({
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Mitra F&B Penyedia</h3>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                    <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-                    Mitra Resmi
-                  </span>
                 </div>
 
                 <div className="flex items-start gap-3.5">
@@ -667,24 +564,35 @@ export function CustomerOrderDetail({
               </section>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                <button
-                  type="button"
-                  onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
-                  className="bg-[#1b1c1c] hover:bg-black text-white text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 shadow-xs transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                  <span>Beli Lagi di {storeName}</span>
-                </button>
+              {activeStep === 1 ? (
                 <button
                   type="button"
                   onClick={onNavigateOrders}
-                  className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer w-full focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                  <span>Kembali ke Pesanan Saya</span>
+                  <ClipboardList className="w-4 h-4" aria-hidden="true" />
+                  <span>Kembali ke Riwayat Pesanan</span>
                 </button>
-              </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                  <button
+                    type="button"
+                    onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
+                    className="bg-[#1b1c1c] hover:bg-black text-white text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 shadow-xs transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                    <span>Beli Lagi di {storeName}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onNavigateOrders}
+                    className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                    <span>Kembali ke Riwayat Pesanan</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Right Column (Span 5) */}
@@ -693,10 +601,16 @@ export function CustomerOrderDetail({
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Rincian Pembayaran</h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
-                    <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
-                    Lunas
-                  </span>
+                  {activeStep === 1 ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#d94a38] text-[#d94a38] bg-[#fdeceb]">
+                      Perlu Dibayar
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
+                      <Check className="w-3 h-3 stroke-3" aria-hidden="true" />
+                      Lunas
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-2.5 text-xs sm:text-sm">
@@ -706,15 +620,31 @@ export function CustomerOrderDetail({
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
                     <span className="inline-flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                      <Tag className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
                       Diskon Penyelamatan
                     </span>
                     <span className="font-semibold text-emerald-600">-Rp {formatRupiah(discountAmount)}</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span className="inline-flex items-center gap-1">
-                      Biaya Layanan RescueBite
-                      <Info className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>Biaya Layanan RescueBite</span>
+                      <span className="relative group inline-flex items-center">
+                        <button
+                          type="button"
+                          className="text-slate-400 hover:text-slate-600 focus:text-slate-700 focus:outline-none transition-colors cursor-help p-0.5 rounded"
+                          aria-label="Informasi biaya layanan"
+                          title="Biaya layanan untuk pengembangan aplikasi"
+                        >
+                          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <span
+                          role="tooltip"
+                          className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#1b1c1c] text-white text-[11px] leading-relaxed rounded-xl shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-20 text-center"
+                        >
+                          Biaya layanan untuk pengembangan dan pemeliharaan aplikasi RescueBite.
+                          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-[#1b1c1c]" aria-hidden="true" />
+                        </span>
+                      </span>
                     </span>
                     <span className="font-medium text-slate-800">Rp {formatRupiah(serviceFee)}</span>
                   </div>
@@ -725,13 +655,25 @@ export function CustomerOrderDetail({
                       <p className="text-2xl font-black text-[#1b1c1c]">Rp {formatRupiah(grandTotal)}</p>
                     </div>
                   </div>
+
+                  {activeStep === 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveStep(2);
+                        onShowToast?.('Pembayaran berhasil diverifikasi!', 'success');
+                      }}
+                      className="mt-3 w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99]"
+                    >
+                      Bayar Sekarang
+                    </button>
+                  )}
                 </div>
               </section>
 
               {/* Card 2: Rekomendasi Lainnya */}
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                <div className="mb-1">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Rekomendasi Lainnya</h3>
                 </div>
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed">

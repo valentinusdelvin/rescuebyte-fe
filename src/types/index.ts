@@ -111,7 +111,7 @@ export interface PaymentOrderData {
   serviceFee: number;
   grandTotal: number;
   source?: 'direct' | 'cart';
-  status?: CustomerOrderStatus;
+  status?: CustomerOrderStatus | string;
   createdAt?: string;
 }
 

@@ -148,7 +148,7 @@ export function CustomerProfile({
   };
 
   return (
-    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-[#3c6a00]/20 selection:text-[#0b1510]">
+    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
       <CustomerHeader
         activeTab="profile"
         currentUser={user}

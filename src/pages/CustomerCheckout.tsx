@@ -734,9 +734,25 @@ export function CustomerCheckout({
                 )}
 
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    Biaya layanan
-                    <Info className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="flex items-center gap-1.5">
+                    <span>Biaya layanan</span>
+                    <span className="relative group inline-flex items-center">
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600 focus:text-gray-700 focus:outline-none transition-colors cursor-help p-0.5 rounded"
+                        aria-label="Informasi biaya layanan"
+                        title="Biaya layanan untuk pengembangan aplikasi"
+                      >
+                        <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
+                      <span
+                        role="tooltip"
+                        className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#1b1c1c] text-white text-[11px] leading-relaxed rounded-xl shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-20 text-center"
+                      >
+                        Biaya layanan untuk pengembangan dan pemeliharaan aplikasi RescueBite.
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-[#1b1c1c]" aria-hidden="true" />
+                      </span>
+                    </span>
                   </span>
                   <span className="font-semibold text-gray-900">Rp {formatRupiah(serviceFee)}</span>
                 </div>

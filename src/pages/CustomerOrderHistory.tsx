@@ -83,7 +83,7 @@ export function CustomerOrderHistory({
 
   const handleLogout = () => {
     logoutUser()
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         clearAuth();
         onShowToast?.('Berhasil keluar dari akun.', 'info');
@@ -163,18 +163,18 @@ export function CustomerOrderHistory({
         activeStatus === 'all'
           ? true
           : activeStatus === 'menunggu-konfirmasi'
-          ? order.status === 'menunggu-konfirmasi'
-          : activeStatus === 'diproses'
-          ? order.status === 'diproses'
-          : activeStatus === 'siap-diambil'
-          ? order.status === 'siap-diambil'
-          : activeStatus === 'selesai'
-          ? order.status === 'selesai'
-          : activeStatus === 'dibatalkan'
-          ? order.status === 'dibatalkan'
-          : activeStatus === 'menunggu-pembayaran'
-          ? order.status === 'menunggu-pembayaran'
-          : true;
+            ? order.status === 'menunggu-konfirmasi'
+            : activeStatus === 'diproses'
+              ? order.status === 'diproses'
+              : activeStatus === 'siap-diambil'
+                ? order.status === 'siap-diambil'
+                : activeStatus === 'selesai'
+                  ? order.status === 'selesai'
+                  : activeStatus === 'dibatalkan'
+                    ? order.status === 'dibatalkan'
+                    : activeStatus === 'menunggu-pembayaran'
+                      ? order.status === 'menunggu-pembayaran'
+                      : true;
 
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
@@ -191,6 +191,7 @@ export function CustomerOrderHistory({
   const counts = useMemo(() => {
     return {
       all: orders.length,
+      menungguPembayaran: orders.filter((o) => o.status === 'menunggu-pembayaran').length,
       menungguKonfirmasi: orders.filter((o) => o.status === 'menunggu-konfirmasi').length,
       diproses: orders.filter((o) => o.status === 'diproses').length,
       siapDiambil: orders.filter((o) => o.status === 'siap-diambil').length,
@@ -217,7 +218,7 @@ export function CustomerOrderHistory({
   };
 
   return (
-    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-[#3c6a00]/20 selection:text-[#0b1510]">
+    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
       <div>
         <CustomerHeader
           activeTab="marketplace"
@@ -229,15 +230,15 @@ export function CustomerOrderHistory({
           }}
           onNavigateSeller={onNavigateSeller}
           onNavigateProfile={onNavigateProfile}
-          onNavigateOrders={() => {}}
+          onNavigateOrders={() => { }}
           onShowToast={onShowToast}
         />
 
         <main className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-16 flex-1">
           {/* Header Title Section */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="font-display font-extrabold text-2xl sm:text-3xl md:text-4xl text-[#1b1c1c] tracking-tight">
-              Pesanan Saya
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#1b1c1c] tracking-tight">
+              Riwayat Pesanan
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Pantau pesanan Mystery Box kamu hingga siap diambil.
@@ -252,7 +253,7 @@ export function CustomerOrderHistory({
               avatarUrl={userAvatar}
               activeTab="orders"
               onNavigateProfile={onNavigateProfile}
-              onNavigateOrders={() => {}}
+              onNavigateOrders={() => { }}
               onLogout={handleLogout}
               onShowToast={onShowToast}
             />
@@ -260,162 +261,100 @@ export function CustomerOrderHistory({
             {/* Right Main Content */}
             <div className="flex-1 min-w-0 flex flex-col gap-5 w-full">
               {/* Status Filter Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
-                {/* 1. Semua Pesanan */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('all');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'all'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <LayoutGrid className="w-4 h-4 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Semua Pesanan</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.all}
-                  </span>
-                </button>
-
-                {/* 2. Menunggu Konfirmasi */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('menunggu-konfirmasi');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'menunggu-konfirmasi'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Menunggu Konfirmasi</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'menunggu-konfirmasi' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.menungguKonfirmasi}
-                  </span>
-                </button>
-
-                {/* 3. Diproses */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('diproses');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'diproses'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Diproses</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'diproses' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.diproses}
-                  </span>
-                </button>
-
-                {/* 4. Siap Diambil */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('siap-diambil');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'siap-diambil'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ShoppingBag className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Siap Diambil</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'siap-diambil' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.siapDiambil}
-                  </span>
-                </button>
-
-                {/* 5. Selesai */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('selesai');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'selesai'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Selesai</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'selesai' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.selesai}
-                  </span>
-                </button>
-
-                {/* 6. Dibatalkan */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStatus('dibatalkan');
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
-                    activeStatus === 'dibatalkan'
-                      ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <XCircle className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold truncate">Dibatalkan</span>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      activeStatus === 'dibatalkan' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {counts.dibatalkan}
-                  </span>
-                </button>
+<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+                {[
+                  {
+                    id: 'all' as OrderHistoryFilterTab,
+                    label: 'Semua Pesanan',
+                    count: counts.all,
+                    icon: LayoutGrid,
+                    inactiveColor: 'text-slate-700',
+                  },
+                  ...(counts.menungguPembayaran > 0
+                    ? [
+                        {
+                          id: 'menunggu-pembayaran' as OrderHistoryFilterTab,
+                          label: 'Menunggu Pembayaran',
+                          count: counts.menungguPembayaran,
+                          icon: AlertCircle,
+                          inactiveColor: 'text-amber-500',
+                        },
+                      ]
+                    : []),
+                  {
+                    id: 'menunggu-konfirmasi' as OrderHistoryFilterTab,
+                    label: 'Menunggu Konfirmasi',
+                    count: counts.menungguKonfirmasi,
+                    icon: AlertCircle,
+                    inactiveColor: 'text-amber-500',
+                  },
+                  {
+                    id: 'diproses' as OrderHistoryFilterTab,
+                    label: 'Diproses',
+                    count: counts.diproses,
+                    icon: RefreshCw,
+                    inactiveColor: 'text-blue-500',
+                  },
+                  {
+                    id: 'siap-diambil' as OrderHistoryFilterTab,
+                    label: 'Siap Diambil',
+                    count: counts.siapDiambil,
+                    icon: ShoppingBag,
+                    inactiveColor: 'text-emerald-600',
+                  },
+                  {
+                    id: 'selesai' as OrderHistoryFilterTab,
+                    label: 'Selesai',
+                    count: counts.selesai,
+                    icon: CheckCircle2,
+                    inactiveColor: 'text-blue-600',
+                  },
+                  {
+                    id: 'dibatalkan' as OrderHistoryFilterTab,
+                    label: 'Dibatalkan',
+                    count: counts.dibatalkan,
+                    icon: XCircle,
+                    inactiveColor: 'text-rose-500',
+                  },
+                ].map((tab) => {
+                  const isActive = activeStatus === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveStatus(tab.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
+                        isActive
+                          ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon
+                          className={`w-4 h-4 shrink-0 transition-colors ${
+                            isActive ? 'text-white' : tab.inactiveColor
+                          }`}
+                        />
+                        <span className="text-xs sm:text-sm font-bold truncate">
+                          {tab.label}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 transition ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Search Bar */}
@@ -497,10 +436,6 @@ export function CustomerOrderHistory({
                               <h4 className="text-sm font-bold text-[#1b1c1c] group-hover:text-emerald-700 group-hover:underline truncate transition">
                                 {order.storeName}
                               </h4>
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Terverifikasi
-                              </span>
                             </div>
                           </div>
 
@@ -537,17 +472,16 @@ export function CustomerOrderHistory({
                         <div className="flex-1 min-w-0 flex items-start gap-4">
                           {/* Box Category Thumbnail */}
                           <div
-                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center text-white shrink-0 shadow-xs ${
-                              order.category === 'fresh'
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center text-white shrink-0 shadow-xs ${order.category === 'fresh'
                                 ? 'bg-emerald-700'
                                 : order.category === 'meal'
-                                ? 'bg-amber-800'
-                                : order.category === 'snack'
-                                ? 'bg-amber-900'
-                                : order.category === 'bakery'
-                                ? 'bg-[#7c4d28]'
-                                : 'bg-[#6d3e23]'
-                            }`}
+                                  ? 'bg-amber-800'
+                                  : order.category === 'snack'
+                                    ? 'bg-amber-900'
+                                    : order.category === 'bakery'
+                                      ? 'bg-[#7c4d28]'
+                                      : 'bg-[#6d3e23]'
+                              }`}
                           >
                             {order.category === 'bakery' && <Croissant className="w-6 h-6 mb-0.5" />}
                             {order.category === 'meal' && <Utensils className="w-6 h-6 mb-0.5" />}
@@ -691,27 +625,24 @@ export function CustomerOrderHistory({
                   <button
                     type="button"
                     onClick={() => setCurrentPage(1)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${
-                      currentPage === 1 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                    }`}
+                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 1 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
+                      }`}
                   >
                     1
                   </button>
                   <button
                     type="button"
                     onClick={() => setCurrentPage(2)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${
-                      currentPage === 2 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                    }`}
+                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 2 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
+                      }`}
                   >
                     2
                   </button>
                   <button
                     type="button"
                     onClick={() => setCurrentPage(3)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${
-                      currentPage === 3 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                    }`}
+                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 3 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
+                      }`}
                   >
                     3
                   </button>
@@ -771,9 +702,8 @@ export function CustomerOrderHistory({
                       className="text-amber-400 hover:scale-110 transition p-1 cursor-pointer"
                     >
                       <Star
-                        className={`w-7 h-7 ${
-                          star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                        }`}
+                        className={`w-7 h-7 ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
+                          }`}
                       />
                     </button>
                   ))}
