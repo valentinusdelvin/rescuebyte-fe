@@ -368,6 +368,137 @@ export async function deleteProductApi(productId: string): Promise<void> {
   }
 }
 
+/**
+ * Synchronize product updates to the marketplace cached items in localStorage
+ */
+export function syncProductToMarketplaceCache(
+  productId: string,
+  updates: {
+    status?: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
+    isActive?: boolean;
+    stock?: number;
+    name?: string;
+  }
+): void {
+  try {
+    const raw = localStorage.getItem('rescuebyte_cached_marketplace_products');
+    if (!raw) return;
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items)) return;
+
+    const isNonaktif = updates.status === 'nonaktif' || updates.isActive === false;
+    const stockDisplay = isNonaktif ? 0 : (updates.stock ?? 0);
+
+    const updated = items.map((item: any) => {
+      if (item.id === productId || (updates.name && item.productName === updates.name)) {
+        return {
+          ...item,
+          remainingBoxesText: `Sisa ${stockDisplay} Box`,
+        };
+      }
+      return item;
+    });
+
+    localStorage.setItem('rescuebyte_cached_marketplace_products', JSON.stringify(updated));
+  } catch (err) {
+    console.warn('Failed to sync product to marketplace cache:', err);
+  }
+}
+
+/**
+ * Update product stock both in local cache and backend database.
+ */
+export async function updateProductStockApi(
+  item: ProductItem,
+  newStock: number,
+  nextStatus?: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif'
+): Promise<ProductItem> {
+  const validStock = Math.max(0, newStock);
+  const calculatedStatus: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif' =
+    nextStatus ??
+    (item.status === 'nonaktif'
+      ? 'nonaktif'
+      : validStock === 0
+      ? 'habis'
+      : validStock <= 2
+      ? 'segera_habis'
+      : 'aktif');
+
+  const nextMaxStock = Math.max(item.maxStock || 0, validStock);
+  const isActive = calculatedStatus !== 'nonaktif';
+
+  // 1. Update local storage merchant products
+  updateProduct(item.id, {
+    stock: validStock,
+    maxStock: nextMaxStock,
+    status: calculatedStatus,
+    isActive,
+  });
+
+  // 2. Synchronize to marketplace cached products
+  syncProductToMarketplaceCache(item.id, {
+    status: calculatedStatus,
+    isActive,
+    stock: validStock,
+    name: item.name,
+  });
+
+  // 3. Attempt backend API call (PUT /api/v1/products/:id)
+  try {
+    await api.put(`/api/v1/products/${item.id}`, {
+      name: item.name,
+      description: item.description,
+      main_image_url: item.imageUrl,
+      is_active: isActive && validStock > 0,
+      variants: [
+        {
+          name: 'Reguler',
+          sequence: 1,
+          normal_price: item.normalPrice,
+          rescue_price: item.rescuePrice,
+          current_stock: validStock,
+          initial_stock: nextMaxStock,
+        },
+      ],
+      current_stock: validStock,
+      total_current_stock: validStock,
+    });
+  } catch (err) {
+    console.warn('Backend update product stock via PUT failed:', err);
+  }
+
+  // 4. Synchronize status via PATCH if active status toggled or stock is 0
+  if (isActive) {
+    try {
+      await toggleProductStatusApi(item.id, validStock > 0);
+    } catch (err) {
+      console.warn('Backend toggle product status sync failed:', err);
+    }
+  }
+
+  // 5. Broadcast change to all active tabs/views
+  try {
+    window.dispatchEvent(
+      new CustomEvent('rescuebyte_product_updated', {
+        detail: {
+          id: item.id,
+          stock: validStock,
+          status: calculatedStatus,
+          isActive,
+        },
+      })
+    );
+  } catch {}
+
+  return {
+    ...item,
+    stock: validStock,
+    maxStock: nextMaxStock,
+    status: calculatedStatus,
+    isActive,
+  };
+}
+
 export interface PublicProductItem {
   id: string;
   store_id?: string;

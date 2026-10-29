@@ -32,7 +32,16 @@ const CUSTOMER_ORDERS_STORAGE_KEY = 'rescuebyte_customer_orders';
 const MERCHANT_ORDERS_STORAGE_KEY = 'rescuebyte_merchant_orders';
 const ORDERS_UPDATE_EVENT = 'rescuebyte_orders_update';
 
-export const PLACEHOLDER_ORDER_IDS = new Set(['ord-1', 'ord-2', 'ord-3', 'ord-4', 'ord-5']);
+export const PLACEHOLDER_ORDER_IDS = new Set([
+  'ord-1',
+  'ord-2',
+  'ord-3',
+  'ord-4',
+  'ord-5',
+  'RB261029-65056-1',
+  'RB261029-65056-2',
+  'RB261029-81118-2',
+]);
 export const PLACEHOLDER_STORE_NAMES = new Set([
   'TerasRasa Bakery',
   'GreenBowl',
@@ -125,7 +134,8 @@ export function getCustomerOrders(): CustomerOrderItem[] {
             o.id &&
             !PLACEHOLDER_ORDER_IDS.has(o.id) &&
             !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
-            !o.orderNumber?.startsWith('RB25102') && !o.orderNumber?.startsWith('RB2610')
+            !PLACEHOLDER_ORDER_IDS.has(o.orderNumber) &&
+            !o.orderNumber?.startsWith('RB25102')
         )
         .map((o) => {
           const cleaned = { ...o };
@@ -334,6 +344,38 @@ export function subscribeToOrders(
 }
 
 
+/**
+ * Update the status of an existing customer order by orderNumber or id.
+ */
+export function updateCustomerOrderStatus(
+  orderIdOrNumber: string,
+  newStatus: CustomerOrderStatus
+): boolean {
+  try {
+    const cleanId = orderIdOrNumber.replace(/^#/, '').trim();
+    const orders = getCustomerOrders();
+    const target = orders.find(
+      (o) =>
+        o.id === orderIdOrNumber ||
+        o.orderNumber === orderIdOrNumber ||
+        o.orderNumber === cleanId ||
+        o.id === cleanId
+    );
+    if (!target) return false;
+
+    target.status = newStatus;
+    target.statusLabel = getOrderStatusLabel(newStatus);
+    if (target.orderData) {
+      target.orderData.status = newStatus;
+    }
+    saveCustomerOrders(orders);
+    return true;
+  } catch (err) {
+    console.warn('Failed to update customer order status:', err);
+    return false;
+  }
+}
+
 export interface CheckoutApiPayload {
   store_id: string;
   customer_name: string;
@@ -394,7 +436,7 @@ export interface CheckoutApiResponse {
 
 export function mapBackendStatusToCustomerStatus(backendStatus: string): CustomerOrderStatus {
   const s = (backendStatus || '').toUpperCase();
-  if (s.includes('PAYMENT') || s === 'WAITING_PAYMENT') return 'menunggu-pembayaran';
+  if (s.includes('PAYMENT') || s === 'WAITING_PAYMENT' || s === 'PENDING' || s === 'UNPAID' || s === 'NEW') return 'menunggu-pembayaran';
   if (s.includes('CONFIRM') || s === 'WAITING_CONFIRMATION') return 'menunggu-konfirmasi';
   if (s.includes('PROCESS') || s === 'PREPARING' || s === 'CONFIRMED') return 'diproses';
   if (s.includes('READY') || s === 'READY_FOR_PICKUP') return 'siap-diambil';
@@ -457,7 +499,9 @@ export async function fetchCustomerOrdersApi(params?: {
     const response = await api.get('/api/v1/orders', { params });
     const payload = response.data?.payload;
     if (payload && Array.isArray(payload.orders)) {
-      const mappedOrders: CustomerOrderItem[] = payload.orders.map((bo: any) => {
+      const mappedOrders: CustomerOrderItem[] = payload.orders
+        .filter((bo: any) => !PLACEHOLDER_ORDER_IDS.has(bo.id) && !PLACEHOLDER_ORDER_IDS.has(bo.order_number))
+        .map((bo: any) => {
         const status = mapBackendStatusToCustomerStatus(bo.status);
         return {
           id: bo.id,
@@ -503,14 +547,40 @@ export async function fetchCustomerOrdersApi(params?: {
             subtotal: bo.total_amount,
             grandTotal: bo.total_amount,
             status,
+            snapRedirectUrl: bo.payment?.snap_redirect_url || (bo as any).snap_redirect_url,
+            snapToken: bo.payment?.snap_token || (bo as any).snap_token,
             createdAt: bo.created_at,
           },
         };
       });
 
-      // Backend is the single source of truth - do not merge unverified client orders
-      saveCustomerOrders(mappedOrders);
-      return mappedOrders;
+      // Merge backend orders with active customer orders
+      const existing = getCustomerOrders();
+      const existingMap = new Map(existing.map((o) => [o.orderNumber, o]));
+      mappedOrders.forEach((bo) => {
+        const local = existingMap.get(bo.orderNumber);
+        if (local && local.status === 'menunggu-konfirmasi' && bo.status === 'menunggu-pembayaran') {
+          bo.status = 'menunggu-konfirmasi';
+          bo.statusLabel = getOrderStatusLabel('menunggu-konfirmasi');
+          if (bo.orderData) {
+            bo.orderData.status = 'menunggu-konfirmasi';
+          }
+        }
+      });
+      const merged = [...mappedOrders];
+      existing.forEach((localOrder) => {
+        if (
+          !PLACEHOLDER_ORDER_IDS.has(localOrder.id) &&
+          !PLACEHOLDER_ORDER_IDS.has(localOrder.orderNumber) &&
+          !PLACEHOLDER_STORE_NAMES.has(localOrder.storeName) &&
+          !localOrder.orderNumber?.startsWith('RB25102') &&
+          !merged.some((m) => m.orderNumber === localOrder.orderNumber || m.id === localOrder.id)
+        ) {
+          merged.push(localOrder);
+        }
+      });
+      saveCustomerOrders(merged);
+      return merged;
     }
     return null;
   } catch (err) {

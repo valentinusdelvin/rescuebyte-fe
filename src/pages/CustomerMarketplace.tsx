@@ -142,54 +142,72 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
 export const MARKETPLACE_CACHE_KEY = 'rescuebyte_cached_marketplace_products';
 
 function getInitialMarketplaceProducts(): MarketplaceBoxItem[] {
+  const localProducts = getStoredProducts();
+  const savedStoreName = (() => {
+    try {
+      return localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
+    } catch {
+      return 'Toko Rejak';
+    }
+  })();
+
   // 1. Prioritize cached products from previous API fetch (instant 0ms load)
   try {
     const cached = localStorage.getItem(MARKETPLACE_CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((item: any) => {
+          const match = localProducts.find(
+            (lp) => lp.id === item.id || lp.name.toLowerCase() === (item.productName || '').toLowerCase()
+          );
+          if (match) {
+            const isNonaktif = match.status === 'nonaktif' || !match.isActive;
+            const stockDisplay = isNonaktif ? 0 : match.stock;
+            return {
+              ...item,
+              remainingBoxesText: `Sisa ${stockDisplay} Box`,
+            };
+          }
+          return item;
+        });
       }
     }
   } catch {}
 
-  // 2. Fallback to local stored merchant products if available
-  try {
-    const savedStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
-    const localItems = getStoredProducts().filter(
-      (lp) => lp.isActive && lp.status !== 'nonaktif'
-    );
-    if (localItems.length > 0) {
-      return localItems.map((lp) => {
-        const discount =
-          lp.normalPrice > 0
-            ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
-            : 0;
-        return {
-          id: lp.id,
-          storeName: savedStoreName,
-          productName: lp.name,
-          category: lp.name,
-          categoryBadge: lp.name,
-          categoryType: 'heavy',
-          city: 'Malang',
-          remainingBoxesText: `Sisa ${lp.stock} Box`,
-          distanceText: '2.1 km',
-          discountPercent: discount,
-          originalPrice: lp.normalPrice,
-          rescuePrice: lp.rescuePrice,
-          pickupTime: '08.00 – 23.59 WIB',
-          description:
-            lp.description ||
-            'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-          tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
-          imageSrc: lp.imageUrl || cardMonsieurSpoon,
-          rating: 5.0,
-          reviewCount: 12,
-        };
-      });
-    }
-  } catch {}
+  // 2. Fallback to local stored merchant products (do NOT filter out nonaktif!)
+  if (localProducts.length > 0) {
+    return localProducts.map((lp) => {
+      const isNonaktif = lp.status === 'nonaktif' || !lp.isActive;
+      const stockDisplay = isNonaktif ? 0 : lp.stock;
+      const discount =
+        lp.normalPrice > 0
+          ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
+          : 0;
+      return {
+        id: lp.id,
+        storeName: savedStoreName,
+        productName: lp.name,
+        category: lp.name,
+        categoryBadge: lp.name,
+        categoryType: 'heavy',
+        city: 'Malang',
+        remainingBoxesText: `Sisa ${stockDisplay} Box`,
+        distanceText: '2.1 km',
+        discountPercent: discount,
+        originalPrice: lp.normalPrice,
+        rescuePrice: lp.rescuePrice,
+        pickupTime: '08.00 - 23.59 WIB',
+        description:
+          lp.description ||
+          'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
+        tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
+        imageSrc: lp.imageUrl || cardMonsieurSpoon,
+        rating: 5.0,
+        reviewCount: 12,
+      };
+    });
+  }
 
   return [];
 }
@@ -329,7 +347,8 @@ export function CustomerMarketplace({
 
         const mappedApi = publicItems.map((p) => mapPublicProductToItem(p, 'Malang'));
 
-        // Merge local stored products if seller created them locally
+        // Local stored products
+        const localProducts = getStoredProducts();
         const savedStoreName = (() => {
           try {
             return localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
@@ -338,12 +357,28 @@ export function CustomerMarketplace({
           }
         })();
 
-        const localItems = getStoredProducts().filter(
-          (lp) => lp.isActive && lp.status !== 'nonaktif'
-        );
-        const mappedLocal: MarketplaceBoxItem[] = localItems
-          .filter((lp) => !mappedApi.some((ap) => ap.id === lp.id || ap.productName === lp.name))
+        // Update mappedApi with latest local stock / status
+        const syncedApi = mappedApi.map((ap) => {
+          const match = localProducts.find(
+            (lp) => lp.id === ap.id || lp.name.toLowerCase() === (ap.productName || '').toLowerCase()
+          );
+          if (match) {
+            const isNonaktif = match.status === 'nonaktif' || !match.isActive;
+            const stockDisplay = isNonaktif ? 0 : match.stock;
+            return {
+              ...ap,
+              remainingBoxesText: `Sisa ${stockDisplay} Box`,
+            };
+          }
+          return ap;
+        });
+
+        // Map local products not in syncedApi (including nonaktif products so they never vanish!)
+        const mappedLocal: MarketplaceBoxItem[] = localProducts
+          .filter((lp) => !syncedApi.some((ap) => ap.id === lp.id || (ap.productName && ap.productName.toLowerCase() === lp.name.toLowerCase())))
           .map((lp) => {
+            const isNonaktif = lp.status === 'nonaktif' || !lp.isActive;
+            const stockDisplay = isNonaktif ? 0 : lp.stock;
             const discount =
               lp.normalPrice > 0
                 ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
@@ -356,12 +391,12 @@ export function CustomerMarketplace({
               categoryBadge: lp.name,
               categoryType: 'heavy',
               city: 'Malang',
-              remainingBoxesText: `Sisa ${lp.stock} Box`,
+              remainingBoxesText: `Sisa ${stockDisplay} Box`,
               distanceText: '2.1 km',
               discountPercent: discount,
               originalPrice: lp.normalPrice,
               rescuePrice: lp.rescuePrice,
-              pickupTime: '08.00 – 23.59 WIB',
+              pickupTime: '08.00 - 23.59 WIB',
               description:
                 lp.description ||
                 'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
@@ -372,7 +407,7 @@ export function CustomerMarketplace({
             };
           });
 
-        const merged = [...mappedApi, ...mappedLocal];
+        const merged = [...syncedApi, ...mappedLocal];
         if (merged.length > 0) {
           setApiProducts(merged);
           try {
@@ -391,6 +426,17 @@ export function CustomerMarketplace({
   // Initial instant products fetch on mount
   useEffect(() => {
     fetchMarketplaceProducts(userCoords);
+  }, [fetchMarketplaceProducts, userCoords]);
+
+  // Synchronize immediately whenever product stock or status updates
+  useEffect(() => {
+    const handleProductUpdated = () => {
+      fetchMarketplaceProducts(userCoords);
+    };
+    window.addEventListener('rescuebyte_product_updated', handleProductUpdated);
+    return () => {
+      window.removeEventListener('rescuebyte_product_updated', handleProductUpdated);
+    };
   }, [fetchMarketplaceProducts, userCoords]);
 
   // Request browser live location (quick non-blocking 3s timeout)
@@ -1038,10 +1084,20 @@ export function CustomerMarketplace({
                         {(() => {
                           const stockMatch = item.remainingBoxesText.match(/\d+/);
                           const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
+                          const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
                           const isAboveTwo = stockCount > 2;
                           const cleanStockText = item.remainingBoxesText
                             .replace(/^[!\s]+/, '')
                             .replace(/[!\s]+$/, '');
+
+                          if (isOutOfStock) {
+                            return (
+                              <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
+                                <Clock className="w-3 h-3 shrink-0 text-gray-500" aria-hidden="true" />
+                                <span>Sisa 0 Box</span>
+                              </span>
+                            );
+                          }
 
                           return isAboveTwo ? (
                             <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
@@ -1114,13 +1170,34 @@ export function CustomerMarketplace({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleOpenOrder(item)}
-                        className="bg-[#1b1c1c] hover:bg-[#2e2f2f] text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0"
-                      >
-                        Pesan Sekarang
-                      </button>
+                      {(() => {
+                        const stockMatch = item.remainingBoxesText.match(/\d+/);
+                        const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
+                        const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
+
+                        if (isOutOfStock) {
+                          return (
+                            <button
+                              type="button"
+                              disabled
+                              className="bg-gray-200 text-gray-400 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight cursor-not-allowed shrink-0 select-none"
+                              title="Stok habis atau produk sedang dinonaktifkan"
+                            >
+                              Habis
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenOrder(item)}
+                            className="bg-[#1b1c1c] hover:bg-[#2e2f2f] text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0"
+                          >
+                            Pesan Sekarang
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </article>

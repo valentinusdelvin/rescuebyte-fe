@@ -55,9 +55,7 @@ export function CustomerOrderHistory({
   onShowToast,
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
-  const [orders, setOrders] = useState<CustomerOrderItem[]>(() =>
-    getCustomerOrders().filter((o) => !o.orderNumber?.startsWith('RB2610') && !o.orderNumber?.startsWith('RB2510'))
-  );
+  const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
   const [storeAvatars, setStoreAvatars] = useState<Record<string, string>>({});
   const [storeAddresses, setStoreAddresses] = useState<Record<string, string>>({});
   const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');

@@ -370,9 +370,9 @@ const handlePayNow = async () => {
 
                 if (checkoutRes && checkoutRes.order) {
                   storeOrderCode = checkoutRes.order.order_number || storeOrderCode;
-                  finalStatus = mapBackendStatusToCustomerStatus(checkoutRes.order.status);
-                  snapToken = checkoutRes.snap_token;
-                  snapRedirectUrl = checkoutRes.snap_redirect_url;
+                  finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
+                  snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
+                  snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
                 }
               }
             } catch (err) {
@@ -476,9 +476,9 @@ const handlePayNow = async () => {
 
               if (checkoutRes && checkoutRes.order) {
                 singleOrderCode = checkoutRes.order.order_number || singleOrderCode;
-                finalStatus = mapBackendStatusToCustomerStatus(checkoutRes.order.status);
-                snapToken = checkoutRes.snap_token;
-                snapRedirectUrl = checkoutRes.snap_redirect_url;
+                finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
+                snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
+                snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
               }
             }
           } catch (err) {
@@ -516,7 +516,14 @@ const handlePayNow = async () => {
         };
 
         createCustomerOrder(orderData, finalStatus);
-        if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+        if (paymentMethod === 'online' && snapRedirectUrl) {
+          try {
+            window.open(snapRedirectUrl, '_blank');
+          } catch (e) {
+            console.warn('Popup blocked, available on detail page:', e);
+          }
+        }
+        if (onShowToast) onShowToast(paymentMethod === 'online' ? 'Pesanan berhasil dibuat! Membuka halaman pembayaran...' : 'Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
 
         setTimeout(() => {
           setIsSubmitting(false);

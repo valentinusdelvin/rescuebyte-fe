@@ -19,7 +19,7 @@ import {
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
-import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus } from '../services/orderService';
+import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus, updateCustomerOrderStatus, createCustomerOrder } from '../services/orderService';
 
 import saladStopCard from '../assets/customer/card-saladstop.jpg';
 
@@ -58,6 +58,9 @@ export function CustomerOrderDetail({
     if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
       return s;
     }
+    if (orderData?.snapRedirectUrl || orderData?.snapToken) {
+      return 'menunggu-pembayaran';
+    }
     return 'menunggu-konfirmasi';
   });
 
@@ -71,8 +74,14 @@ export function CustomerOrderDetail({
     const orderIdToFetch = (orderData as any)?.id || (orderData?.items?.[0] as any)?.id;
     if (orderIdToFetch && typeof orderIdToFetch === 'string' && !orderIdToFetch.startsWith('ord-') && !orderIdToFetch.startsWith('item-')) {
       fetchOrderDetailApi(orderIdToFetch).then((payload) => {
-        if (payload && payload.status) {
-          setCurrentStatus(mapBackendStatusToCustomerStatus(payload.status));
+        if (payload) {
+          if (payload.status) {
+            setCurrentStatus(mapBackendStatusToCustomerStatus(payload.status));
+          }
+          const redirectUrl = payload.payment?.snap_redirect_url || payload.snap_redirect_url;
+          if (redirectUrl && orderData && !orderData.snapRedirectUrl) {
+            orderData.snapRedirectUrl = redirectUrl;
+          }
         }
       }).catch(() => {});
     }
@@ -92,6 +101,24 @@ export function CustomerOrderDetail({
 
 
   const orderId = orderData?.orderId || 'RB251023-00455';
+
+  useEffect(() => {
+    if (currentStatus === 'menunggu-konfirmasi' && orderData) {
+      const targetId = orderId || orderData.orderId;
+      if (targetId) {
+        const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
+        if (!updated) {
+          createCustomerOrder(
+            {
+              ...orderData,
+              status: 'menunggu-konfirmasi',
+            },
+            'menunggu-konfirmasi'
+          );
+        }
+      }
+    }
+  }, [currentStatus, orderId, orderData]);
   const items = orderData?.items && orderData.items.length > 0 ? orderData.items : null;
   const primaryItem = items?.[0];
 
@@ -703,6 +730,21 @@ export function CustomerOrderDetail({
                     </div>
                   </div>
 
+                  {orderData?.snapRedirectUrl && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open(orderData.snapRedirectUrl, '_blank');
+                        }}
+                        className="w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>{activeStep === 1 ? 'Bayar Sekarang via Midtrans' : 'Buka Link Pembayaran Midtrans'}</span>
+                      </button>
+                    </div>
+                  )}
+
                   {activeStep === 1 && (
                     <button
                       type="button"
@@ -711,11 +753,28 @@ export function CustomerOrderDetail({
                           window.open(orderData.snapRedirectUrl, '_blank');
                         }
                         setCurrentStatus('menunggu-konfirmasi');
-                        onShowToast?.('Pembayaran berhasil diverifikasi!', 'success');
+                        const targetId = orderId || orderData?.orderId;
+                        if (targetId) {
+                          const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
+                          if (!updated && orderData) {
+                            createCustomerOrder(
+                              {
+                                ...orderData,
+                                status: 'menunggu-konfirmasi',
+                              },
+                              'menunggu-konfirmasi'
+                            );
+                          }
+                        }
+                        onShowToast?.('Pembayaran berhasil diverifikasi! Menunggu konfirmasi toko.', 'success');
                       }}
-                      className="mt-3 w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99]"
+                      className={
+                        orderData?.snapRedirectUrl
+                          ? 'mt-2 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer text-center'
+                          : 'mt-3 w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99]'
+                      }
                     >
-                      Bayar Sekarang
+                      {orderData?.snapRedirectUrl ? 'Konfirmasi Sudah Bayar' : 'Bayar Sekarang'}
                     </button>
                   )}
                 </div>
