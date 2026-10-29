@@ -11,10 +11,11 @@ export interface CustomerOrderItem {
   status: CustomerOrderStatus;
   statusLabel: string;
   storeName: string;
-  storeRating: number;
-  storeReviewCount: number;
-  storeDistance: string;
-  storeTags: string[];
+  storeAddress?: string;
+  storeRating?: number;
+  storeReviewCount?: number;
+  storeDistance?: string;
+  storeTags?: string[];
   productName: string;
   productBoxCount: number;
   productDescription: string;
@@ -22,8 +23,9 @@ export interface CustomerOrderItem {
   pickupTime: string;
   originalPrice?: number;
   finalPrice: number;
-  category: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
+  category?: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
   orderData?: PaymentOrderData;
+  imageUrl?: string;
 }
 
 const CUSTOMER_ORDERS_STORAGE_KEY = 'rescuebyte_customer_orders';
@@ -116,17 +118,27 @@ export function getCustomerOrders(): CustomerOrderItem[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      const realOrders = parsed.filter(
-        (o: CustomerOrderItem) =>
-          o &&
-          o.id &&
-          !PLACEHOLDER_ORDER_IDS.has(o.id) &&
-          !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
-          !o.orderNumber?.startsWith('RB25102') // filter old mock numbers like RB251026-00123
-      );
-      if (realOrders.length !== parsed.length) {
-        localStorage.setItem(CUSTOMER_ORDERS_STORAGE_KEY, JSON.stringify(realOrders));
-      }
+      const realOrders = parsed
+        .filter(
+          (o) =>
+            o &&
+            o.id &&
+            !PLACEHOLDER_ORDER_IDS.has(o.id) &&
+            !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
+            !o.orderNumber?.startsWith('RB25102')
+        )
+        .map((o) => {
+          const cleaned = { ...o };
+          delete cleaned.storeRating;
+          delete cleaned.storeReviewCount;
+          delete cleaned.storeDistance;
+          delete cleaned.storeTags;
+          if (cleaned.originalPrice && cleaned.originalPrice === cleaned.finalPrice + 20000) {
+            delete cleaned.originalPrice;
+          }
+          return cleaned;
+        });
+      localStorage.setItem(CUSTOMER_ORDERS_STORAGE_KEY, JSON.stringify(realOrders));
       return realOrders;
     }
     return [];
@@ -190,13 +202,8 @@ export function createCustomerOrder(
     status: initialStatus,
     statusLabel: getOrderStatusLabel(initialStatus),
     storeName: paymentData.primaryStore.storeName || primaryItem?.storeName || 'Toko Mitra',
-    storeRating: paymentData.primaryStore.rating || 4.8,
-    storeReviewCount:
-      typeof paymentData.primaryStore.reviewCount === 'number'
-        ? paymentData.primaryStore.reviewCount
-        : 100,
-    storeDistance: primaryItem?.distanceText || '1.0 km',
-    storeTags: primaryItem?.categoryTags || ['✓ Halal', 'Sisa Stok Harian'],
+    storeAddress: paymentData.primaryStore.storeAddress,
+    imageUrl: primaryItem?.imageSrc,
     productName: productTitle,
     productBoxCount: paymentData.totalBoxes,
     productDescription: productDesc,
@@ -222,20 +229,33 @@ export function createCustomerOrder(
     const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
     const merchantOrders = rawMerchant ? JSON.parse(rawMerchant) : [];
     if (Array.isArray(merchantOrders)) {
+      const primaryItem = paymentData.items[0];
+      const origPrice = originalTotal > paymentData.grandTotal ? originalTotal : (primaryItem?.originalPrice || newOrder.finalPrice * 2);
+      const rescPrice = primaryItem?.rescuePrice || newOrder.finalPrice;
+      const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
+
       merchantOrders.unshift({
         id: newOrder.id,
         orderNumber: newOrder.orderNumber,
-        status: initialStatus === 'menunggu-konfirmasi' ? 'konfirmasi' : 'diproses',
+        status: 'diproses',
         storeName: newOrder.storeName,
         customerName: paymentData.customerInfo.name,
         customerPhone: paymentData.customerInfo.phone,
+        productName: newOrder.productName,
+        productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
         totalBoxes: newOrder.productBoxCount,
+        rescuePrice: rescPrice,
+        originalPrice: origPrice,
+        discountPercent: disc,
         grandTotal: newOrder.finalPrice,
         pickupDate: newOrder.pickupDate,
         pickupTime: newOrder.pickupTime,
         createdAt: new Date().toISOString(),
       });
       localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(merchantOrders));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: merchantOrders }));
+      }
     }
   } catch (err) {
     console.warn('Failed to sync to merchant orders:', err);
@@ -428,13 +448,11 @@ export async function fetchCustomerOrdersApi(params?: {
           status,
           statusLabel: bo.status_label || getOrderStatusLabel(status),
           storeName: bo.store_name,
-          storeRating: 4.9,
-          storeReviewCount: 42,
-          storeDistance: '1.0 km',
-          storeTags: ['Penyelamatan Pangan', '✓ Halal'],
+          storeAddress: bo.store_address,
           productName: bo.summary_item_name || 'Mystery Box',
           productBoxCount: bo.total_items || 1,
           productDescription: bo.summary_item_name || 'Paket Mystery Box',
+          imageUrl: bo.summary_image_url,
           pickupDate: bo.pickup_schedule || bo.created_at,
           pickupTime: bo.pickup_schedule && bo.pickup_schedule.includes('|') ? bo.pickup_schedule.split('|')[1]?.trim() : '15.00 - 18.00 WIB',
           finalPrice: bo.total_amount,
@@ -447,9 +465,7 @@ export async function fetchCustomerOrdersApi(params?: {
                 name: bo.summary_item_name || 'Mystery Box',
                 storeName: bo.store_name,
                 storeAddress: bo.store_address,
-                originalPrice: bo.total_amount + 20000,
                 rescuePrice: bo.total_amount,
-                discountPercent: 50,
                 quantity: bo.total_items || 1,
                 categoryTags: ['Penyelamatan Pangan'],
                 imageSrc: bo.summary_image_url || cardMonsieurSpoon,
@@ -458,8 +474,6 @@ export async function fetchCustomerOrdersApi(params?: {
             primaryStore: {
               storeName: bo.store_name,
               storeAddress: bo.store_address,
-              rating: 4.9,
-              reviewCount: 42,
             },
             pickupDate: bo.pickup_schedule || 'Hari ini',
             pickupTimeSlot: bo.pickup_schedule || '15.00 - 18.00 WIB',
@@ -469,9 +483,7 @@ export async function fetchCustomerOrdersApi(params?: {
               email: 'customer@rescuebite.com',
             },
             totalBoxes: bo.total_items || 1,
-            subtotal: Math.max(0, bo.total_amount - 2000),
-            discountTotal: 20000,
-            serviceFee: 2000,
+            subtotal: bo.total_amount,
             grandTotal: bo.total_amount,
             status,
             createdAt: bo.created_at,
@@ -501,4 +513,274 @@ export async function fetchCustomerOrdersApi(params?: {
     console.warn('fetchCustomerOrdersApi failed:', err);
     return null;
   }
+}
+
+
+export interface MerchantOrderItem {
+  id: string;
+  orderNumber: string;
+  status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal';
+  storeName: string;
+  customerName: string;
+  customerPhone?: string;
+  productName: string;
+  productImage?: string;
+  totalBoxes: number;
+  rescuePrice: number;
+  originalPrice: number;
+  discountPercent: number;
+  grandTotal: number;
+  pickupDate: string;
+  pickupTime: string;
+  createdAt: string;
+}
+
+export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [
+  {
+    id: 'm-ord-1',
+    orderNumber: 'RB261030-10111',
+    status: 'diproses',
+    storeName: 'Toko Rejak',
+    customerName: 'Reza Pratama',
+    customerPhone: '081234567890',
+    productName: 'Mystery Bakery Box',
+    productImage: cardMonsieurSpoon,
+    totalBoxes: 1,
+    rescuePrice: 20000,
+    originalPrice: 40000,
+    discountPercent: 50,
+    grandTotal: 20000,
+    pickupDate: 'Hari ini',
+    pickupTime: '15.00 - 18.00 WIB',
+    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+  },
+  {
+    id: 'm-ord-2',
+    orderNumber: 'RB261030-10112',
+    status: 'diproses',
+    storeName: 'Toko Rejak',
+    customerName: 'Reza Pratama',
+    customerPhone: '081234567890',
+    productName: 'Mystery Bakery Box',
+    productImage: cardMonsieurSpoon,
+    totalBoxes: 1,
+    rescuePrice: 20000,
+    originalPrice: 40000,
+    discountPercent: 50,
+    grandTotal: 20000,
+    pickupDate: 'Hari ini',
+    pickupTime: '15.00 - 18.00 WIB',
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: 'm-ord-3',
+    orderNumber: 'RB261030-10113',
+    status: 'diproses',
+    storeName: 'Toko Rejak',
+    customerName: 'Reza Pratama',
+    customerPhone: '081234567890',
+    productName: 'Mystery Bakery Box',
+    productImage: cardMonsieurSpoon,
+    totalBoxes: 1,
+    rescuePrice: 20000,
+    originalPrice: 40000,
+    discountPercent: 50,
+    grandTotal: 20000,
+    pickupDate: 'Hari ini',
+    pickupTime: '15.00 - 18.00 WIB',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+  },
+  {
+    id: 'm-ord-4',
+    orderNumber: 'RB261030-10114',
+    status: 'diproses',
+    storeName: 'Toko Rejak',
+    customerName: 'Reza Pratama',
+    customerPhone: '081234567890',
+    productName: 'Mystery Bakery Box',
+    productImage: cardMonsieurSpoon,
+    totalBoxes: 1,
+    rescuePrice: 20000,
+    originalPrice: 40000,
+    discountPercent: 50,
+    grandTotal: 20000,
+    pickupDate: 'Hari ini',
+    pickupTime: '15.00 - 18.00 WIB',
+    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  },
+  {
+    id: 'm-ord-5',
+    orderNumber: 'RB261030-10115',
+    status: 'diproses',
+    storeName: 'Toko Rejak',
+    customerName: 'Reza Pratama',
+    customerPhone: '081234567890',
+    productName: 'Mystery Bakery Box',
+    productImage: cardMonsieurSpoon,
+    totalBoxes: 1,
+    rescuePrice: 20000,
+    originalPrice: 40000,
+    discountPercent: 50,
+    grandTotal: 20000,
+    pickupDate: 'Hari ini',
+    pickupTime: '15.00 - 18.00 WIB',
+    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+  },
+];
+
+export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[] {
+  if (typeof window === 'undefined') return INITIAL_MERCHANT_ORDERS;
+
+  try {
+    const raw = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
+    let orders: MerchantOrderItem[] = raw ? JSON.parse(raw) : [];
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+      orders = [...INITIAL_MERCHANT_ORDERS];
+      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    }
+
+    // Auto-sync customer orders into merchant queue
+    const customerOrders = getCustomerOrders();
+    let hasNewSync = false;
+
+    customerOrders.forEach((co) => {
+      if (!orders.some((m) => m.orderNumber === co.orderNumber || m.id === co.id)) {
+        const primaryItem = co.orderData?.items?.[0];
+        const origPrice = primaryItem?.originalPrice || co.originalPrice || co.finalPrice * 2;
+        const rescPrice = primaryItem?.rescuePrice || co.finalPrice;
+        const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
+
+        let status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal' = 'diproses';
+        if (co.status === 'siap-diambil' || co.status === 'diproses') {
+          status = 'konfirmasi';
+        } else if (co.status === 'selesai') {
+          status = 'selesai';
+        } else if (co.status === 'dibatalkan') {
+          status = 'batal';
+        }
+
+        orders.unshift({
+          id: co.id,
+          orderNumber: co.orderNumber,
+          status,
+          storeName: co.storeName,
+          customerName: co.orderData?.customerInfo?.name || 'Pelanggan RescueByte',
+          customerPhone: co.orderData?.customerInfo?.phone,
+          productName: co.productName,
+          productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
+          totalBoxes: co.productBoxCount,
+          rescuePrice: rescPrice,
+          originalPrice: origPrice,
+          discountPercent: disc,
+          grandTotal: co.finalPrice,
+          pickupDate: co.pickupDate,
+          pickupTime: co.pickupTime,
+          createdAt: co.orderData?.createdAt || new Date().toISOString(),
+        });
+        hasNewSync = true;
+      }
+    });
+
+    if (hasNewSync) {
+      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    }
+
+    if (currentStoreName && currentStoreName.trim()) {
+      const targetStore = currentStoreName.toLowerCase().trim();
+      const filtered = orders.filter((o) => {
+        const sName = (o.storeName || '').toLowerCase().trim();
+        return sName === targetStore || sName.includes(targetStore) || targetStore.includes(sName);
+      });
+      if (filtered.length > 0) return filtered;
+    }
+
+    return orders;
+  } catch (err) {
+    console.warn('Failed to get merchant orders:', err);
+    return INITIAL_MERCHANT_ORDERS;
+  }
+}
+
+export function saveMerchantOrders(orders: MerchantOrderItem[]): void {
+  try {
+    localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: orders }));
+    }
+  } catch (err) {
+    console.warn('Failed to save merchant orders:', err);
+  }
+}
+
+export async function confirmMerchantOrder(orderId: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'konfirmasi';
+    saveMerchantOrders(orders);
+  }
+
+  // Also update customer order state
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'diproses';
+    cTarget.statusLabel = 'Dikonfirmasi Toko';
+    saveCustomerOrders(customerOrders);
+  }
+
+  // If order id is UUID, sync with backend
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch(`/api/v1/orders/${target.id}/status`, { status: 'IN_PROCESS' });
+    } catch (err) {
+      console.warn('Failed to update status in backend:', err);
+    }
+  }
+
+  return true;
+}
+
+export async function completeMerchantOrder(orderId: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'selesai';
+    saveMerchantOrders(orders);
+  }
+
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'selesai';
+    cTarget.statusLabel = 'Selesai';
+    saveCustomerOrders(customerOrders);
+  }
+
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch(`/api/v1/orders/${target.id}/status`, { status: 'COMPLETED' });
+    } catch (err) {
+      console.warn('Failed to complete status in backend:', err);
+    }
+  }
+
+  return true;
+}
+
+export function subscribeToMerchantOrders(callback: (orders: MerchantOrderItem[]) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleUpdate = () => {
+    callback(getMerchantOrders());
+  };
+
+  window.addEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+  window.addEventListener('storage', handleUpdate);
+
+  return () => {
+    window.removeEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+    window.removeEventListener('storage', handleUpdate);
+  };
 }
