@@ -18,7 +18,11 @@ import {
   getStoredCart,
   saveCart,
   removeCartItem,
+  removeCartItemApi,
   removeCartStore,
+  removeCartStoreApi,
+  updateCartItemQtyApi,
+  fetchBackendCart,
   subscribeToCart,
   getStoreInitials,
 } from '../services/cartService';
@@ -113,6 +117,27 @@ export function CustomerCart({
     initial.forEach((store) => store.items.forEach((item) => set.add(item.id)));
     return set;
   });
+
+  // Synchronize cart from backend database if user is authenticated
+  useEffect(() => {
+    let isCancelled = false;
+    fetchBackendCart().then((remoteStores) => {
+      if (!isCancelled && remoteStores && remoteStores.length > 0) {
+        setCartStores(remoteStores);
+        setSelectedItemIds((prev) => {
+          if (prev.size === 0) {
+            const allIds = new Set<string>();
+            remoteStores.forEach((s) => s.items.forEach((it) => allIds.add(it.id)));
+            return allIds;
+          }
+          return prev;
+        });
+      }
+    }).catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   // Synchronize cartStores with cartService updates
   useEffect(() => {
@@ -260,6 +285,10 @@ export function CustomerCart({
     });
     setCartStores(updated);
     saveCart(updated);
+    const targetItem = cartStores.find((s) => s.storeId === storeId)?.items.find((i) => i.id === itemId);
+    if (targetItem && targetItem.quantity < 5) {
+      updateCartItemQtyApi(itemId, targetItem.quantity + 1).catch(() => {});
+    }
   };
 
   // Decreasing when quantity is 1 triggers confirmation popup
@@ -289,6 +318,7 @@ export function CustomerCart({
 
     setCartStores(updated);
     saveCart(updated);
+    updateCartItemQtyApi(item.id, Math.max(1, item.quantity - 1)).catch(() => {});
   };
 
   const handlePromptRemoveItem = (storeId: string, storeName: string, item: CartItem) => {
@@ -313,6 +343,7 @@ export function CustomerCart({
     if (!deleteTarget) return;
 
     if (deleteTarget.type === 'store') {
+      removeCartStoreApi(deleteTarget.storeId).catch(() => {});
       removeCartStore(deleteTarget.storeId);
       setSelectedItemIds((prev) => {
         const next = new Set(prev);
@@ -324,6 +355,7 @@ export function CustomerCart({
       });
       if (onShowToast) onShowToast(`Semua pesanan dari ${deleteTarget.storeName} dihapus.`);
     } else if (deleteTarget.type === 'item' && deleteTarget.itemId) {
+      removeCartItemApi(deleteTarget.storeId, deleteTarget.itemId).catch(() => {});
       removeCartItem(deleteTarget.storeId, deleteTarget.itemId);
       setSelectedItemIds((prev) => {
         const next = new Set(prev);
@@ -348,6 +380,8 @@ export function CustomerCart({
         .map((item) => ({
           id: item.id,
           name: item.name?.replace(/\s+Reguler$/i, ''),
+          productId: item.productId,
+          variantId: item.variantId,
           storeId: store.storeId,
           storeName: store.storeName,
           storeAvatar: store.storeAvatar,

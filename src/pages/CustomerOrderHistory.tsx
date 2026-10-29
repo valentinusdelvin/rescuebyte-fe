@@ -30,7 +30,9 @@ import {
   CustomerOrderItem,
   getCustomerOrders,
   subscribeToOrders,
+  fetchCustomerOrdersApi,
 } from '../services/orderService';
+import { getAllStores } from '../services/storeService';
 
 export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 
@@ -59,6 +61,7 @@ export function CustomerOrderHistory({
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
   const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
+  const [storeAvatars, setStoreAvatars] = useState<Record<string, string>>({});
   const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -68,6 +71,44 @@ export function CustomerOrderHistory({
     return subscribeToOrders((latest) => {
       setOrders(latest);
     });
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    getAllStores()
+      .then((backendStores) => {
+        if (isCancelled || !backendStores) return;
+        const avatarMap: Record<string, string> = {};
+        backendStores.forEach((store) => {
+          if (store.profile_picture_url) {
+            if (store.name) avatarMap[store.name.trim().toLowerCase()] = store.profile_picture_url;
+            if (store.id) avatarMap[store.id] = store.profile_picture_url;
+          }
+        });
+        setStoreAvatars(avatarMap);
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadBackendOrders() {
+      try {
+        const backendOrders = await fetchCustomerOrdersApi();
+        if (!isCancelled && backendOrders && backendOrders.length > 0) {
+          setOrders(backendOrders);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat pesanan dari backend:', err);
+      }
+    }
+    loadBackendOrders();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // Review modal state
@@ -108,6 +149,11 @@ export function CustomerOrderHistory({
       onNavigateOrderDetail(order.orderData);
       return;
     }
+    const resolvedAvatar =
+      storeAvatars[order.storeName.trim().toLowerCase()] ||
+      (order.orderData?.primaryStore as any)?.profile_picture_url ||
+      order.storeName.slice(0, 2).toUpperCase();
+
     const paymentData: PaymentOrderData = {
       orderId: order.orderNumber,
       status: order.status,
@@ -117,7 +163,7 @@ export function CustomerOrderHistory({
           name: order.productName,
           storeId: 'store-1',
           storeName: order.storeName,
-          storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
+          storeAvatar: resolvedAvatar,
           storeAddress: `${order.storeName}, Area Terdekat`,
           rating: order.storeRating,
           reviewCount: order.storeReviewCount,
@@ -132,7 +178,7 @@ export function CustomerOrderHistory({
       ],
       primaryStore: {
         storeName: order.storeName,
-        storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
+        storeAvatar: resolvedAvatar,
         storeAddress: `${order.storeName}, Area Terdekat`,
         rating: order.storeRating,
         reviewCount: order.storeReviewCount,
@@ -429,9 +475,28 @@ export function CustomerOrderHistory({
                               }
                             }}
                           >
-                            <div className="w-8 h-8 rounded-full bg-[#1b1c1c] text-white font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-800 transition">
-                              {order.storeName.slice(0, 2).toUpperCase()}
-                            </div>
+                            {(() => {
+                              const avatarUrl =
+                                storeAvatars[order.storeName.trim().toLowerCase()] ||
+                                (order.orderData?.primaryStore as any)?.profile_picture_url;
+                              return (
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1b1c1c] text-white font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-800 transition border border-black/5">
+                                  {avatarUrl ? (
+                                    <img
+                                      src={avatarUrl}
+                                      alt={order.storeName}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <span className={avatarUrl ? 'hidden' : 'block'}>
+                                    {order.storeName.slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             <div className="min-w-0">
                               <h4 className="text-sm font-bold text-[#1b1c1c] group-hover:text-emerald-700 group-hover:underline truncate transition">
                                 {order.storeName}

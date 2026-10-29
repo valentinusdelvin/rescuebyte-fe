@@ -5,7 +5,7 @@ import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { FormattedDescription } from '../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../types';
-import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
+import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../services/cartService';
 import { getAllStores } from '../services/storeService';
 
 export interface CustomerProductDetailProps {
@@ -228,9 +228,12 @@ export function CustomerProductDetail({
     // 1. Cleanup flying element
     setFlyingItems((prev) => prev.filter((item) => item.id !== id));
 
-    // 2. Persist in cartService
+    // 2. Persist in cartService and sync to backend API
     const newCount = addToCart(activeBoxItem, qtyToAdd);
     setCartCount(newCount);
+    addToCartApi(activeBoxItem, qtyToAdd).then(({ count }) => {
+      setCartCount(count);
+    }).catch(() => {});
 
     // 3. Trigger bounce / scale animation on cart button
     setIsCartBouncing(true);

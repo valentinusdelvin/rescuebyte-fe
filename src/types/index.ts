@@ -73,6 +73,8 @@ export interface CheckoutItem {
   quantity: number;
   imageSrc?: string;
   pickupTime?: string;
+  productId?: string;
+  variantId?: string;
 }
 
 export interface CheckoutPayload {
@@ -112,11 +114,14 @@ export interface PaymentOrderData {
   grandTotal: number;
   source?: 'direct' | 'cart';
   status?: CustomerOrderStatus | string;
+  snapToken?: string;
+  snapRedirectUrl?: string;
   createdAt?: string;
 }
 
 export interface CustomerMysteryBox {
   id: string;
+  variantId?: string;
   storeId?: string;
   storeName: string;
   storeAvatar?: string;
@@ -140,6 +145,8 @@ export interface CustomerMysteryBox {
 
 export interface CartItem {
   id: string;
+  productId?: string;
+  variantId?: string;
   name: string;
   categoryTags: string[];
   originalPrice: number;
@@ -147,12 +154,15 @@ export interface CartItem {
   discountPercent: number;
   quantity: number;
   imageSrc?: string;
+  currentStock?: number;
+  isAvailable?: boolean;
 }
 
 export interface StoreCartGroup {
   storeId: string;
   storeName: string;
   storeAvatar: string;
+  storeAddress?: string;
   rating: number;
   reviewCount: number | string;
   distanceText: string;

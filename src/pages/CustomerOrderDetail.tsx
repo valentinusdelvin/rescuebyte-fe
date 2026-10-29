@@ -247,7 +247,7 @@ export function CustomerOrderDetail({
           onShowToast={onShowToast}
         />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
           {/* Breadcrumb Navigation */}
           <nav aria-label="Breadcrumb" className="flex items-center flex-wrap gap-2 text-xs text-slate-500 mb-6">
             <button
@@ -666,6 +666,9 @@ export function CustomerOrderDetail({
                     <button
                       type="button"
                       onClick={() => {
+                        if (orderData?.snapRedirectUrl) {
+                          window.open(orderData.snapRedirectUrl, '_blank');
+                        }
                         setActiveStep(2);
                         onShowToast?.('Pembayaran berhasil diverifikasi!', 'success');
                       }}
