@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { User, FileText, Lock, LogOut } from 'lucide-react';
+import { User, FileText, Lock, Bell, LogOut } from 'lucide-react';
 
 export interface CustomerProfileSidebarProps {
   name: string;
   email: string;
   avatarUrl?: string;
+  activeTab?: 'info' | 'orders' | 'security' | 'notifications';
+  onNavigateProfile?: () => void;
   onNavigateOrders?: () => void;
   onLogout: () => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
@@ -14,6 +16,8 @@ export function CustomerProfileSidebar({
   name,
   email,
   avatarUrl,
+  activeTab = 'info',
+  onNavigateProfile,
   onNavigateOrders,
   onLogout,
   onShowToast,
@@ -56,28 +60,62 @@ export function CustomerProfileSidebar({
       <nav className="bg-white rounded-2xl p-2.5 border border-black/5 shadow-2xs flex flex-col gap-1" aria-label="Menu Navigasi Akun">
         <button
           type="button"
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-left bg-[#eef8ee] text-[#2d6a2e]"
+          onClick={() => {
+            if (activeTab !== 'info') {
+              onNavigateProfile?.();
+            }
+          }}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+            activeTab === 'info'
+              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
+              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
+          }`}
         >
-          <User className="w-4 h-4 shrink-0" />
+          <User className={`w-4 h-4 shrink-0 ${activeTab === 'info' ? 'text-[#2d6a2e]' : 'text-gray-400'}`} />
           <span>Informasi Akun</span>
         </button>
 
         <button
           type="button"
-          onClick={() => (onNavigateOrders ? onNavigateOrders() : (window.location.hash = '#riwayat-seller'))}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-black hover:bg-gray-50 text-left transition-colors cursor-pointer"
+          onClick={() => {
+            if (activeTab !== 'orders') {
+              onNavigateOrders?.();
+            }
+          }}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+            activeTab === 'orders'
+              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
+              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
+          }`}
         >
-          <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+          <FileText className={`w-4 h-4 shrink-0 ${activeTab === 'orders' ? 'text-[#2d6a2e]' : 'text-gray-400'}`} />
           <span>Riwayat Pesanan</span>
         </button>
 
         <button
           type="button"
           onClick={() => onShowToast?.('Fitur Keamanan Akun akan segera hadir.', 'info')}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:text-black hover:bg-gray-50 text-left transition-colors cursor-pointer"
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+            activeTab === 'security'
+              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
+              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
+          }`}
         >
           <Lock className="w-4 h-4 text-gray-400 shrink-0" />
           <span>Keamanan Akun</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onShowToast?.('Fitur Notifikasi akan segera hadir.', 'info')}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+            activeTab === 'notifications'
+              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
+              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
+          }`}
+        >
+          <Bell className="w-4 h-4 text-gray-400 shrink-0" />
+          <span>Notifikasi</span>
         </button>
 
         <div className="h-px bg-gray-100 my-1 mx-2" />

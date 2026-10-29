@@ -18,8 +18,10 @@ export interface CustomerMarketplaceProps {
   onNavigateSeller?: () => void;
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
+  onNavigateStore?: (storeName: string) => void;
   onNavigateCart?: () => void;
   onNavigateProfile?: () => void;
+  onNavigateOrders?: () => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -404,8 +406,10 @@ export function CustomerMarketplace({
   onNavigateSeller,
   onNavigateAuth,
   onNavigateDetail,
+  onNavigateStore,
   onNavigateCart,
   onNavigateProfile,
+  onNavigateOrders,
   onShowToast,
 }: CustomerMarketplaceProps) {
   // Coordinates State
@@ -746,6 +750,7 @@ export function CustomerMarketplace({
           onSelectTab={handleHeaderTab}
           onNavigateSeller={onNavigateSeller}
           onNavigateProfile={onNavigateProfile}
+          onNavigateOrders={onNavigateOrders}
           onNavigateAuth={onNavigateAuth}
           onShowToast={onShowToast}
           onOpenAuthModal={() => {
@@ -1354,7 +1359,14 @@ export function CustomerMarketplace({
                       <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
                         {cleanProductName(item.productName || item.categoryBadge || item.category)}
                       </span>
-                      <h2 className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate">
+                      <h2
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onNavigateStore) onNavigateStore(item.storeName);
+                        }}
+                        className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate pointer-events-auto cursor-pointer hover:text-[#bbf381] hover:underline transition-colors"
+                        title={`Lihat halaman toko ${item.storeName}`}
+                      >
                         {item.storeName}
                       </h2>
                     </div>

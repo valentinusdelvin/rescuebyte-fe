@@ -4,6 +4,7 @@ export interface MysteryBoxCardProps {
   item: CustomerMysteryBox;
   variant?: 'popular' | 'radius';
   onOrderClick: (item: CustomerMysteryBox) => void;
+  onStoreClick?: (storeName: string) => void;
 }
 
 /**
@@ -70,6 +71,7 @@ export function MysteryBoxCard({
   item,
   variant = 'popular',
   onOrderClick,
+  onStoreClick,
 }: MysteryBoxCardProps) {
   const isPopular = variant === 'popular';
 
@@ -212,7 +214,18 @@ export function MysteryBoxCard({
           </span>
 
           {/* Store Name */}
-          <h3 className="text-white font-bold text-base sm:text-lg font-display leading-tight truncate drop-shadow-sm">
+          <h3
+            onClick={(e) => {
+              if (onStoreClick) {
+                e.stopPropagation();
+                onStoreClick(item.storeName);
+              }
+            }}
+            className={`text-white font-bold text-base sm:text-lg font-display leading-tight truncate drop-shadow-sm ${
+              onStoreClick ? 'pointer-events-auto cursor-pointer hover:underline hover:text-[#b7e472]' : ''
+            }`}
+            title={`Lihat halaman toko ${item.storeName}`}
+          >
             {item.storeName}
           </h3>
         </div>

@@ -30,6 +30,7 @@ export interface CustomerHomeProps {
   onNavigateMarketplace?: () => void;
   onNavigateAuth?: () => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
+  onNavigateStore?: (storeName: string) => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
@@ -236,6 +237,7 @@ export function CustomerHome({
   onNavigateMarketplace,
   onNavigateAuth,
   onNavigateDetail,
+  onNavigateStore,
   onShowToast,
 }: CustomerHomeProps) {
   // Modal states
@@ -395,6 +397,7 @@ export function CustomerHome({
                 item={box}
                 variant="popular"
                 onOrderClick={handleOpenOrder}
+                onStoreClick={onNavigateStore}
               />
             ))}
           </div>
@@ -419,6 +422,7 @@ export function CustomerHome({
                 item={box}
                 variant="radius"
                 onOrderClick={handleOpenOrder}
+                onStoreClick={onNavigateStore}
               />
             ))}
           </div>
