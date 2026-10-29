@@ -146,7 +146,7 @@ export function CustomerOrderDetail({
             <span aria-hidden="true" className="text-slate-400">&gt;</span>
             <span className="text-slate-800 font-medium">Detail Pesanan</span>
             <span aria-hidden="true" className="text-slate-400">&gt;</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#dcfce7] text-[#15803d]">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#dcfce7] text-primary">
               Selesai
             </span>
           </nav>
@@ -193,11 +193,11 @@ export function CustomerOrderDetail({
           </section>
 
           {/* Celebration / Successful Pickup Banner */}
-          <section className="bg-gradient-to-r from-[#edf9ef] via-[#f2faf3] to-[#edf9ef] border border-emerald-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
+          <section className="bg-linear-to-r from-[#edf9ef] via-[#f2faf3] to-[#edf9ef] border border-emerald-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#22c55e] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Check className="w-6 h-6 stroke-[3]" aria-hidden="true" />
+                <div className="w-12 h-12 rounded-2xl bg-primary-light text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Check className="w-6 h-6 stroke-3" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -220,7 +220,7 @@ export function CustomerOrderDetail({
               </div>
 
               {/* Verified Recipient & Timestamp Card */}
-              <div className="w-full lg:w-auto bg-white/90 border border-emerald-100 rounded-2xl p-4 shadow-xs shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[230px]">
+              <div className="w-full lg:w-auto bg-white/90 border border-emerald-100 rounded-2xl p-4 shadow-xs shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-57.5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
                     <UserCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
@@ -253,7 +253,7 @@ export function CustomerOrderDetail({
                 </p>
               </div>
               <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
                   <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
                   Log Verifikasi Lengkap
                 </span>
@@ -265,13 +265,13 @@ export function CustomerOrderDetail({
               {/* Connector line for large screens */}
               <div
                 aria-hidden="true"
-                className="hidden sm:block absolute top-4 left-[10%] right-[10%] h-1 bg-[#22c55e] z-0"
+                className="hidden sm:block absolute top-4 left-[10%] right-[10%] h-1 bg-primary-light z-0"
               />
 
               {/* Step 1 */}
               <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                <div className="w-8 h-8 rounded-full bg-primary-light text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
                 </div>
                 <p className="text-xs font-bold text-[#1b1c1c]">1. Pesanan Dibuat</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">23 Okt • 14:10 WIB</p>
@@ -279,8 +279,8 @@ export function CustomerOrderDetail({
 
               {/* Step 2 */}
               <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                <div className="w-8 h-8 rounded-full bg-primary-light text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
                 </div>
                 <p className="text-xs font-bold text-[#1b1c1c]">2. Pembayaran</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">Lunas QRIS • 14:12 WIB</p>
@@ -288,8 +288,8 @@ export function CustomerOrderDetail({
 
               {/* Step 3 */}
               <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                <div className="w-8 h-8 rounded-full bg-primary-light text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
                 </div>
                 <p className="text-xs font-bold text-[#1b1c1c]">3. Dikonfirmasi</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">Diterima Toko • 14:15 WIB</p>
@@ -297,8 +297,8 @@ export function CustomerOrderDetail({
 
               {/* Step 4 */}
               <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                <div className="w-8 h-8 rounded-full bg-primary-light text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
                 </div>
                 <p className="text-xs font-bold text-[#1b1c1c]">4. Siap Diambil</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">Di Rak Khusus • 15:00 WIB</p>
@@ -306,8 +306,8 @@ export function CustomerOrderDetail({
 
               {/* Step 5 */}
               <div className="relative z-10 flex flex-col items-center text-center col-span-2 sm:col-span-1">
-                <div className="w-8 h-8 rounded-full bg-[#22c55e] text-white flex items-center justify-center shadow-xs mb-2">
-                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                <div className="w-8 h-8 rounded-full bg-primary-light text-white flex items-center justify-center shadow-xs mb-2">
+                  <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
                 </div>
                 <p className="text-xs font-bold text-[#1b1c1c]">5. Selesai</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">Diambil • 15:42 WIB</p>
@@ -374,7 +374,7 @@ export function CustomerOrderDetail({
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Barang yang Diselamatkan</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
                     {totalBoxes} Kotak Diclaim
                   </span>
                 </div>
@@ -387,7 +387,7 @@ export function CustomerOrderDetail({
                       alt={itemName}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2 bg-[#22c55e] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
+                    <div className="absolute top-2 left-2 bg-primary-light text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
                       -{discountPercent}%
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export function CustomerOrderDetail({
                         <Sparkles className="w-3 h-3" aria-hidden="true" />
                         Mystery Box
                       </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-[#15803d]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-primary">
                         Halal MUI
                       </span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
@@ -508,8 +508,8 @@ export function CustomerOrderDetail({
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Rincian Pembayaran</h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d]">
-                    <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
+                    <Check className="w-3 h-3 stroke-3" aria-hidden="true" />
                     Lunas
                   </span>
                 </div>

@@ -242,7 +242,7 @@ export function CustomerStoreDetail({
   };
 
   return (
-    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-[#3c6a00]/20 selection:text-[#0b1510]">
+    <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
       <div>
         <CustomerHeader
           activeTab="marketplace"
@@ -268,7 +268,7 @@ export function CustomerStoreDetail({
                 alt={storeData.name}
                 className="w-full h-full object-cover filter brightness-[0.6] scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
             </div>
 
             {/* Overlapping Floating Store Card */}
@@ -286,7 +286,7 @@ export function CustomerStoreDetail({
                       <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1b1c1c] tracking-tight truncate">
                         {storeData.name}
                       </h1>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-primary">
                         {storeData.status}
                       </span>
                     </div>
@@ -449,7 +449,7 @@ export function CustomerStoreDetail({
                         <span className="text-xs font-extrabold text-[#1b1c1c]">
                           Rp {formatRupiah(prod.rescuePrice)}
                         </span>
-                        <span className="text-[10px] text-white font-bold bg-[#22c55e] px-1 rounded-sm">
+                        <span className="text-[10px] text-white font-bold bg-primary-light px-1 rounded-sm">
                           -{prod.discountPercent}%
                         </span>
                       </div>
