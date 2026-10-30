@@ -162,20 +162,33 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
 
     Promise.all(ordersNeedingCustomer.map(async (order) => {
       const detail = await fetchOrderDetailApi(order.id);
-      const customerName = typeof detail?.customer_name === 'string' ? detail.customer_name.trim() : '';
-      return customerName ? { id: order.id, customerName } : null;
+      const rawName = detail?.customer_name || detail?.customer?.name;
+      const customerName = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : '';
+      const customerPhone = detail?.customer_phone || detail?.customer?.phone || detail?.customer?.phone_number || undefined;
+      const customerAvatar = detail?.customer_avatar_url || detail?.customer?.avatar_url || undefined;
+      const storeName = detail?.store_name || detail?.store?.name || undefined;
+      const storeAddress = detail?.store_address || detail?.store?.address || undefined;
+      return { id: order.id, customerName, customerPhone, customerAvatar, storeName, storeAddress };
     })).then((resolvedCustomers) => {
       if (isCancelled) return;
-      const namesByOrderId = new Map<string, string>();
+      const dataByOrderId = new Map<string, any>();
       resolvedCustomers.forEach((entry) => {
-        if (entry) namesByOrderId.set(entry.id, entry.customerName);
+        if (entry) dataByOrderId.set(entry.id, entry);
       });
-      if (namesByOrderId.size === 0) return;
+      if (dataByOrderId.size === 0) return;
 
-      const updatedOrders = getMerchantOrders(currentStore).map((order) => ({
-        ...order,
-        customerName: namesByOrderId.get(order.id) || order.customerName,
-      }));
+      const updatedOrders = getMerchantOrders(currentStore).map((order) => {
+        const extra = dataByOrderId.get(order.id);
+        if (!extra) return order;
+        return {
+          ...order,
+          customerName: extra.customerName || order.customerName,
+          customerPhone: extra.customerPhone || order.customerPhone,
+          customerAvatar: extra.customerAvatar || order.customerAvatar,
+          storeName: extra.storeName || order.storeName,
+          storeAddress: extra.storeAddress || order.storeAddress,
+        };
+      });
       saveMerchantOrders(updatedOrders);
       setOrders(updatedOrders);
     });
@@ -185,16 +198,29 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
     };
   }, [pageOrders, currentStore]);
 
-  const handleOpenConfirmModal = (order: MerchantOrderItem) => {
+  const handleOpenModal = (order: MerchantOrderItem) => {
     setSelectedModalOrder(order);
     setIsModalOpen(true);
+  };
+
+  const refreshOrders = async () => {
+    try {
+      const apiOrders = await fetchMerchantOrdersApi(currentStore);
+      if (apiOrders !== null) {
+        setOrders(apiOrders);
+        return;
+      }
+    } catch (err) {
+      console.warn('Gagal menyegarkan data pesanan:', err);
+    }
+    setOrders(getMerchantOrders(currentStore));
   };
 
   const handleModalConfirm = async (order: MerchantOrderItem) => {
     setProcessingId(order.id);
     try {
       await confirmMerchantOrder(order.id);
-      setOrders(getMerchantOrders(currentStore));
+      await refreshOrders();
       setIsModalOpen(false);
       setSelectedModalOrder(null);
       if (onShowToast) {
@@ -208,11 +234,13 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
     }
   };
 
-  const handleProcessReady = async (order: MerchantOrderItem) => {
+  const handleModalProcessReady = async (order: MerchantOrderItem) => {
     setProcessingId(order.id);
     try {
       await processMerchantOrder(order.id);
-      setOrders(getMerchantOrders(currentStore));
+      await refreshOrders();
+      setIsModalOpen(false);
+      setSelectedModalOrder(null);
       if (onShowToast) {
         onShowToast(`Pesanan ${order.orderNumber} sudah diproses & siap diambil!`, 'success');
       }
@@ -224,11 +252,13 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
     }
   };
 
-  const handleComplete = async (order: MerchantOrderItem) => {
+  const handleModalComplete = async (order: MerchantOrderItem) => {
     setProcessingId(order.id);
     try {
       await completeMerchantOrder(order.id);
-      setOrders(getMerchantOrders(currentStore));
+      await refreshOrders();
+      setIsModalOpen(false);
+      setSelectedModalOrder(null);
       if (onShowToast) {
         onShowToast(`Pesanan ${order.orderNumber} telah diserahkan & selesai!`, 'success');
       }
@@ -367,11 +397,12 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
               {pageOrders.map((order) => (
                 <article
                   key={order.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafaf8] transition-colors"
+                  onClick={() => handleOpenModal(order)}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafaf8] transition-colors cursor-pointer group"
                 >
                   {/* Left: Thumbnail & Details */}
                   <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200/80 shadow-2xs">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200/80 shadow-2xs group-hover:border-[#3c6a00]/40 transition-colors">
                       <img
                         src={order.productImage || cardMonsieurSpoon}
                         alt={order.productName}
@@ -383,7 +414,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate leading-snug">
+                      <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate leading-snug group-hover:text-[#3c6a00] transition-colors">
                         {order.productName}
                       </h4>
                       <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">
@@ -415,11 +446,11 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                   </div>
 
                   {/* Right: Action Button or Status Badge */}
-                  <div className="shrink-0 flex items-center justify-end">
+                  <div className="shrink-0 flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                     {activeTab === 'perlu-konfirmasi' && (
                       <button
                         type="button"
-                        onClick={() => handleOpenConfirmModal(order)}
+                        onClick={() => handleOpenModal(order)}
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#3c6a00] hover:bg-[#325800] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
@@ -429,7 +460,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                     {activeTab === 'diproses' && (
                       <button
                         type="button"
-                        onClick={() => handleProcessReady(order)}
+                        onClick={() => handleOpenModal(order)}
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#3c6a00] hover:bg-[#325800] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
@@ -439,7 +470,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                     {activeTab === 'siap-diambil' && (
                       <button
                         type="button"
-                        onClick={() => handleComplete(order)}
+                        onClick={() => handleOpenModal(order)}
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#1F2A24] hover:bg-[#2C3B33] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
@@ -447,10 +478,14 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                       </button>
                     )}
                     {activeTab === 'selesai' && (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenModal(order)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-1.5 rounded-full cursor-pointer transition-colors"
+                      >
                         <Check className="w-3.5 h-3.5" />
                         Selesai
-                      </span>
+                      </button>
                     )}
                   </div>
                 </article>
@@ -494,7 +529,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
         </div>
       </div>
 
-      {/* Confirmation Popup Modal matching User's Image */}
+      {/* Confirmation & Order Detail Popup Modal matching User's Image */}
       <SellerOrderDetailModal
         order={selectedModalOrder}
         isOpen={isModalOpen}
@@ -503,6 +538,8 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
           setSelectedModalOrder(null);
         }}
         onConfirm={handleModalConfirm}
+        onProcessReady={handleModalProcessReady}
+        onComplete={handleModalComplete}
         onShowToast={onShowToast}
       />
     </section>

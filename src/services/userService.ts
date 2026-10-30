@@ -55,6 +55,23 @@ export async function getUserProfile(): Promise<UserPayload> {
 }
 
 /**
+ * Fetch public or specific user profile by user ID via GET /api/v1/users/:id
+ */
+export async function getUserById(userId: string): Promise<UserPayload | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token || !userId) return null;
+
+  try {
+    const response = await api.get(`/api/v1/users/${encodeURIComponent(userId)}`);
+    const payload = response.data?.payload;
+    return (payload?.user || (payload?.id || payload?.name ? payload : null)) as UserPayload | null;
+  } catch (err) {
+    console.warn(`getUserById(${userId}) failed:`, err);
+    return null;
+  }
+}
+
+/**
  * Update authenticated user's profile via PUT /api/v1/users/profile
  * Accepts: name, avatar_url, phone_number, date_of_birth, gender
  */
