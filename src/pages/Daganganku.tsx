@@ -9,6 +9,8 @@ import {
   getMerchantProducts,
   toggleProductStatusApi,
   deleteProductApi,
+  updateProductStockApi,
+  syncProductToMarketplaceCache,
 } from '../services/productService';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 
@@ -147,6 +149,24 @@ export function Daganganku({
     });
     setProducts(updated);
 
+    // Sync to marketplace cache & notify
+    syncProductToMarketplaceCache(item.id, {
+      status: nextStatus,
+      isActive: nextIsActive,
+      stock: item.stock,
+      name: item.name,
+    });
+    window.dispatchEvent(
+      new CustomEvent('rescuebyte_product_updated', {
+        detail: {
+          id: item.id,
+          status: nextStatus,
+          isActive: nextIsActive,
+          stock: item.stock,
+        },
+      })
+    );
+
     if (onShowToast) {
       onShowToast(
         `Produk "${item.name}" ${nextIsActive ? 'berhasil diaktifkan' : 'telah dinonaktifkan'}`
@@ -156,6 +176,8 @@ export function Daganganku({
 
   const handleDirectStockChange = async (item: ProductItem, newStock: number) => {
     const validStock = Math.max(0, newStock);
+    if (validStock === item.stock) return;
+
     let nextStatus = item.status;
     if (item.status !== 'nonaktif') {
       if (validStock === 0) {
@@ -167,21 +189,11 @@ export function Daganganku({
       }
     }
 
-    const nextMaxStock = Math.max(item.maxStock || 0, validStock);
+    const updatedItem = await updateProductStockApi(item, validStock, nextStatus);
+    setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
 
-    const updated = updateProduct(item.id, {
-      stock: validStock,
-      maxStock: nextMaxStock,
-      status: nextStatus,
-    });
-    setProducts(updated);
-
-    if (item.status !== 'nonaktif') {
-      try {
-        await toggleProductStatusApi(item.id, validStock > 0);
-      } catch (err) {
-        console.warn('Backend toggle status sync failed:', err);
-      }
+    if (onShowToast) {
+      onShowToast(`Stok "${item.name}" berhasil diubah menjadi ${validStock} box`);
     }
   };
 
@@ -201,21 +213,11 @@ export function Daganganku({
       }
     }
 
-    const nextMaxStock = Math.max(item.maxStock || 0, newStock);
+    const updatedItem = await updateProductStockApi(item, newStock, nextStatus);
+    setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
 
-    const updated = updateProduct(item.id, {
-      stock: newStock,
-      maxStock: nextMaxStock,
-      status: nextStatus,
-    });
-    setProducts(updated);
-
-    if (item.status !== 'nonaktif' && ((currentStock === 0 && newStock > 0) || (currentStock > 0 && newStock === 0))) {
-      try {
-        await toggleProductStatusApi(item.id, newStock > 0);
-      } catch (err) {
-        console.warn('Backend toggle status sync failed:', err);
-      }
+    if (onShowToast) {
+      onShowToast(`Stok "${item.name}" berhasil diubah menjadi ${newStock} box`);
     }
   };
 

@@ -14,9 +14,14 @@ import {
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CheckoutItem, CheckoutPayload, PaymentOrderData } from '../types';
+import { CheckoutItem, CheckoutPayload, PaymentOrderData, CustomerOrderStatus } from '../types';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import { createCustomerOrder } from '../services/orderService';
+import {
+  createCustomerOrder,
+  checkoutOrderApi,
+  mapBackendStatusToCustomerStatus,
+} from '../services/orderService';
+import { getProductVariantId } from '../services/cartService';
 import { getCurrentUser } from '../services/authService';
 import { getAllStores, StoreProfileData } from '../services/storeService';
 
@@ -29,7 +34,8 @@ export interface CustomerCheckoutProps {
   onNavigateSeller?: () => void;
   onNavigatePayment?: (orderData: PaymentOrderData) => void;
   onNavigateOrderDetail?: (orderData: PaymentOrderData) => void;
-  onShowToast?: (message: string) => void;
+  onNavigateOrders?: () => void;
+  onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 export interface StoreCheckoutGroup {
@@ -68,6 +74,7 @@ export function CustomerCheckout({
   onNavigateSeller,
   onNavigatePayment,
   onNavigateOrderDetail,
+  onNavigateOrders,
   onShowToast,
 }: CustomerCheckoutProps) {
   // Customer Info State from current user or defaults
@@ -282,7 +289,7 @@ export function CustomerCheckout({
     };
   }, [checkoutItems]);
 
-  const handlePayNow = () => {
+const handlePayNow = async () => {
     if (totalBoxes === 0) {
       if (onShowToast) onShowToast('Tidak ada item untuk dipesan.');
       return;
@@ -291,48 +298,247 @@ export function CustomerCheckout({
     setIsSubmitting(true);
     const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(10000 + Math.random() * 90000).toString();
-    const generatedCode = `RB${todayStr}-${randomSuffix}`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
-    const firstGroup = storeGroups[0];
-    const orderData: PaymentOrderData = {
-      orderId: generatedCode,
-      items: checkoutItems,
-      primaryStore: {
-        storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
-        storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
-        storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
-        rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
-        reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
-      },
-      pickupDate: orderDateFormatted,
-      pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
-      customerInfo: {
-        name: customerName,
-        phone: customerPhone,
-        email: customerEmail,
-      },
-      totalBoxes,
-      subtotal,
-      discountTotal,
-      serviceFee,
-      grandTotal,
-      source: payload?.source,
-      status: 'menunggu-konfirmasi',
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      // Opsi 2 Alur B:
+      // Jika checkout dari lebih dari 1 toko -> Split orders per toko dan arahkan ke Pesanan Saya
+      // Jika hanya 1 toko -> Buat 1 pesanan dan langsung arahkan ke Detail Pesanan
+      if (storeGroups.length > 1) {
+        for (let idx = 0; idx < storeGroups.length; idx++) {
+          const group = storeGroups[idx];
+          let groupBoxes = 0;
+          let groupSub = 0;
+          let groupDisc = 0;
 
-    // Save order, deduct merchant stock, clear cart if source was cart
-    createCustomerOrder(orderData, 'menunggu-konfirmasi');
-    if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+          group.items.forEach((item) => {
+            groupBoxes += item.quantity;
+            const originalTotal = item.originalPrice * item.quantity;
+            const rescueTotal = item.rescuePrice * item.quantity;
+            groupSub += rescueTotal;
+            groupDisc += originalTotal - rescueTotal;
+          });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (onNavigateOrderDetail) {
-        onNavigateOrderDetail(orderData);
-      } else if (onNavigatePayment) {
-        onNavigatePayment(orderData);
+          const groupServiceFee = 2000;
+          const groupGrandTotal = groupSub + groupServiceFee;
+          let storeOrderCode = `RB${todayStr}-${randomSuffix}-${idx + 1}`;
+          let snapToken: string | undefined;
+          let snapRedirectUrl: string | undefined;
+          let finalStatus: CustomerOrderStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : 'menunggu-konfirmasi';
+
+          if (token && group.storeId && !group.storeId.startsWith('store-')) {
+            try {
+              const apiItems: Array<{ product_variant_id: string; quantity: number }> = [];
+              for (const it of group.items) {
+                let vId = it.variantId;
+                if (!vId && it.productId) {
+                  vId = (await getProductVariantId(it.productId)) || undefined;
+                }
+                if (!vId) {
+                  vId = (await getProductVariantId(it.id)) || undefined;
+                }
+                if (vId) {
+                  apiItems.push({
+                    product_variant_id: vId,
+                    quantity: it.quantity,
+                  });
+                }
+              }
+
+              if (apiItems.length > 0) {
+                const opMatch = group.operationalHours.match(/(\d{2})[.:](\d{2})\s*-\s*(\d{2})[.:](\d{2})/);
+                const timeStart = opMatch ? `${opMatch[1]}:${opMatch[2]}:00` : '08:00:00';
+                const timeEnd = opMatch ? `${opMatch[3]}:${opMatch[4]}:00` : '22:00:00';
+
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                const pickupDateStr = `${yyyy}-${mm}-${dd}`;
+
+                const checkoutRes = await checkoutOrderApi({
+                  store_id: group.storeId,
+                  customer_name: customerName,
+                  customer_phone: customerPhone,
+                  customer_email: customerEmail,
+                  payment_method: paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_PICKUP',
+                  pickup_date: pickupDateStr,
+                  pickup_time_start: timeStart,
+                  pickup_time_end: timeEnd,
+                  items: apiItems,
+                });
+
+                if (checkoutRes && checkoutRes.order) {
+                  storeOrderCode = checkoutRes.order.order_number || storeOrderCode;
+                  finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
+                  snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
+                  snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
+                }
+              }
+            } catch (err) {
+              console.warn(`Backend checkout failed for store ${group.storeName}:`, err);
+            }
+          }
+
+          const storeOrderData: PaymentOrderData = {
+            orderId: storeOrderCode,
+            items: group.items,
+            primaryStore: {
+              storeName: group.storeName,
+              storeAvatar: group.storeAvatar,
+              storeAddress: group.storeAddress,
+              rating: group.rating,
+              reviewCount: group.reviewCount,
+            },
+            pickupDate: orderDateFormatted,
+            pickupTimeSlot: group.operationalHours,
+            customerInfo: {
+              name: customerName,
+              phone: customerPhone,
+              email: customerEmail,
+            },
+            totalBoxes: groupBoxes,
+            subtotal: groupSub,
+            discountTotal: groupDisc,
+            serviceFee: groupServiceFee,
+            grandTotal: groupGrandTotal,
+            source: payload?.source,
+            status: finalStatus,
+            snapToken,
+            snapRedirectUrl,
+            createdAt: new Date().toISOString(),
+          };
+
+          createCustomerOrder(storeOrderData, finalStatus);
+        }
+
+        if (onShowToast) {
+          onShowToast(`Pesanan berhasil dibuat untuk ${storeGroups.length} toko! Membuka Pesanan Saya...`);
+        }
+
+        setTimeout(() => {
+          setIsSubmitting(false);
+          if (onNavigateOrders) {
+            onNavigateOrders();
+          } else {
+            window.location.assign('#pesanan-saya');
+          }
+        }, 350);
+      } else {
+        // Single store checkout -> langsung ke detail pesanan
+        const firstGroup = storeGroups[0];
+        let singleOrderCode = `RB${todayStr}-${randomSuffix}`;
+        let snapToken: string | undefined;
+        let snapRedirectUrl: string | undefined;
+        let finalStatus: CustomerOrderStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : 'menunggu-konfirmasi';
+
+        if (token && firstGroup?.storeId && !firstGroup.storeId.startsWith('store-')) {
+          try {
+            const apiItems: Array<{ product_variant_id: string; quantity: number }> = [];
+            for (const it of checkoutItems) {
+              let vId = it.variantId;
+              if (!vId && it.productId) {
+                vId = (await getProductVariantId(it.productId)) || undefined;
+              }
+              if (!vId) {
+                vId = (await getProductVariantId(it.id)) || undefined;
+              }
+              if (vId) {
+                apiItems.push({
+                  product_variant_id: vId,
+                  quantity: it.quantity,
+                });
+              }
+            }
+
+            if (apiItems.length > 0) {
+              const opMatch = (firstGroup.operationalHours || '').match(/(\d{2})[.:](\d{2})\s*-\s*(\d{2})[.:](\d{2})/);
+              const timeStart = opMatch ? `${opMatch[1]}:${opMatch[2]}:00` : '08:00:00';
+              const timeEnd = opMatch ? `${opMatch[3]}:${opMatch[4]}:00` : '22:00:00';
+
+              const now = new Date();
+              const yyyy = now.getFullYear();
+              const mm = String(now.getMonth() + 1).padStart(2, '0');
+              const dd = String(now.getDate()).padStart(2, '0');
+              const pickupDateStr = `${yyyy}-${mm}-${dd}`;
+
+              const checkoutRes = await checkoutOrderApi({
+                store_id: firstGroup.storeId,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_email: customerEmail,
+                payment_method: paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_PICKUP',
+                pickup_date: pickupDateStr,
+                pickup_time_start: timeStart,
+                pickup_time_end: timeEnd,
+                items: apiItems,
+              });
+
+              if (checkoutRes && checkoutRes.order) {
+                singleOrderCode = checkoutRes.order.order_number || singleOrderCode;
+                finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
+                snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
+                snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
+              }
+            }
+          } catch (err) {
+            console.warn('Backend single checkout failed:', err);
+          }
+        }
+
+        const orderData: PaymentOrderData = {
+          orderId: singleOrderCode,
+          items: checkoutItems,
+          primaryStore: {
+            storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
+            storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
+            storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
+            rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
+            reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
+          },
+          pickupDate: orderDateFormatted,
+          pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
+          customerInfo: {
+            name: customerName,
+            phone: customerPhone,
+            email: customerEmail,
+          },
+          totalBoxes,
+          subtotal,
+          discountTotal,
+          serviceFee,
+          grandTotal,
+          source: payload?.source,
+          status: finalStatus,
+          snapToken,
+          snapRedirectUrl,
+          createdAt: new Date().toISOString(),
+        };
+
+        createCustomerOrder(orderData, finalStatus);
+        if (paymentMethod === 'online' && snapRedirectUrl) {
+          try {
+            window.open(snapRedirectUrl, '_blank');
+          } catch (e) {
+            console.warn('Popup blocked, available on detail page:', e);
+          }
+        }
+        if (onShowToast) onShowToast(paymentMethod === 'online' ? 'Pesanan berhasil dibuat! Membuka halaman pembayaran...' : 'Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+
+        setTimeout(() => {
+          setIsSubmitting(false);
+          if (onNavigateOrderDetail) {
+            onNavigateOrderDetail(orderData);
+          } else if (onNavigatePayment) {
+            onNavigatePayment(orderData);
+          }
+        }, 300);
       }
-    }, 300);
+    } catch (err) {
+      setIsSubmitting(false);
+      console.error('Checkout error:', err);
+      if (onShowToast) onShowToast('Gagal membuat pesanan.', 'error');
+    }
   };
 
   const handleHeaderTab = (tab: string) => {

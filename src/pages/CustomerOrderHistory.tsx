@@ -10,11 +10,6 @@ import {
   ChevronRight,
   ChevronLeft,
   ExternalLink,
-  Utensils,
-  Cookie,
-  Carrot,
-  Croissant,
-  Sandwich,
   X,
   LayoutGrid,
   AlertCircle,
@@ -29,7 +24,9 @@ import {
   CustomerOrderItem,
   getCustomerOrders,
   subscribeToOrders,
+  fetchCustomerOrdersApi,
 } from '../services/orderService';
+import { getAllStores } from '../services/storeService';
 
 export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 
@@ -58,6 +55,8 @@ export function CustomerOrderHistory({
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
   const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
+  const [storeAvatars, setStoreAvatars] = useState<Record<string, string>>({});
+  const [storeAddresses, setStoreAddresses] = useState<Record<string, string>>({});
   const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -67,6 +66,51 @@ export function CustomerOrderHistory({
     return subscribeToOrders((latest) => {
       setOrders(latest);
     });
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    getAllStores()
+      .then((backendStores) => {
+        if (isCancelled || !backendStores) return;
+        const avatarMap: Record<string, string> = {};
+        const addressMap: Record<string, string> = {};
+        backendStores.forEach((store) => {
+          if (store.profile_picture_url) {
+            if (store.name) avatarMap[store.name.trim().toLowerCase()] = store.profile_picture_url;
+            if (store.id) avatarMap[store.id] = store.profile_picture_url;
+          }
+          const fullAddr = [store.address, store.district, store.city].filter(Boolean).join(', ');
+          if (fullAddr) {
+            if (store.name) addressMap[store.name.trim().toLowerCase()] = fullAddr;
+            if (store.id) addressMap[store.id] = fullAddr;
+          }
+        });
+        setStoreAvatars(avatarMap);
+        setStoreAddresses(addressMap);
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadBackendOrders() {
+      try {
+        const backendOrders = await fetchCustomerOrdersApi();
+        if (!isCancelled && backendOrders !== null) {
+          setOrders(backendOrders);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat pesanan dari backend:', err);
+      }
+    }
+    loadBackendOrders();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // Review modal state
@@ -107,6 +151,11 @@ export function CustomerOrderHistory({
       onNavigateOrderDetail(order.orderData);
       return;
     }
+    const resolvedAvatar =
+      storeAvatars[order.storeName.trim().toLowerCase()] ||
+      (order.orderData?.primaryStore as any)?.profile_picture_url ||
+      order.storeName.slice(0, 2).toUpperCase();
+
     const paymentData: PaymentOrderData = {
       orderId: order.orderNumber,
       status: order.status,
@@ -116,12 +165,12 @@ export function CustomerOrderHistory({
           name: order.productName,
           storeId: 'store-1',
           storeName: order.storeName,
-          storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
+          storeAvatar: resolvedAvatar,
           storeAddress: `${order.storeName}, Area Terdekat`,
           rating: order.storeRating,
           reviewCount: order.storeReviewCount,
           distanceText: order.storeDistance,
-          categoryTags: order.storeTags,
+          categoryTags: order.storeTags || [],
           originalPrice: order.originalPrice || order.finalPrice + 15000,
           rescuePrice: order.finalPrice,
           discountPercent: 50,
@@ -131,7 +180,7 @@ export function CustomerOrderHistory({
       ],
       primaryStore: {
         storeName: order.storeName,
-        storeAvatar: order.storeName.slice(0, 2).toUpperCase(),
+        storeAvatar: resolvedAvatar,
         storeAddress: `${order.storeName}, Area Terdekat`,
         rating: order.storeRating,
         reviewCount: order.storeReviewCount,
@@ -408,9 +457,28 @@ export function CustomerOrderHistory({
                               }
                             }}
                           >
-                            <div className="w-8 h-8 rounded-full bg-[#1b1c1c] text-white font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-800 transition">
-                              {order.storeName.slice(0, 2).toUpperCase()}
-                            </div>
+                            {(() => {
+                              const avatarUrl =
+                                storeAvatars[order.storeName.trim().toLowerCase()] ||
+                                (order.orderData?.primaryStore as any)?.profile_picture_url;
+                              return (
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1b1c1c] text-white font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-emerald-800 transition border border-black/5">
+                                  {avatarUrl ? (
+                                    <img
+                                      src={avatarUrl}
+                                      alt={order.storeName}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <span className={avatarUrl ? 'hidden' : 'block'}>
+                                    {order.storeName.slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             <div className="min-w-0">
                               <h4 className="text-sm font-bold text-[#1b1c1c] group-hover:text-emerald-700 group-hover:underline truncate transition">
                                 {order.storeName}
@@ -418,59 +486,57 @@ export function CustomerOrderHistory({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                            <span className="font-semibold text-slate-700">★ {order.storeRating}</span>
-                            <span>({order.storeReviewCount} ulasan)</span>
-                            <span>•</span>
-                            <span>{order.storeDistance}</span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                            {order.storeTags.map((tag, idx) => (
-                              <span
-                                key={idx}
-                                className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-medium"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-
-                          <a
-                            href={`https://maps.google.com/?q=${encodeURIComponent(order.storeName)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-emerald-700 mt-1 transition"
-                          >
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            <span>Lihat di Google Maps</span>
-                          </a>
+                          {(() => {
+                            const addr =
+                              order.storeAddress ||
+                              storeAddresses[order.storeName.trim().toLowerCase()] ||
+                              (order.orderData?.primaryStore as any)?.storeAddress;
+                            return (
+                              <div className="flex flex-col gap-1 mt-1 text-xs text-slate-500">
+                                {addr ? (
+                                  <div className="flex items-start gap-1 text-slate-600 leading-snug">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                                    <span className="line-clamp-2">{addr}</span>
+                                  </div>
+                                ) : null}
+                                <a
+                                  href={`https://maps.google.com/?q=${encodeURIComponent(
+                                    addr ? `${order.storeName}, ${addr}` : order.storeName
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-emerald-700 transition w-fit"
+                                >
+                                  {!addr && <MapPin className="w-3 h-3 text-slate-400" />}
+                                  <span>Lihat di Google Maps</span>
+                                </a>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* 2. Middle Item Details */}
                         <div className="flex-1 min-w-0 flex items-start gap-4">
-                          {/* Box Category Thumbnail */}
-                          <div
-                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center text-white shrink-0 shadow-xs ${order.category === 'fresh'
-                                ? 'bg-emerald-700'
-                                : order.category === 'meal'
-                                  ? 'bg-amber-800'
-                                  : order.category === 'snack'
-                                    ? 'bg-amber-900'
-                                    : order.category === 'bakery'
-                                      ? 'bg-[#7c4d28]'
-                                      : 'bg-[#6d3e23]'
-                              }`}
-                          >
-                            {order.category === 'bakery' && <Croissant className="w-6 h-6 mb-0.5" />}
-                            {order.category === 'meal' && <Utensils className="w-6 h-6 mb-0.5" />}
-                            {order.category === 'snack' && <Cookie className="w-6 h-6 mb-0.5" />}
-                            {order.category === 'fresh' && <Carrot className="w-6 h-6 mb-0.5" />}
-                            {order.category === 'deli' && <Sandwich className="w-6 h-6 mb-0.5" />}
-                            <span className="text-[9px] font-bold tracking-wider uppercase opacity-90">
-                              {order.category}
-                            </span>
-                          </div>
+                          {/* Product Image Thumbnail */}
+                          {(() => {
+                            const itemImg = order.imageUrl || order.orderData?.items?.[0]?.imageSrc;
+                            return (
+                              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 shadow-xs border border-black/5">
+                                {itemImg ? (
+                                  <img
+                                    src={itemImg}
+                                    alt={order.productName}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <ShoppingBag className="w-6 h-6 text-slate-400" />
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           <div className="flex-1 min-w-0">
                             <h3 className="text-sm sm:text-base font-bold text-[#1b1c1c] truncate">
@@ -479,9 +545,13 @@ export function CustomerOrderHistory({
                             <p className="text-xs text-slate-500 font-medium">
                               {order.productBoxCount} box
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">
-                              {order.productDescription}
-                            </p>
+                            {order.productDescription &&
+                            order.productDescription !== order.productName &&
+                            order.productDescription !== `1x ${order.productName}` && (
+                              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                                {order.productDescription}
+                              </p>
+                            )}
 
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-slate-500">
                               <span className="flex items-center gap-1 font-medium text-slate-700">

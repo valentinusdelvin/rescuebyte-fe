@@ -79,6 +79,7 @@ export function MysteryBoxCard({
   // Check stock quantity from text (e.g. "Sisa 4 Box" -> 4, "Sisa 2 Box!" -> 2, "Hanya 1 Box Tersisa!" -> 1)
   const stockMatch = item.remainingBoxesText.match(/\d+/);
   const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
+  const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
   const isAboveTwo = stockCount > 2;
   const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
   const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
@@ -124,8 +125,27 @@ export function MysteryBoxCard({
           <div className="flex items-center gap-1.5">
             {isPopular ? (
               <>
-                {/* Stock Badge: Merah Muda jika > 2, Merah Tebal jika <= 2 */}
-                {isAboveTwo ? (
+                {/* Stock Badge: Abu-abu jika Habis, Merah Muda jika > 2, Merah Tebal jika <= 2 */}
+                {isOutOfStock ? (
+                  <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-500 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <polyline points="12 6 12 12 15 14" />
+                    </svg>
+                    <span>Sisa 0 Box</span>
+                  </span>
+                ) : isAboveTwo ? (
                   <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
                     <svg
                       width="12"
@@ -270,16 +290,28 @@ export function MysteryBoxCard({
             </span>
           </div>
 
-          {/* Action Button: 'Pesan Sekarang' */}
-          <button
-            type="button"
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
-            id={`btn-order-${item.id}`}
-            onClick={() => onOrderClick(item)}
-            aria-label={`Pesan Mystery Box dari ${item.storeName}`}
-          >
-            <span>Pesan Sekarang</span>
-          </button>
+          {/* Action Button: 'Pesan Sekarang' or 'Habis' */}
+          {isOutOfStock ? (
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-gray-200 text-gray-400 text-xs sm:text-sm font-bold shadow-xs cursor-not-allowed shrink-0 select-none"
+              id={`btn-order-${item.id}`}
+              aria-label={`Mystery Box dari ${item.storeName} telah habis`}
+            >
+              <span>Habis</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+              id={`btn-order-${item.id}`}
+              onClick={() => onOrderClick(item)}
+              aria-label={`Pesan Mystery Box dari ${item.storeName}`}
+            >
+              <span>Pesan Sekarang</span>
+            </button>
+          )}
         </div>
       </div>
     </article>

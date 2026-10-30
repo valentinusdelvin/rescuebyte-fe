@@ -5,7 +5,8 @@ import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { FormattedDescription } from '../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../types';
-import { getCartCount, addToCart, subscribeToCart } from '../services/cartService';
+import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../services/cartService';
+import { getAllStores } from '../services/storeService';
 
 export interface CustomerProductDetailProps {
   product?: CustomerMysteryBox | null;
@@ -55,6 +56,28 @@ export function CustomerProductDetail({
 
   // Use product prop or default to Figma mock data for TerasRasa Bakery
   const storeName = (product?.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak';
+
+  const [storeAvatarUrl, setStoreAvatarUrl] = useState<string | null>(() => {
+    return product?.storeAvatar || null;
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+    getAllStores().then((stores) => {
+      if (isCancelled || !stores) return;
+      const matched = stores.find(
+        (s) =>
+          (s.id && product?.storeId && (s.id === product.storeId || product.storeId.includes(s.id))) ||
+          (s.name && storeName && s.name.toLowerCase() === storeName.toLowerCase())
+      );
+      if (matched?.profile_picture_url) {
+        setStoreAvatarUrl(matched.profile_picture_url);
+      }
+    }).catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.storeId, storeName]);
   const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box';
   const description =
     product?.description ||
@@ -70,7 +93,7 @@ export function CustomerProductDetail({
     : 5;
   const pickupTime = product?.pickupTime
     ? product.pickupTime.replace(/^Ambil:\s*/i, '').replace(/WIB.*$/, 'WIB')
-    : '15.00 – 18.00 WIB';
+    : '15.00 - 18.00 WIB';
 
   // Photos Gallery: Only use actual uploaded product images (no fake placeholder fallback photos)
   const galleryImages = useMemo(() => {
@@ -96,9 +119,19 @@ export function CustomerProductDetail({
 
   const currentImage = galleryImages[selectedImageIndex] || galleryImages[0] || '';
 
-  // Reservation quantity state (1 - 5)
-  const [quantity, setQuantity] = useState(1);
-  const maxQuantity = 5;
+  // Reservation quantity state
+  const isOutOfStock = remainingBoxes === 0;
+  const maxQuantity = isOutOfStock ? 0 : 5;
+  const [quantity, setQuantity] = useState(isOutOfStock ? 0 : 1);
+
+  // Synchronize quantity if stock changes
+  useEffect(() => {
+    if (remainingBoxes === 0) {
+      setQuantity(0);
+    } else {
+      setQuantity((prev) => (prev === 0 ? 1 : prev));
+    }
+  }, [remainingBoxes]);
 
   // Modals & Cart State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -205,9 +238,12 @@ export function CustomerProductDetail({
     // 1. Cleanup flying element
     setFlyingItems((prev) => prev.filter((item) => item.id !== id));
 
-    // 2. Persist in cartService
+    // 2. Persist in cartService and sync to backend API
     const newCount = addToCart(activeBoxItem, qtyToAdd);
     setCartCount(newCount);
+    addToCartApi(activeBoxItem, qtyToAdd).then(({ count }) => {
+      setCartCount(count);
+    }).catch(() => {});
 
     // 3. Trigger bounce / scale animation on cart button
     setIsCartBouncing(true);
@@ -242,21 +278,24 @@ export function CustomerProductDetail({
   };
 
   // Active mystery box representation for modal
-  const activeBoxItem: CustomerMysteryBox = product || {
-    id: 'detail-teras-rasa',
-    storeName,
-    category: '🥐 Pastry & Bakery',
-    distanceText,
-    remainingBoxesText: `Tersisa ${remainingBoxes} box`,
-    discountPercent,
-    originalPrice,
-    rescuePrice,
-    pickupTime,
-    description,
-    tags: ['Sisa Stok Harian'],
-    rating,
-    reviewCount,
-    imageSrc: galleryImages[selectedImageIndex] || '',
+  const activeBoxItem: CustomerMysteryBox = {
+    ...(product || {
+      id: 'detail-teras-rasa',
+      storeName,
+      category: '🥐 Pastry & Bakery',
+      distanceText,
+      remainingBoxesText: `Tersisa ${remainingBoxes} box`,
+      discountPercent,
+      originalPrice,
+      rescuePrice,
+      pickupTime,
+      description,
+      tags: ['Sisa Stok Harian'],
+      rating,
+      reviewCount,
+      imageSrc: galleryImages[selectedImageIndex] || '',
+    }),
+    storeAvatar: storeAvatarUrl || product?.storeAvatar,
   };
 
   return (
@@ -390,8 +429,20 @@ export function CustomerProductDetail({
                     }
                   }}
                 >
-                  <div className="w-11 h-11 rounded-full bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                    {storeName.slice(0, 4)}
+                  <div className="w-11 h-11 rounded-full overflow-hidden bg-[#1e3323] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 group-hover:scale-105 transition-transform border border-black/5">
+                    {storeAvatarUrl ? (
+                      <img
+                        src={storeAvatarUrl}
+                        alt={storeName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <span className={storeAvatarUrl ? 'hidden' : 'block'}>
+                      {storeName.slice(0, 2).toUpperCase()}
+                    </span>
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
@@ -471,7 +522,11 @@ export function CustomerProductDetail({
                         Stok Tersedia
                       </span>
                       <span className="text-xs sm:text-sm font-black text-gray-900 block">
-                        Tersisa <span className="text-red-600 font-black">{remainingBoxes} box</span>
+                        {isOutOfStock ? (
+                          <span className="text-gray-500 font-bold">Tersisa 0 box (Habis)</span>
+                        ) : (
+                          <>Tersisa <span className="text-red-600 font-black">{remainingBoxes} box</span></>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -503,12 +558,12 @@ export function CustomerProductDetail({
                     <button
                       type="button"
                       onClick={handleDecreaseQuantity}
-                      disabled={quantity <= 1}
+                      disabled={quantity <= 1 || isOutOfStock}
                       className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
                       title="Kurangi box"
                       aria-label="Kurangi box"
                     >
-                      –
+                      -
                     </button>
                     <span className="font-bold text-sm text-[#1b1c1c] min-w-5 text-center select-none">
                       {quantity}
@@ -516,7 +571,7 @@ export function CustomerProductDetail({
                     <button
                       type="button"
                       onClick={handleIncreaseQuantity}
-                      disabled={quantity >= maxQuantity}
+                      disabled={quantity >= maxQuantity || isOutOfStock}
                       className="w-8 h-8 rounded-lg bg-white shadow-2xs hover:bg-gray-100 flex items-center justify-center font-bold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
                       title="Tambah box"
                       aria-label="Tambah box"
@@ -533,10 +588,11 @@ export function CustomerProductDetail({
                     ref={addToCartBtnRef}
                     type="button"
                     onClick={handleAddToCart}
-                    className="w-14 sm:w-16 py-3.5 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white flex items-center justify-center shrink-0 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none"
+                    disabled={isOutOfStock}
+                    className="w-14 sm:w-16 py-3.5 rounded-2xl border-2 border-[#1f2620] bg-white hover:bg-[#1f2620] text-[#1f2620] hover:text-white flex items-center justify-center shrink-0 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer group select-none disabled:opacity-40 disabled:cursor-not-allowed"
                     id="btn-tambah-keranjang"
-                    title="Tambah ke Keranjang"
-                    aria-label="Tambah ke Keranjang"
+                    title={isOutOfStock ? 'Stok habis' : 'Tambah ke Keranjang'}
+                    aria-label={isOutOfStock ? 'Stok habis' : 'Tambah ke Keranjang'}
                   >
                     <div className="relative flex items-center justify-center">
                       <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" />
@@ -548,11 +604,16 @@ export function CustomerProductDetail({
                   <button
                     type="button"
                     onClick={handleReservasi}
-                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
+                    disabled={isOutOfStock}
+                    className={
+                      isOutOfStock
+                        ? "flex-1 py-3.5 px-4 rounded-2xl bg-gray-200 text-gray-400 text-xs sm:text-sm font-bold flex items-center justify-center cursor-not-allowed select-none"
+                        : "flex-1 py-3.5 px-4 rounded-2xl bg-[#1f2620] hover:bg-black text-white text-xs sm:text-sm font-bold flex items-center justify-center shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer select-none"
+                    }
                     id="btn-reservasi-sekarang"
-                    title="Reservasi Sekarang"
+                    title={isOutOfStock ? 'Stok habis' : 'Reservasi Sekarang'}
                   >
-                    <span>Reservasi Sekarang</span>
+                    <span>{isOutOfStock ? 'Stok Habis' : 'Reservasi Sekarang'}</span>
                   </button>
                 </div>
               </article>

@@ -1,4 +1,7 @@
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
+import { api } from './api';
+import { extractApiErrorMessage } from './authService';
+import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import { clearCart } from './cartService';
 import { getStoredProducts, saveAllProducts } from './productService';
 
@@ -8,10 +11,11 @@ export interface CustomerOrderItem {
   status: CustomerOrderStatus;
   statusLabel: string;
   storeName: string;
-  storeRating: number;
-  storeReviewCount: number;
-  storeDistance: string;
-  storeTags: string[];
+  storeAddress?: string;
+  storeRating?: number;
+  storeReviewCount?: number;
+  storeDistance?: string;
+  storeTags?: string[];
   productName: string;
   productBoxCount: number;
   productDescription: string;
@@ -19,89 +23,35 @@ export interface CustomerOrderItem {
   pickupTime: string;
   originalPrice?: number;
   finalPrice: number;
-  category: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
+  category?: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
   orderData?: PaymentOrderData;
+  imageUrl?: string;
 }
 
 const CUSTOMER_ORDERS_STORAGE_KEY = 'rescuebyte_customer_orders';
 const MERCHANT_ORDERS_STORAGE_KEY = 'rescuebyte_merchant_orders';
 const ORDERS_UPDATE_EVENT = 'rescuebyte_orders_update';
 
-export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [
-  {
-    id: 'ord-1',
-    orderNumber: 'RB251026-00123',
-    status: 'menunggu-pembayaran',
-    statusLabel: 'Menunggu Pembayaran',
-    storeName: 'Toko Rejak',
-    storeRating: 4.8,
-    storeReviewCount: 320,
-    storeDistance: '1.2 km',
-    storeTags: ['Roti & Pastry', 'Halal'],
-    productName: 'Mystery Bakery Box Reguler',
-    productBoxCount: 1,
-    productDescription: 'Roti, pastry, dan kue pilihan',
-    pickupDate: '26 Oktober 2026',
-    pickupTime: '16.00 - 18.00 WIB',
-    finalPrice: 22000,
-    category: 'bakery',
-  },
-  {
-    id: 'ord-2',
-    orderNumber: 'RB251025-00891',
-    status: 'menunggu-konfirmasi',
-    statusLabel: 'Menunggu Konfirmasi',
-    storeName: 'GreenBowl',
-    storeRating: 4.7,
-    storeReviewCount: 210,
-    storeDistance: '2.5 km',
-    storeTags: ['Makanan Sehat', 'Halal'],
-    productName: 'Mystery Meal Box',
-    productBoxCount: 2,
-    productDescription: 'Nasi, lauk, dan sayur pilihan',
-    pickupDate: '25 Oktober 2026',
-    pickupTime: '12.00 - 13.00 WIB',
-    finalPrice: 52000,
-    category: 'meal',
-  },
-  {
-    id: 'ord-3',
-    orderNumber: 'RB251024-00567',
-    status: 'siap-diambil',
-    statusLabel: 'Siap Diambil',
-    storeName: 'SnackTime',
-    storeRating: 4.5,
-    storeReviewCount: 95,
-    storeDistance: '3.1 km',
-    storeTags: ['Camilan & Snack', 'Halal'],
-    productName: 'Mystery Snack Box',
-    productBoxCount: 1,
-    productDescription: 'Snack dan camilan pilihan',
-    pickupDate: '24 Oktober 2026',
-    pickupTime: '17.00 - 18.00 WIB',
-    originalPrice: 45000,
-    finalPrice: 20000,
-    category: 'snack',
-  },
-  {
-    id: 'ord-4',
-    orderNumber: 'RB251023-00455',
-    status: 'selesai',
-    statusLabel: 'Selesai',
-    storeName: 'SayurKita',
-    storeRating: 4.6,
-    storeReviewCount: 180,
-    storeDistance: '2.8 km',
-    storeTags: ['Sayur & Buah', 'Halal'],
-    productName: 'Mystery Fresh Box',
-    productBoxCount: 1,
-    productDescription: 'Sayur dan buah segar pilihan',
-    pickupDate: '23 Oktober 2026',
-    pickupTime: '15.00 - 16.00 WIB',
-    finalPrice: 22000,
-    category: 'fresh',
-  },
-];
+export const PLACEHOLDER_ORDER_IDS = new Set([
+  'ord-1',
+  'ord-2',
+  'ord-3',
+  'ord-4',
+  'ord-5',
+  'RB261029-65056-1',
+  'RB261029-65056-2',
+  'RB261029-81118-2',
+]);
+export const PLACEHOLDER_STORE_NAMES = new Set([
+  'TerasRasa Bakery',
+  'GreenBowl',
+  'SnackTime',
+  'SayurKita',
+  'DailyDeli',
+]);
+
+export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [];
+
 
 export function inferItemCategory(
   name: string,
@@ -168,23 +118,45 @@ export function getOrderStatusLabel(status: CustomerOrderStatus): string {
 }
 
 /**
- * Retrieve all customer orders from localStorage with fallback to initial mock data.
+ * Retrieve all customer orders from localStorage, filtering out legacy placeholder dummy orders.
  */
 export function getCustomerOrders(): CustomerOrderItem[] {
   try {
     const raw = localStorage.getItem(CUSTOMER_ORDERS_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(CUSTOMER_ORDERS_STORAGE_KEY, JSON.stringify(INITIAL_CUSTOMER_ORDERS));
-      return INITIAL_CUSTOMER_ORDERS;
+      return [];
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.filter((o: CustomerOrderItem) => o.status !== 'dibatalkan');
+    if (Array.isArray(parsed)) {
+      const realOrders = parsed
+        .filter(
+          (o) =>
+            o &&
+            o.id &&
+            !PLACEHOLDER_ORDER_IDS.has(o.id) &&
+            !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
+            !PLACEHOLDER_ORDER_IDS.has(o.orderNumber) &&
+            !o.orderNumber?.startsWith('RB25102')
+        )
+        .map((o) => {
+          const cleaned = { ...o };
+          delete cleaned.storeRating;
+          delete cleaned.storeReviewCount;
+          delete cleaned.storeDistance;
+          delete cleaned.storeTags;
+          if (cleaned.originalPrice && cleaned.originalPrice === cleaned.finalPrice + 20000) {
+            delete cleaned.originalPrice;
+          }
+          return cleaned;
+        });
+      localStorage.setItem(CUSTOMER_ORDERS_STORAGE_KEY, JSON.stringify(realOrders));
+      return realOrders;
+
     }
-    return INITIAL_CUSTOMER_ORDERS;
+    return [];
   } catch (err) {
     console.warn('Failed to read customer orders from localStorage:', err);
-    return INITIAL_CUSTOMER_ORDERS;
+    return [];
   }
 }
 
@@ -237,18 +209,13 @@ export function createCustomerOrder(
   );
 
   const newOrder: CustomerOrderItem = {
-    id: `ord-${Date.now()}`,
+    id: `ord-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
     orderNumber: paymentData.orderId,
     status: initialStatus,
     statusLabel: getOrderStatusLabel(initialStatus),
     storeName: paymentData.primaryStore.storeName || primaryItem?.storeName || 'Toko Mitra',
-    storeRating: paymentData.primaryStore.rating || 4.8,
-    storeReviewCount:
-      typeof paymentData.primaryStore.reviewCount === 'number'
-        ? paymentData.primaryStore.reviewCount
-        : 100,
-    storeDistance: primaryItem?.distanceText || '1.0 km',
-    storeTags: primaryItem?.categoryTags || ['✓ Halal', 'Sisa Stok Harian'],
+    storeAddress: paymentData.primaryStore.storeAddress,
+    imageUrl: primaryItem?.imageSrc,
     productName: productTitle,
     productBoxCount: paymentData.totalBoxes,
     productDescription: productDesc,
@@ -274,20 +241,33 @@ export function createCustomerOrder(
     const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
     const merchantOrders = rawMerchant ? JSON.parse(rawMerchant) : [];
     if (Array.isArray(merchantOrders)) {
+      const primaryItem = paymentData.items[0];
+      const origPrice = originalTotal > paymentData.grandTotal ? originalTotal : (primaryItem?.originalPrice || newOrder.finalPrice * 2);
+      const rescPrice = primaryItem?.rescuePrice || newOrder.finalPrice;
+      const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
+
       merchantOrders.unshift({
         id: newOrder.id,
         orderNumber: newOrder.orderNumber,
-        status: initialStatus === 'menunggu-konfirmasi' ? 'konfirmasi' : 'diproses',
+        status: 'diproses',
         storeName: newOrder.storeName,
         customerName: paymentData.customerInfo.name,
         customerPhone: paymentData.customerInfo.phone,
+        productName: newOrder.productName,
+        productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
         totalBoxes: newOrder.productBoxCount,
+        rescuePrice: rescPrice,
+        originalPrice: origPrice,
+        discountPercent: disc,
         grandTotal: newOrder.finalPrice,
         pickupDate: newOrder.pickupDate,
         pickupTime: newOrder.pickupTime,
         createdAt: new Date().toISOString(),
       });
       localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(merchantOrders));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: merchantOrders }));
+      }
     }
   } catch (err) {
     console.warn('Failed to sync to merchant orders:', err);
@@ -365,3 +345,467 @@ export function subscribeToOrders(
   };
 }
 
+
+/**
+ * Update the status of an existing customer order by orderNumber or id.
+ */
+export function updateCustomerOrderStatus(
+  orderIdOrNumber: string,
+  newStatus: CustomerOrderStatus
+): boolean {
+  try {
+    const cleanId = orderIdOrNumber.replace(/^#/, '').trim();
+    const orders = getCustomerOrders();
+    const target = orders.find(
+      (o) =>
+        o.id === orderIdOrNumber ||
+        o.orderNumber === orderIdOrNumber ||
+        o.orderNumber === cleanId ||
+        o.id === cleanId
+    );
+    if (!target) return false;
+
+    target.status = newStatus;
+    target.statusLabel = getOrderStatusLabel(newStatus);
+    if (target.orderData) {
+      target.orderData.status = newStatus;
+    }
+    saveCustomerOrders(orders);
+    return true;
+  } catch (err) {
+    console.warn('Failed to update customer order status:', err);
+    return false;
+  }
+}
+
+export interface CheckoutApiPayload {
+  store_id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  payment_method: 'ONLINE' | 'CASH_ON_PICKUP';
+  pickup_date: string;
+  pickup_time_start: string;
+  pickup_time_end: string;
+  items: Array<{
+    product_variant_id: string;
+    quantity: number;
+  }>;
+  notes?: string;
+}
+
+export interface CheckoutApiResponse {
+  order: {
+    id: string;
+    order_number: string;
+    store_id: string;
+    store_name: string;
+    store_address: string;
+    store_city: string;
+    store_district: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email: string;
+    pickup_date: string;
+    pickup_time: string;
+    total_original_price: number;
+    total_discount: number;
+    subtotal: number;
+    service_fee: number;
+    packaging_fee: number;
+    total_amount: number;
+    status: string;
+    status_label: string;
+    payment_method: string;
+    notes?: string;
+    created_at: string;
+    items: Array<{
+      id: string;
+      product_id: string;
+      product_variant_id: string;
+      product_name: string;
+      variant_name: string;
+      product_image_url: string;
+      normal_price: number;
+      rescue_price: number;
+      quantity: number;
+      subtotal: number;
+    }>;
+  };
+  snap_token?: string;
+  snap_redirect_url?: string;
+}
+
+export function mapBackendStatusToCustomerStatus(backendStatus: string): CustomerOrderStatus {
+  const s = (backendStatus || '').toUpperCase();
+  if (s.includes('PAYMENT') || s === 'WAITING_PAYMENT' || s === 'PENDING' || s === 'UNPAID' || s === 'NEW') return 'menunggu-pembayaran';
+  if (s.includes('CONFIRM') || s === 'WAITING_CONFIRMATION') return 'menunggu-konfirmasi';
+  if (s.includes('PROCESS') || s === 'PREPARING' || s === 'CONFIRMED') return 'diproses';
+  if (s.includes('READY') || s === 'READY_FOR_PICKUP') return 'siap-diambil';
+  if (s.includes('COMPLETE') || s === 'COMPLETED' || s === 'FINISHED') return 'selesai';
+  if (s.includes('CANCEL') || s === 'CANCELLED') return 'dibatalkan';
+  return 'menunggu-konfirmasi';
+}
+
+/**
+ * Call backend checkout endpoint POST /api/v1/orders/checkout
+ */
+export async function checkoutOrderApi(data: CheckoutApiPayload): Promise<CheckoutApiResponse | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token) return null;
+
+  try {
+    const response = await api.post('/api/v1/orders/checkout', data);
+    const payload = response.data?.payload;
+    if (payload && payload.order) {
+      return payload as CheckoutApiResponse;
+    }
+    return null;
+  } catch (err: any) {
+    const msg = extractApiErrorMessage(err, 'Gagal membuat pesanan di server.');
+    console.warn('checkoutOrderApi error:', msg);
+    throw new Error(msg);
+  }
+}
+
+/**
+ * Fetch customer orders from GET /api/v1/orders
+ */
+/**
+ * Fetch single order detail from GET /api/v1/orders/{id}
+ */
+export async function fetchOrderDetailApi(orderId: string): Promise<any | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token || !orderId) return null;
+
+  try {
+    const response = await api.get('/api/v1/orders/' + orderId);
+    const payload = response.data?.payload;
+    return payload?.order || payload || null;
+  } catch (err) {
+    console.warn('fetchOrderDetailApi failed:', err);
+    return null;
+  }
+}
+
+export async function fetchCustomerOrdersApi(params?: {
+  page?: number;
+  limit?: number;
+  tab?: string;
+  search?: string;
+}): Promise<CustomerOrderItem[] | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token) return null;
+
+  try {
+    const response = await api.get('/api/v1/orders', { params });
+    const payload = response.data?.payload;
+    if (payload && Array.isArray(payload.orders)) {
+      const mappedOrders: CustomerOrderItem[] = payload.orders
+        .filter((bo: any) => !PLACEHOLDER_ORDER_IDS.has(bo.id) && !PLACEHOLDER_ORDER_IDS.has(bo.order_number))
+        .map((bo: any) => {
+        const status = mapBackendStatusToCustomerStatus(bo.status);
+        return {
+          id: bo.id,
+          orderNumber: bo.order_number,
+          status,
+          statusLabel: bo.status_label || getOrderStatusLabel(status),
+          storeName: bo.store_name,
+          storeAddress: bo.store_address,
+          productName: bo.summary_item_name || 'Mystery Box',
+          productBoxCount: bo.total_items || 1,
+          productDescription: bo.summary_item_name || 'Paket Mystery Box',
+          imageUrl: bo.summary_image_url,
+          pickupDate: bo.pickup_schedule || bo.created_at,
+          pickupTime: bo.pickup_schedule && bo.pickup_schedule.includes('|') ? bo.pickup_schedule.split('|')[1]?.trim() : '15.00 - 18.00 WIB',
+          finalPrice: bo.total_amount,
+          category: 'meal',
+          orderData: {
+            orderId: bo.order_number,
+            items: [
+              {
+                id: bo.id,
+                name: bo.summary_item_name || 'Mystery Box',
+                storeName: bo.store_name,
+                storeAddress: bo.store_address,
+                rescuePrice: bo.total_amount,
+                quantity: bo.total_items || 1,
+                categoryTags: ['Penyelamatan Pangan'],
+                imageSrc: bo.summary_image_url || cardMonsieurSpoon,
+              },
+            ],
+            primaryStore: {
+              storeName: bo.store_name,
+              storeAddress: bo.store_address,
+            },
+            pickupDate: bo.pickup_schedule || 'Hari ini',
+            pickupTimeSlot: bo.pickup_schedule || '15.00 - 18.00 WIB',
+            customerInfo: {
+              name: 'Tester',
+              phone: '081234567890',
+              email: 'customer@rescuebite.com',
+            },
+            totalBoxes: bo.total_items || 1,
+            subtotal: bo.total_amount,
+            grandTotal: bo.total_amount,
+            status,
+            snapRedirectUrl: bo.payment?.snap_redirect_url || (bo as any).snap_redirect_url,
+            snapToken: bo.payment?.snap_token || (bo as any).snap_token,
+            createdAt: bo.created_at,
+          },
+        };
+      });
+
+      // Merge backend orders with active customer orders
+      const existing = getCustomerOrders();
+      const existingMap = new Map(existing.map((o) => [o.orderNumber, o]));
+      mappedOrders.forEach((bo) => {
+        const local = existingMap.get(bo.orderNumber);
+        if (local && local.status === 'menunggu-konfirmasi' && bo.status === 'menunggu-pembayaran') {
+          bo.status = 'menunggu-konfirmasi';
+          bo.statusLabel = getOrderStatusLabel('menunggu-konfirmasi');
+          if (bo.orderData) {
+            bo.orderData.status = 'menunggu-konfirmasi';
+          }
+        }
+      });
+      const merged = [...mappedOrders];
+      existing.forEach((localOrder) => {
+        if (
+          !PLACEHOLDER_ORDER_IDS.has(localOrder.id) &&
+          !PLACEHOLDER_ORDER_IDS.has(localOrder.orderNumber) &&
+          !PLACEHOLDER_STORE_NAMES.has(localOrder.storeName) &&
+          !localOrder.orderNumber?.startsWith('RB25102') &&
+          !merged.some((m) => m.orderNumber === localOrder.orderNumber || m.id === localOrder.id)
+        ) {
+          merged.push(localOrder);
+        }
+      });
+      saveCustomerOrders(merged);
+      return merged;
+    }
+    return null;
+  } catch (err) {
+    console.warn('fetchCustomerOrdersApi failed:', err);
+    return null;
+  }
+}
+
+
+export interface MerchantOrderItem {
+  id: string;
+  orderNumber: string;
+  status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal';
+  storeName: string;
+  customerName: string;
+  customerPhone?: string;
+  productName: string;
+  productImage?: string;
+  totalBoxes: number;
+  rescuePrice: number;
+  originalPrice: number;
+  discountPercent: number;
+  grandTotal: number;
+  pickupDate: string;
+  pickupTime: string;
+  createdAt: string;
+}
+
+export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [];
+
+export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
+    let orders: MerchantOrderItem[] = raw ? JSON.parse(raw) : [];
+
+    // Filter out dummy/placeholder orders completely
+    orders = orders.filter(
+      (o) =>
+        o &&
+        !o.id?.startsWith('m-ord-') &&
+        !o.orderNumber?.startsWith('RB261030-1011') &&
+        o.orderNumber !== 'RB261029-00125'
+    );
+
+    // Auto-sync real customer orders into merchant queue
+    const customerOrders = getCustomerOrders();
+
+    customerOrders.forEach((co) => {
+      // Exclude placeholder mock customer orders
+      if (
+        PLACEHOLDER_ORDER_IDS.has(co.id) ||
+        PLACEHOLDER_STORE_NAMES.has(co.storeName) ||
+        co.orderNumber?.startsWith('RB25102') ||
+        co.orderNumber?.startsWith('RB261030-1011')
+      ) {
+        return;
+      }
+
+      if (!orders.some((m) => m.orderNumber === co.orderNumber || m.id === co.id)) {
+        const primaryItem = co.orderData?.items?.[0];
+        const origPrice = primaryItem?.originalPrice || co.originalPrice || co.finalPrice * 2;
+        const rescPrice = primaryItem?.rescuePrice || co.finalPrice;
+        const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
+
+        let status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal' = 'diproses';
+        if (co.status === 'siap-diambil' || co.status === 'diproses') {
+          status = 'konfirmasi';
+        } else if (co.status === 'selesai') {
+          status = 'selesai';
+        } else if (co.status === 'dibatalkan') {
+          status = 'batal';
+        }
+
+        orders.unshift({
+          id: co.id,
+          orderNumber: co.orderNumber,
+          status,
+          storeName: co.storeName,
+          customerName: co.orderData?.customerInfo?.name || 'Pelanggan RescueByte',
+          customerPhone: co.orderData?.customerInfo?.phone,
+          productName: co.productName,
+          productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
+          totalBoxes: co.productBoxCount,
+          rescuePrice: rescPrice,
+          originalPrice: origPrice,
+          discountPercent: disc,
+          grandTotal: co.finalPrice,
+          pickupDate: co.pickupDate,
+          pickupTime: co.pickupTime,
+          createdAt: co.orderData?.createdAt || new Date().toISOString(),
+        });
+      }
+    });
+
+    localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+
+    if (currentStoreName && currentStoreName.trim()) {
+      const targetStore = currentStoreName.toLowerCase().trim();
+      const filtered = orders.filter((o) => {
+        const sName = (o.storeName || '').toLowerCase().trim();
+        return sName === targetStore || sName.includes(targetStore) || targetStore.includes(sName);
+      });
+      return filtered;
+    }
+
+    return orders;
+  } catch (err) {
+    console.warn('Failed to get merchant orders:', err);
+    return [];
+  }
+}
+
+export function saveMerchantOrders(orders: MerchantOrderItem[]): void {
+  try {
+    localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: orders }));
+    }
+  } catch (err) {
+    console.warn('Failed to save merchant orders:', err);
+  }
+}
+
+export async function confirmMerchantOrder(orderId: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'konfirmasi';
+    saveMerchantOrders(orders);
+  }
+
+  // Also update customer order state
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'diproses';
+    cTarget.statusLabel = 'Dikonfirmasi Toko';
+    saveCustomerOrders(customerOrders);
+  }
+
+  // If order id is UUID, sync with backend
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch(`/api/v1/orders/${target.id}/status`, { status: 'IN_PROCESS' });
+    } catch (err) {
+      console.warn('Failed to update status in backend:', err);
+    }
+  }
+
+  return true;
+}
+
+export async function completeMerchantOrder(orderId: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'selesai';
+    saveMerchantOrders(orders);
+  }
+
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'selesai';
+    cTarget.statusLabel = 'Selesai';
+    saveCustomerOrders(customerOrders);
+  }
+
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch(`/api/v1/orders/${target.id}/status`, { status: 'COMPLETED' });
+    } catch (err) {
+      console.warn('Failed to complete status in backend:', err);
+    }
+  }
+
+  return true;
+}
+
+export function subscribeToMerchantOrders(callback: (orders: MerchantOrderItem[]) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleUpdate = () => {
+    callback(getMerchantOrders());
+  };
+
+  window.addEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+  window.addEventListener('storage', handleUpdate);
+
+  return () => {
+    window.removeEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+    window.removeEventListener('storage', handleUpdate);
+  };
+}
+
+export async function cancelMerchantOrder(orderId: string, reason?: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'batal';
+    saveMerchantOrders(orders);
+  }
+
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'dibatalkan';
+    cTarget.statusLabel = 'Dibatalkan Toko';
+    saveCustomerOrders(customerOrders);
+  }
+
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch('/api/v1/orders/' + target.id + '/status', {
+        status: 'CANCELLED',
+        cancellation_reason: reason || 'Dibatalkan oleh pihak toko mitra',
+      });
+    } catch (err) {
+      console.warn('Failed to cancel status in backend:', err);
+    }
+  }
+
+  return true;
+}

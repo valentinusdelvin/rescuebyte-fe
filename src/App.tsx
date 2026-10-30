@@ -647,6 +647,7 @@ export function App() {
             setPaymentOrderData(orderData);
             handleNavigate('view-customer-order-detail', 'Detail Pesanan');
           }}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-orders' ? (
@@ -769,6 +770,7 @@ export function App() {
             <main className="flex-1 p-[32px_36px] max-md:p-[24px_20px] bg-surface-app overflow-y-auto min-w-0" id="main-content">
               {activeView === 'view-beranda' && (
                 <Dashboard
+                  storeName={storeName}
                   onShowToast={showToast}
                   onNavigateToOrders={(tabId) => handleNavigate('view-riwayat', 'Riwayat Pesanan', tabId)}
                 />
@@ -784,6 +786,7 @@ export function App() {
               {activeView === 'view-riwayat' && (
                 <OrderHistory
                   key={orderTab}
+                  storeName={storeName}
                   initialTab={orderTab}
                   onShowToast={showToast}
                 />
