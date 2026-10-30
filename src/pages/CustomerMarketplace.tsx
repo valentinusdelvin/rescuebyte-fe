@@ -24,6 +24,7 @@ import {
   PublicProductItem,
   getStoredProducts,
 } from '../services/productService';
+import { formatDistanceKm } from '../services/locationService';
 
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 
@@ -101,8 +102,7 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
     pickup = '08.00 – 23.59 WIB';
   }
 
-  const dist = typeof p.distance_km === 'number' ? p.distance_km : 2.1;
-  const distanceText = `${dist.toFixed(1)} km`;
+  const distanceText = formatDistanceKm(p.distance_km);
 
   const realProductName = p.name || 'Surprise Box';
   let realStoreName = p.store_name || '';
@@ -193,7 +193,7 @@ function getInitialMarketplaceProducts(): MarketplaceBoxItem[] {
         categoryType: 'heavy',
         city: 'Malang',
         remainingBoxesText: `Sisa ${stockDisplay} Box`,
-        distanceText: '2.1 km',
+        distanceText: '0.0 km',
         discountPercent: discount,
         originalPrice: lp.normalPrice,
         rescuePrice: lp.rescuePrice,
@@ -392,7 +392,7 @@ export function CustomerMarketplace({
               categoryType: 'heavy',
               city: 'Malang',
               remainingBoxesText: `Sisa ${stockDisplay} Box`,
-              distanceText: '2.1 km',
+              distanceText: '0.0 km',
               discountPercent: discount,
               originalPrice: lp.normalPrice,
               rescuePrice: lp.rescuePrice,

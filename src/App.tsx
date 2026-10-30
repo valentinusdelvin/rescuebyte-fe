@@ -203,6 +203,21 @@ export function App() {
     }
   });
 
+  useEffect(() => {
+    const handleStoreChange = () => {
+      const saved = localStorage.getItem('rescuebyte_store_name');
+      if (saved) {
+        setStoreName(saved);
+      }
+    };
+    window.addEventListener('rescuebyte_store_updated', handleStoreChange);
+    window.addEventListener('storage', handleStoreChange);
+    return () => {
+      window.removeEventListener('rescuebyte_store_updated', handleStoreChange);
+      window.removeEventListener('storage', handleStoreChange);
+    };
+  }, []);
+
   // Toast state
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastType, setToastType] = useState<ToastType>('success');

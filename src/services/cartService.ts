@@ -159,7 +159,7 @@ export async function fetchBackendCart(): Promise<StoreCartGroup[] | null> {
         storeAddress: fullAddress,
         rating: 4.9,
         reviewCount: 42,
-        distanceText: store.distance_km ? `${store.distance_km} km` : '1.0 km',
+        distanceText: typeof store.distance_km === 'number' ? `${store.distance_km.toFixed(1)} km` : '0.0 km',
         pickupTime: formattedPickup,
         availablePickupTimes: [formattedPickup],
         items: (store.items || []).map((it: any) => ({
@@ -259,7 +259,7 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
       storeAvatar: avatar,
       rating: box.rating ?? 4.8,
       reviewCount: typeof box.reviewCount === 'number' ? box.reviewCount : Number(box.reviewCount) || 100,
-      distanceText: box.distanceText || '1.0 km',
+      distanceText: box.distanceText || '0.0 km',
       pickupTime: box.pickupTime || '15.00 - 18.00 WIB',
       availablePickupTimes: [box.pickupTime || '15.00 - 18.00 WIB', '18.00 - 20.00 WIB'],
       items: [

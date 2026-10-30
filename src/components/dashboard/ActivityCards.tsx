@@ -46,8 +46,8 @@ export function ActivityCards({ storeName, onSelectActivity }: ActivityCardsProp
       } catch {
         // fallback
       }
-    });
-  }, []);
+    }, storeName);
+  }, [storeName]);
 
   const perluKonfirmasiCount = orders.filter((o) => o.status === 'perlu-konfirmasi' || (o.status as string) === 'konfirmasi').length;
   const diprosesCount = orders.filter((o) => o.status === 'diproses').length;

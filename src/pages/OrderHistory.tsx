@@ -6,6 +6,7 @@ import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import {
   MerchantOrderItem,
   getMerchantOrders,
+  fetchMerchantOrdersApi,
   confirmMerchantOrder,
   processMerchantOrder,
   completeMerchantOrder,
@@ -37,7 +38,8 @@ function formatRupiah(amount: number): string {
  * Includes interactive confirmation modal matching reference design.
  * Fully compliant with design.md and antislop guidelines.
  */
-export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onShowToast }: OrderHistoryProps) {
+export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-konfirmasi', onShowToast }: OrderHistoryProps) {
+  const currentStore = propStoreName || (typeof window !== 'undefined' ? localStorage.getItem('rescuebyte_store_name') || undefined : undefined);
   const validTabIds = ORDER_TABS.map((t) => t.id);
   const resolvedInitialTab = validTabIds.includes(initialTab)
     ? initialTab
@@ -50,24 +52,37 @@ export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onSho
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('semua');
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
-  const [orders, setOrders] = useState<MerchantOrderItem[]>(() => getMerchantOrders(storeName));
+  const [orders, setOrders] = useState<MerchantOrderItem[]>(() => getMerchantOrders(currentStore));
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Modal State for order confirmation popup
   const [selectedModalOrder, setSelectedModalOrder] = useState<MerchantOrderItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [prevStoreName, setPrevStoreName] = useState(storeName);
-  if (storeName !== prevStoreName) {
-    setPrevStoreName(storeName);
-    setOrders(getMerchantOrders(storeName));
-  }
-
   useEffect(() => {
-    return subscribeToMerchantOrders((latest) => {
-      setOrders(latest);
+    setOrders(getMerchantOrders(currentStore));
+    fetchMerchantOrdersApi(currentStore).then((apiOrders) => {
+      if (apiOrders && apiOrders.length > 0) {
+        setOrders(getMerchantOrders(currentStore));
+      }
     });
-  }, []);
+
+    const unsubscribe = subscribeToMerchantOrders((latest) => {
+      setOrders(latest);
+    }, currentStore);
+
+    const handleStoreChange = () => {
+      const updated = localStorage.getItem('rescuebyte_store_name') || undefined;
+      setOrders(getMerchantOrders(updated));
+    };
+
+    window.addEventListener('rescuebyte_store_updated', handleStoreChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('rescuebyte_store_updated', handleStoreChange);
+    };
+  }, [currentStore, activeTab]);
 
   const handleTabChange = (tabId: OrderStatusTab) => {
     setActiveTab(tabId);
@@ -124,7 +139,7 @@ export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onSho
     setProcessingId(order.id);
     try {
       await confirmMerchantOrder(order.id);
-      setOrders(getMerchantOrders(storeName));
+      setOrders(getMerchantOrders(currentStore));
       setIsModalOpen(false);
       setSelectedModalOrder(null);
       if (onShowToast) {
@@ -142,7 +157,7 @@ export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onSho
     setProcessingId(order.id);
     try {
       await cancelMerchantOrder(order.id);
-      setOrders(getMerchantOrders(storeName));
+      setOrders(getMerchantOrders(currentStore));
       setIsModalOpen(false);
       setSelectedModalOrder(null);
       if (onShowToast) {
@@ -160,7 +175,7 @@ export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onSho
     setProcessingId(order.id);
     try {
       await processMerchantOrder(order.id);
-      setOrders(getMerchantOrders(storeName));
+      setOrders(getMerchantOrders(currentStore));
       if (onShowToast) {
         onShowToast(`Pesanan ${order.orderNumber} sudah diproses & siap diambil!`, 'success');
       }
@@ -176,7 +191,7 @@ export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onSho
     setProcessingId(order.id);
     try {
       await completeMerchantOrder(order.id);
-      setOrders(getMerchantOrders(storeName));
+      setOrders(getMerchantOrders(currentStore));
       if (onShowToast) {
         onShowToast(`Pesanan ${order.orderNumber} telah diserahkan & selesai!`, 'success');
       }

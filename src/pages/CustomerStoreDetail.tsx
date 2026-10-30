@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   MapPin,
   Clock,
+  Calendar,
   ShoppingBag,
   Star,
   Mail,
@@ -17,6 +18,7 @@ import { CustomerMysteryBox } from '../types';
 import { getCurrentUser } from '../services/authService';
 import { getAllStores } from '../services/storeService';
 import { getPublicProducts, getStoredProducts } from '../services/productService';
+import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../services/locationService';
 
 import heroBannerImg from '../assets/customer/hero-full-banner.jpg';
 import cardPastry from '../assets/customer/card-monsieur-spoon.jpg';
@@ -274,6 +276,14 @@ export function CustomerStoreDetail({
             return sorted.map((d) => DAY_NAMES[d] || '').filter(Boolean).join(', ');
           })();
 
+          const userCoords = getUserCoordinates();
+          const storeLat = Number(matchedBackendStore.latitude);
+          const storeLng = Number(matchedBackendStore.longitude);
+          const dynamicDistance =
+            !isNaN(storeLat) && !isNaN(storeLng) && (storeLat !== 0 || storeLng !== 0)
+              ? formatDistanceKm(calculateDistanceKm(userCoords.lat, userCoords.lng, storeLat, storeLng))
+              : '0.0 km';
+
           setStoreData({
             id: matchedBackendStore.id,
             name: matchedBackendStore.name,
@@ -281,12 +291,12 @@ export function CustomerStoreDetail({
             status: displayStatus,
             rating: 4.9,
             reviewCount: 48,
-            distance: '1.2 km',
+            distance: dynamicDistance,
             area: matchedBackendStore.district
               ? `${matchedBackendStore.district}, ${matchedBackendStore.city || 'Malang'}`
               : matchedBackendStore.city || 'Kota Malang',
             address: fullAddress || matchedBackendStore.address || '-',
-            operationalHours: `${daysText}\n${opStart} - ${opEnd} WIB`,
+            operationalHours: daysText || 'Senin - Minggu',
             pickupHours: `${opStart} - ${opEnd} WIB`,
             email: matchedBackendStore.email || '-',
             phone: matchedBackendStore.whatsapp_number || '-',
@@ -297,13 +307,24 @@ export function CustomerStoreDetail({
         }
 
         const targetStoreId = matchedBackendStore?.id || storeId;
+        const userCoords = getUserCoordinates();
 
-        // 2. Fetch live products from backend GET /api/v1/products?store_id=... & localStorage
+        // 2. Fetch live products from backend GET /api/v1/products?store_id=... with coordinates & localStorage
         const [publicProducts, localStored] = await Promise.all([
-          getPublicProducts(targetStoreId ? { store_id: targetStoreId } : undefined).catch(() => []),
+          getPublicProducts({
+            store_id: targetStoreId || undefined,
+            latitude: userCoords.lat,
+            longitude: userCoords.lng,
+          }).catch(() => []),
           Promise.resolve(getStoredProducts()),
         ]);
         if (isCancelled) return;
+
+        // If backend returned distance_km on products, use backend-calculated distance
+        if (publicProducts[0] && typeof publicProducts[0].distance_km === 'number') {
+          const apiDistance = formatDistanceKm(publicProducts[0].distance_km);
+          setStoreData((prev) => ({ ...prev, distance: apiDistance }));
+        }
 
         const liveItems: StoreProductItem[] = [];
 
@@ -537,12 +558,12 @@ export function CustomerStoreDetail({
 
                 <div className="flex items-start gap-2.5 min-w-0">
                   <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 mt-0.5">
-                    <Clock className="w-4 h-4 text-emerald-700" />
+                    <Calendar className="w-4 h-4 text-emerald-700" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Jam Operasional</p>
-                    <p className="text-xs font-semibold text-slate-800 mt-0.5 whitespace-pre-line">
-                      {storeData.operationalHours}
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Hari Operasional</p>
+                    <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                      {storeData.operationalHours || 'Senin - Minggu'}
                     </p>
                   </div>
                 </div>

@@ -19,11 +19,14 @@ import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import {
   createCustomerOrder,
   checkoutOrderApi,
+  updateCustomerOrderStatus,
   mapBackendStatusToCustomerStatus,
 } from '../services/orderService';
 import { getProductVariantId } from '../services/cartService';
 import { getCurrentUser } from '../services/authService';
+import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../services/locationService';
 import { getAllStores, StoreProfileData } from '../services/storeService';
+import { MidtransPaymentModal } from '../components/payment/MidtransPaymentModal';
 
 export interface CustomerCheckoutProps {
   payload?: CheckoutPayload | null;
@@ -83,6 +86,33 @@ export function CustomerCheckout({
   const [customerPhone, setCustomerPhone] = useState(() => currentUser?.phone_number || '');
   const [customerEmail] = useState(() => currentUser?.email || '');
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [midtransModalData, setMidtransModalData] = useState<PaymentOrderData | null>(null);
+
+  const handleCheckoutPaymentSuccess = () => {
+    if (!midtransModalData) return;
+    const paidOrder = { ...midtransModalData, status: 'menunggu-konfirmasi' as CustomerOrderStatus };
+    updateCustomerOrderStatus(midtransModalData.orderId, 'menunggu-konfirmasi');
+    setMidtransModalData(null);
+    if (onShowToast) onShowToast('Pembayaran berhasil diverifikasi! Menuju detail pesanan...', 'success');
+    setTimeout(() => {
+      if (onNavigateOrderDetail) {
+        onNavigateOrderDetail(paidOrder);
+      } else if (onNavigatePayment) {
+        onNavigatePayment(paidOrder);
+      }
+    }, 400);
+  };
+
+  const handleCloseMidtransModal = () => {
+    if (!midtransModalData) return;
+    const pendingOrder = { ...midtransModalData };
+    setMidtransModalData(null);
+    if (onNavigateOrderDetail) {
+      onNavigateOrderDetail(pendingOrder);
+    } else if (onNavigatePayment) {
+      onNavigatePayment(pendingOrder);
+    }
+  };
 
   // Items State directly from checkout payload
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>(() => {
@@ -191,7 +221,15 @@ export function CustomerCheckout({
           operationalHours,
           rating: item.rating || 4.9,
           reviewCount: item.reviewCount || 42,
-          distanceText: item.distanceText || '0.9 km',
+          distanceText: (() => {
+            if (item.distanceText) return item.distanceText;
+            if (matchedStore?.latitude && matchedStore?.longitude) {
+              const uCoords = getUserCoordinates();
+              const distKm = calculateDistanceKm(uCoords.lat, uCoords.lng, Number(matchedStore.latitude), Number(matchedStore.longitude));
+              return formatDistanceKm(distKm);
+            }
+            return '0.0 km';
+          })(),
           items: [item],
         });
       } else {
@@ -497,23 +535,25 @@ const handlePayNow = async () => {
         };
 
         createCustomerOrder(orderData, finalStatus);
-        if (paymentMethod === 'online' && snapRedirectUrl) {
-          try {
-            window.open(snapRedirectUrl, '_blank');
-          } catch (e) {
-            console.warn('Popup blocked, available on detail page:', e);
-          }
-        }
-        if (onShowToast) onShowToast(paymentMethod === 'online' ? 'Pesanan berhasil dibuat! Membuka halaman pembayaran...' : 'Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+        setIsSubmitting(false);
 
-        setTimeout(() => {
-          setIsSubmitting(false);
-          if (onNavigateOrderDetail) {
-            onNavigateOrderDetail(orderData);
-          } else if (onNavigatePayment) {
-            onNavigatePayment(orderData);
+        if (paymentMethod === 'online') {
+          if (snapRedirectUrl) {
+            try {
+              window.open(snapRedirectUrl, '_blank');
+            } catch { }
           }
-        }, 300);
+          setMidtransModalData(orderData);
+        } else {
+          if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
+          setTimeout(() => {
+            if (onNavigateOrderDetail) {
+              onNavigateOrderDetail(orderData);
+            } else if (onNavigatePayment) {
+              onNavigatePayment(orderData);
+            }
+          }, 300);
+        }
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -709,7 +749,7 @@ const handlePayNow = async () => {
                             <span className="text-amber-500 font-bold">★ {item.rating || group.rating || 4.9}</span>
                             <span className="text-gray-400">({item.reviewCount || group.reviewCount || 42} ulasan)</span>
                             <span className="text-gray-300">•</span>
-                            <span>{item.distanceText || group.distanceText || '0.9 km'}</span>
+                            <span>{item.distanceText || group.distanceText || '0.0 km'}</span>
                           </div>
                         </div>
                       </div>
@@ -1088,6 +1128,20 @@ const handlePayNow = async () => {
           </div>
         </main>
       </div>
+
+      {/* Midtrans Sandbox Payment Modal */}
+      {midtransModalData && (
+        <MidtransPaymentModal
+          isOpen={Boolean(midtransModalData)}
+          orderId={midtransModalData.orderId}
+          storeName={midtransModalData.primaryStore.storeName}
+          totalAmount={midtransModalData.grandTotal}
+          snapToken={midtransModalData.snapToken}
+          snapRedirectUrl={midtransModalData.snapRedirectUrl}
+          onSuccess={handleCheckoutPaymentSuccess}
+          onClose={handleCloseMidtransModal}
+        />
+      )}
 
       {/* 3. Footer */}
       <CustomerFooter

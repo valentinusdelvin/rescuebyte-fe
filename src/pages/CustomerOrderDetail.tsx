@@ -14,13 +14,24 @@ import {
   Calendar,
   Tag,
   ClipboardList,
+  CreditCard,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
-import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus, updateCustomerOrderStatus, createCustomerOrder, subscribeToCustomerOrders } from '../services/orderService';
+import {
+  fetchOrderDetailApi,
+  mapBackendStatusToCustomerStatus,
+  updateCustomerOrderStatus,
+  createCustomerOrder,
+  subscribeToCustomerOrders,
+  getCustomerOrders,
+} from '../services/orderService';
 import { getPublicProducts, PublicProductItem } from '../services/productService';
+import { getUserCoordinates } from '../services/locationService';
 import { getCurrentUser } from '../services/authService';
+import { MidtransPaymentModal } from '../components/payment/MidtransPaymentModal';
+import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 
 import saladStopCard from '../assets/customer/card-saladstop.jpg';
 
@@ -56,37 +67,82 @@ export function CustomerOrderDetail({
 
   useEffect(() => {
     let isMounted = true;
-    getPublicProducts()
+    const coords = getUserCoordinates();
+    getPublicProducts({ latitude: coords.lat, longitude: coords.lng })
       .then((items) => {
         if (!isMounted || !items) return;
         setRecommendations(items.slice(0, 3));
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       isMounted = false;
     };
   }, []);
 
-  
+
+  const [isMidtransModalOpen, setIsMidtransModalOpen] = useState(false);
+
+  const effectiveOrderData = useMemo<PaymentOrderData | null>(() => {
+    if (orderData) return orderData;
+    const all = getCustomerOrders();
+    if (all.length > 0) {
+      const latest = all[0];
+      if (latest.orderData) return latest.orderData;
+      return {
+        orderId: latest.orderNumber,
+        items: [
+          {
+            id: latest.id,
+            name: latest.productName,
+            storeName: latest.storeName,
+            storeAddress: latest.storeAddress,
+            rescuePrice: latest.finalPrice,
+            quantity: latest.productBoxCount,
+            categoryTags: ['Penyelamatan Pangan'],
+            imageSrc: latest.imageUrl || cardMonsieurSpoon,
+          },
+        ],
+        primaryStore: {
+          storeName: latest.storeName,
+          storeAddress: latest.storeAddress,
+        },
+        pickupDate: latest.pickupDate,
+        pickupTimeSlot: latest.pickupTime,
+        customerInfo: {
+          name: getCurrentUser()?.name || 'Pelanggan RescueByte',
+          phone: getCurrentUser()?.phone_number || '081234567890',
+          email: getCurrentUser()?.email || 'customer@rescuebyte.com',
+        },
+        totalBoxes: latest.productBoxCount,
+        subtotal: latest.finalPrice,
+        grandTotal: latest.finalPrice,
+        status: latest.status,
+        createdAt: latest.pickupDate || new Date().toISOString(),
+      } as PaymentOrderData;
+    }
+    return null;
+  }, [orderData]);
+
   const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
-    const s = orderData?.status;
+    const s = effectiveOrderData?.status || orderData?.status;
     if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
       return s;
     }
-    if (orderData?.snapRedirectUrl || orderData?.snapToken) {
+    if (effectiveOrderData?.snapRedirectUrl || effectiveOrderData?.snapToken) {
       return 'menunggu-pembayaran';
     }
     return 'menunggu-konfirmasi';
   });
 
   useEffect(() => {
-    if (orderData?.status) {
-      const s = orderData.status;
+    const data = effectiveOrderData || orderData;
+    if (data?.status) {
+      const s = data.status;
       if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
         setCurrentStatus(s);
       }
     }
-    const orderIdToFetch = (orderData as any)?.id || (orderData?.items?.[0] as any)?.id;
+    const orderIdToFetch = (data as any)?.id || (data?.items?.[0] as any)?.id;
     if (orderIdToFetch && typeof orderIdToFetch === 'string' && !orderIdToFetch.startsWith('ord-') && !orderIdToFetch.startsWith('item-')) {
       fetchOrderDetailApi(orderIdToFetch).then((payload) => {
         if (payload) {
@@ -94,27 +150,27 @@ export function CustomerOrderDetail({
             setCurrentStatus(mapBackendStatusToCustomerStatus(payload.status));
           }
           const redirectUrl = payload.payment?.snap_redirect_url || payload.snap_redirect_url;
-          if (redirectUrl && orderData && !orderData.snapRedirectUrl) {
-            orderData.snapRedirectUrl = redirectUrl;
+          if (redirectUrl && data && !data.snapRedirectUrl) {
+            data.snapRedirectUrl = redirectUrl;
           }
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
-  }, [orderData]);
+  }, [effectiveOrderData, orderData]);
 
-  const orderId = orderData?.orderId || 'RB251023-00455';
+  const orderId = effectiveOrderData?.orderId || orderData?.orderId || 'RB261030-001';
 
   // Active step in tracking timeline (1 to 5) determined purely by live database status
-    useEffect(() => {
+  useEffect(() => {
     return subscribeToCustomerOrders((orders) => {
-      const targetId = orderId || orderData?.orderId;
+      const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
       if (!targetId) return;
       const found = orders.find((o) => o.orderNumber === targetId || o.id === targetId);
       if (found?.status) {
         setCurrentStatus(found.status);
       }
     });
-  }, [orderId, orderData?.orderId]);
+  }, [orderId, effectiveOrderData?.orderId, orderData?.orderId]);
 
   const activeStep = useMemo(() => {
     if (currentStatus === 'menunggu-pembayaran') return 1;
@@ -126,19 +182,36 @@ export function CustomerOrderDetail({
     return 2;
   }, [currentStatus]);
 
-
-
-
+  const handlePaymentSuccess = () => {
+    setIsMidtransModalOpen(false);
+    setCurrentStatus('menunggu-konfirmasi');
+    const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
+    const targetData = effectiveOrderData || orderData;
+    if (targetId) {
+      const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
+      if (!updated && targetData) {
+        createCustomerOrder(
+          {
+            ...targetData,
+            status: 'menunggu-konfirmasi',
+          },
+          'menunggu-konfirmasi'
+        );
+      }
+    }
+    onShowToast?.('Pembayaran berhasil diverifikasi! Menunggu konfirmasi toko mitra.', 'success');
+  };
 
   useEffect(() => {
-    if (currentStatus === 'menunggu-konfirmasi' && orderData) {
-      const targetId = orderId || orderData.orderId;
-      if (targetId) {
+    if (currentStatus === 'menunggu-konfirmasi') {
+      const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
+      const targetData = effectiveOrderData || orderData;
+      if (targetId && targetData) {
         const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
         if (!updated) {
           createCustomerOrder(
             {
-              ...orderData,
+              ...targetData,
               status: 'menunggu-konfirmasi',
             },
             'menunggu-konfirmasi'
@@ -146,37 +219,39 @@ export function CustomerOrderDetail({
         }
       }
     }
-  }, [currentStatus, orderId, orderData]);
-  const items = orderData?.items && orderData.items.length > 0 ? orderData.items : null;
+  }, [currentStatus, orderId, effectiveOrderData, orderData]);
+
+  const activeData = effectiveOrderData || orderData;
+  const items = activeData?.items && activeData.items.length > 0 ? activeData.items : null;
   const primaryItem = items?.[0];
 
   const itemName = primaryItem?.name || 'Paket Makanan Surplus';
-  const storeName = orderData?.primaryStore?.storeName || primaryItem?.storeName || 'Toko Mitra';
+  const storeName = activeData?.primaryStore?.storeName || primaryItem?.storeName || 'Toko Mitra';
   const storeAddress =
-    orderData?.primaryStore?.storeAddress ||
-    (orderData?.primaryStore?.storeName ? `${orderData.primaryStore.storeName}, Kota Malang` : 'Kota Malang, Jawa Timur');
-  const storeRating = orderData?.primaryStore?.rating || 5.0;
-  const storeReviewCount = orderData?.primaryStore?.reviewCount || 0;
-  const storeAvatar = orderData?.primaryStore?.storeAvatar || storeName.slice(0, 2).toUpperCase();
+    activeData?.primaryStore?.storeAddress ||
+    (activeData?.primaryStore?.storeName ? `${activeData.primaryStore.storeName}, Kota Malang` : 'Kota Malang, Jawa Timur');
+  const storeRating = activeData?.primaryStore?.rating || 5.0;
+  const storeReviewCount = activeData?.primaryStore?.reviewCount || 0;
+  const storeAvatar = activeData?.primaryStore?.storeAvatar || storeName.slice(0, 2).toUpperCase();
 
-  const recipientName = orderData?.customerInfo?.name || getCurrentUser()?.name || 'Pengguna';
-  const totalBoxes = orderData?.totalBoxes || primaryItem?.quantity || 1;
+  const recipientName = activeData?.customerInfo?.name || getCurrentUser()?.name || 'Pengguna';
+  const totalBoxes = activeData?.totalBoxes || primaryItem?.quantity || 1;
 
   const originalUnitPrice = primaryItem?.originalPrice || 40000;
   const rescueUnitPrice = primaryItem?.rescuePrice || 20000;
   const discountPercent = primaryItem?.discountPercent || 50;
 
   const totalOriginalPrice =
-    orderData?.discountTotal != null && orderData?.subtotal != null
-      ? orderData.subtotal + orderData.discountTotal
+    activeData?.discountTotal != null && activeData?.subtotal != null
+      ? activeData.subtotal + activeData.discountTotal
       : originalUnitPrice * totalBoxes;
-  const totalRescuePrice = orderData?.subtotal ?? rescueUnitPrice * totalBoxes;
-  const discountAmount = orderData?.discountTotal ?? Math.max(0, totalOriginalPrice - totalRescuePrice);
+  const totalRescuePrice = activeData?.subtotal ?? rescueUnitPrice * totalBoxes;
+  const discountAmount = activeData?.discountTotal ?? Math.max(0, totalOriginalPrice - totalRescuePrice);
 
-  const serviceFee = orderData?.serviceFee ?? 2000;
-  const grandTotal = orderData?.grandTotal ?? (totalRescuePrice + serviceFee);
+  const serviceFee = activeData?.serviceFee ?? 2000;
+  const grandTotal = activeData?.grandTotal ?? (totalRescuePrice + serviceFee);
 
-  const orderCreatedAt = orderData?.createdAt;
+  const orderCreatedAt = activeData?.createdAt;
 
   const orderTimeFormatted = useMemo(() => {
     if (orderCreatedAt) {
@@ -185,7 +260,7 @@ export function CustomerOrderDetail({
         const day = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
         return `${day} • ${time} WIB`;
-      } catch {}
+      } catch { }
     }
     return '';
   }, [orderCreatedAt]);
@@ -223,7 +298,7 @@ export function CustomerOrderDetail({
       try {
         const d = new Date(orderCreatedAt);
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-      } catch {}
+      } catch { }
     }
     return '23 Okt 2026, 15:42 WIB';
   }, [orderCreatedAt]);
@@ -233,7 +308,7 @@ export function CustomerOrderDetail({
       try {
         const d = new Date(orderCreatedAt);
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-      } catch {}
+      } catch { }
     }
     return '23 Oktober 2026, 15:42 WIB';
   }, [orderCreatedAt]);
@@ -253,7 +328,7 @@ export function CustomerOrderDetail({
             </>
           ),
           timeLabel: 'Batas Pembayaran',
-          timeValue: '23 Okt 2026, 14:25 WIB',
+          timeValue: '15 Menit Setelah Pesanan Dibuat',
           timelineNote: 'Pesanan telah dibuat dan menunggu penyelesaian pembayaran dari pelanggan.',
         };
       case 2:
@@ -269,7 +344,7 @@ export function CustomerOrderDetail({
             </>
           ),
           timeLabel: 'Waktu Pembayaran',
-          timeValue: '23 Okt 2026, 14:12 WIB',
+          timeValue: orderTimeFormatted || 'Hari ini, Pembayaran Terverifikasi',
           timelineNote: `Pembayaran terverifikasi dan pesanan sedang diteruskan ke ${storeName}.`,
         };
       case 3:
@@ -284,7 +359,7 @@ export function CustomerOrderDetail({
             </>
           ),
           timeLabel: 'Waktu Konfirmasi',
-          timeValue: '23 Okt 2026, 14:15 WIB',
+          timeValue: orderTimeFormatted || 'Hari ini, Telah Dikonfirmasi',
           timelineNote: 'Mitra toko telah mengonfirmasi pesanan dan sedang menyiapkannya.',
         };
       case 4:
@@ -321,7 +396,7 @@ export function CustomerOrderDetail({
           timelineNote: `Seluruh 5 tahap telah selesai dan diverifikasi oleh sistem loket ${storeName}.`,
         };
     }
-  }, [activeStep, storeName, grandTotal, totalBoxes, completionTimestamp]);
+  }, [activeStep, storeName, grandTotal, totalBoxes, completionTimestamp, orderTimeFormatted]);
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -460,11 +535,10 @@ export function CustomerOrderDetail({
                     className="relative z-10 flex flex-col items-center text-center select-none p-1 pointer-events-none"
                   >
                     <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-2 transition-all select-none ${
-                        isCompleted
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-2 transition-all select-none ${isCompleted
                           ? 'bg-[#16a34a] text-white shadow-xs'
                           : 'bg-[#1e2a22] text-transparent'
-                      }`}
+                        }`}
                     >
                       {isCompleted && (
                         <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
@@ -510,9 +584,8 @@ export function CustomerOrderDetail({
                       title={`Beri ${star} bintang`}
                     >
                       <Star
-                        className={`w-5 h-5 ${
-                          star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                        }`}
+                        className={`w-5 h-5 ${star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
+                          }`}
                         aria-hidden="true"
                       />
                     </button>
@@ -737,52 +810,37 @@ export function CustomerOrderDetail({
                     </div>
                   </div>
 
-                  {orderData?.snapRedirectUrl && (
-                    <div className="mt-3">
+                  {activeStep === 1 ? (
+                    <div className="mt-3 flex flex-col gap-2">
                       <button
                         type="button"
                         onClick={() => {
-                          window.open(orderData.snapRedirectUrl, '_blank');
+                          if (activeData?.snapRedirectUrl) {
+                            try {
+                              window.open(activeData.snapRedirectUrl, '_blank');
+                            } catch { }
+                          }
+                          setIsMidtransModalOpen(true);
                         }}
-                        className="w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-[#002b49] hover:bg-[#001f35] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
                       >
-                        <ExternalLink className="w-4 h-4" />
-                        <span>{activeStep === 1 ? 'Bayar Sekarang via Midtrans' : 'Buka Link Pembayaran Midtrans'}</span>
+                        <CreditCard className="w-4 h-4 text-[#00b4d8]" />
+                        <span>Bayar Sekarang via Midtrans</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePaymentSuccess}
+                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer text-center"
+                      >
+                        Simulasikan Pembayaran Berhasil
                       </button>
                     </div>
-                  )}
-
-                  {activeStep === 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (orderData?.snapRedirectUrl) {
-                          window.open(orderData.snapRedirectUrl, '_blank');
-                        }
-                        setCurrentStatus('menunggu-konfirmasi');
-                        const targetId = orderId || orderData?.orderId;
-                        if (targetId) {
-                          const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
-                          if (!updated && orderData) {
-                            createCustomerOrder(
-                              {
-                                ...orderData,
-                                status: 'menunggu-konfirmasi',
-                              },
-                              'menunggu-konfirmasi'
-                            );
-                          }
-                        }
-                        onShowToast?.('Pembayaran berhasil diverifikasi! Menunggu konfirmasi toko.', 'success');
-                      }}
-                      className={
-                        orderData?.snapRedirectUrl
-                          ? 'mt-2 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer text-center'
-                          : 'mt-3 w-full py-3.5 bg-[#3c6a00] hover:bg-[#325800] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99]'
-                      }
-                    >
-                      {orderData?.snapRedirectUrl ? 'Konfirmasi Sudah Bayar' : 'Bayar Sekarang'}
-                    </button>
+                  ) : (
+                    <div className="mt-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60">
+                      <Check className="w-4 h-4 text-emerald-600 stroke-3" />
+                      <span>Pembayaran Midtrans Terverifikasi (Lunas)</span>
+                    </div>
                   )}
                 </div>
               </section>
@@ -822,7 +880,7 @@ export function CustomerOrderDetail({
                             {rec.name}
                           </p>
                           <p className="text-xs text-slate-500 truncate mt-0.5">
-                            {rec.store_name || 'Toko Mitra'} • {typeof rec.distance_km === 'number' ? `${rec.distance_km.toFixed(1)} km` : 'Mitra RescueByte'}
+                            {rec.store_name || 'Toko Mitra'} • {(rec as any).city || 'Malang'}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -890,9 +948,8 @@ export function CustomerOrderDetail({
                       className="text-amber-400 hover:scale-110 transition p-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       <Star
-                        className={`w-7 h-7 ${
-                          star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                        }`}
+                        className={`w-7 h-7 ${star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
+                          }`}
                         aria-hidden="true"
                       />
                     </button>
@@ -944,6 +1001,18 @@ export function CustomerOrderDetail({
           </div>
         </div>
       )}
+
+      {/* Midtrans Payment Simulator Modal */}
+      <MidtransPaymentModal
+        isOpen={isMidtransModalOpen}
+        orderId={orderId}
+        storeName={storeName}
+        totalAmount={grandTotal}
+        snapToken={activeData?.snapToken}
+        snapRedirectUrl={activeData?.snapRedirectUrl}
+        onSuccess={handlePaymentSuccess}
+        onClose={() => setIsMidtransModalOpen(false)}
+      />
 
       {/* Customer Footer */}
       <CustomerFooter onNavigateSeller={onNavigateSeller} />

@@ -7,6 +7,7 @@ import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../types';
 import { getCurrentUser } from '../services/authService';
 import { getPublicProducts, PublicProductItem } from '../services/productService';
+import { formatDistanceKm } from '../services/locationService';
 
 import heroFullBanner from '../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
 import aboutUsTopImg from '../assets/customer/about-us-top.svg';
@@ -48,7 +49,7 @@ function mapPublicProductToCustomerBox(p: PublicProductItem, isRadius = false): 
     pickup = 'Ambil: 19:00 – 21:00 WIB';
   }
 
-  const dist = typeof p.distance_km === 'number' ? `${p.distance_km.toFixed(1)} km` : '1.2 km';
+  const dist = formatDistanceKm(p.distance_km);
   const realProductName = p.name || 'Surprise Box';
   let realStoreName = p.store_name || '';
   if (!realStoreName) {
