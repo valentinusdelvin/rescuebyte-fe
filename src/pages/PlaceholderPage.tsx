@@ -1,3 +1,5 @@
+import { Info } from 'lucide-react';
+
 export interface PlaceholderPageProps {
   title?: string;
   onBackToBeranda?: () => void;
@@ -16,11 +18,7 @@ export function PlaceholderPage({
     <section className="flex flex-col items-center justify-center min-h-[500px] py-12 px-4 animate-[fadeIn_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]" id="view-placeholder" aria-labelledby="placeholder-title">
       <div className="bg-white border border-gray-200/80 rounded-2xl p-8 sm:p-12 text-center max-w-md w-full shadow-xs flex flex-col items-center">
         <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200/80 flex items-center justify-center text-[#15803d] mb-5" id="placeholder-icon">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
+          <Info className="w-9 h-9" aria-hidden="true" />
         </div>
         <h2 id="placeholder-title" className="text-xl font-bold text-gray-900 mb-2">{title}</h2>
         <p id="placeholder-desc" className="text-sm text-gray-500 mb-6 leading-relaxed">

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { FormattedDescription } from '../common/FormattedDescription';
 
 export interface ProductDescriptionModalProps {
   isOpen: boolean;
@@ -96,7 +98,7 @@ export function ProductDescriptionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
+    <div className="fixed inset-0 z-1050 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-desc-title">
       <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-200 overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
@@ -110,10 +112,7 @@ export function ProductDescriptionModal({
             aria-label="Tutup Editor"
             onClick={onClose}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -192,11 +191,11 @@ export function ProductDescriptionModal({
         </div>
 
         {/* Editor Body */}
-        <div className="p-4 flex-1 min-h-[220px]">
+        <div className="p-4 flex-1 min-h-55">
           {activeTab === 'editor' ? (
             <textarea
               ref={textareaRef}
-              className="w-full h-full min-h-[200px] p-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors resize-none leading-relaxed"
+              className="w-full h-full min-h-50 p-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-black transition-colors resize-none leading-relaxed"
               placeholder="Tuliskan deskripsi produk, variasi menu, atau catatan pengambilan di sini..."
               value={text}
               maxLength={1200}
@@ -204,17 +203,13 @@ export function ProductDescriptionModal({
               rows={8}
             />
           ) : (
-            <div className="w-full min-h-[200px] p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800 space-y-2">
+            <div className="w-full min-h-50 p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-800">
               {text.trim() ? (
-                <div>
-                  {text.split('\n').map((line, idx) => (
-                    <p key={idx} className={line.trim() ? 'mb-1 leading-relaxed' : 'h-2'}>
-                      {line}
-                    </p>
-                  ))}
-                </div>
+                <FormattedDescription content={text} />
               ) : (
-                <div className="text-gray-400 text-xs italic text-center py-10">Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.</div>
+                <div className="text-gray-400 text-xs italic text-center py-10">
+                  Belum ada deskripsi yang ditulis. Kembali ke tab Editor untuk menulis.
+                </div>
               )}
             </div>
           )}
@@ -234,7 +229,7 @@ export function ProductDescriptionModal({
             </button>
             <button
               type="button"
-              className="px-5 py-2.5 rounded-xl bg-[#15803d] hover:bg-[#166534] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
               onClick={handleSave}
             >
               Terapkan Deskripsi

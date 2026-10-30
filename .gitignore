@@ -15,6 +15,7 @@ dist-ssr
 
 # Environment files
 .env
+
 .env.local
 .env.*.local
 
@@ -29,3 +30,7 @@ dist-ssr
 *.sln
 *.sw?
 scratch/
+
+# Design
+lomba43.fig
+/lomba43/

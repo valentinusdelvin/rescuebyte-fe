@@ -654,3 +654,52 @@ export async function reverseGeocodeOSM(lat: number, lng: number): Promise<Rever
 
   return null;
 }
+
+/**
+ * Great-circle distance using Haversine formula (matches backend distance_km calculation).
+ */
+export function calculateDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+/**
+ * Format distance in km cleanly matching backend style (e.g. '0.2 km', '2.1 km').
+ */
+export function formatDistanceKm(distanceKm?: number | null): string {
+  if (typeof distanceKm !== 'number' || isNaN(distanceKm) || distanceKm < 0) {
+    return '0.0 km';
+  }
+  return `${distanceKm.toFixed(1)} km`;
+}
+
+/**
+ * Retrieve saved user coordinates from localStorage or fallback to default coordinates.
+ */
+export function getUserCoordinates(): { lat: number; lng: number } {
+  try {
+    const saved = localStorage.getItem('rescuebyte_user_coords');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed?.lat === 'number' && typeof parsed?.lng === 'number') {
+        return parsed;
+      }
+    }
+  } catch {}
+  return { lat: -7.9526, lng: 112.6146 };
+}
+

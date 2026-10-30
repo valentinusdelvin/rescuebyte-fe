@@ -84,7 +84,7 @@ export function Toast({ message, isVisible, type, onClose }: ToastProps) {
             damping: 32,
             mass: 0.8,
           }}
-          className={`fixed bottom-24 right-4 sm:right-6 z-[9990] flex items-center gap-3.5 px-4 py-3.5 bg-[#0d1611]/95 text-white border ${containerBorder} rounded-2xl shadow-2xl backdrop-blur-md max-w-sm w-auto pointer-events-auto`}
+          className={`fixed bottom-24 right-4 sm:right-6 z-9990 flex items-center gap-3.5 px-4 py-3.5 bg-[#0d1611]/95 text-white border ${containerBorder} rounded-2xl shadow-2xl backdrop-blur-md max-w-sm w-auto pointer-events-auto`}
         >
           {/* Accent Badge with Icon (X for errors, Check for success) */}
           <div

@@ -39,6 +39,15 @@ export type ActiveViewId =
   | 'view-customer-marketplace'
   | 'view-customer-product-detail'
   | 'view-customer-cart'
+  | 'view-customer-checkout'
+
+  | 'view-customer-store'
+  | 'view-customer-orders'
+  | 'view-customer-order-detail'
+  | 'view-customer-profile'
+  | 'view-auth-role-selection'
+  | 'view-customer-auth'
+  | 'view-seller-auth'
   | 'view-beranda'
   | 'view-profil'
   | 'view-riwayat'
@@ -47,9 +56,80 @@ export type ActiveViewId =
   | 'view-ulasan'
   | string;
 
+export interface CheckoutItem {
+  id: string;
+  name: string;
+  storeId?: string;
+  storeName: string;
+  storeAvatar?: string;
+  storeAddress?: string;
+  rating?: number;
+  reviewCount?: number | string;
+  distanceText?: string;
+  categoryTags: string[];
+  originalPrice: number;
+  rescuePrice: number;
+  discountPercent: number;
+  quantity: number;
+  imageSrc?: string;
+  pickupTime?: string;
+  productId?: string;
+  variantId?: string;
+}
+
+export interface CheckoutPayload {
+  source: 'direct' | 'cart';
+  items: CheckoutItem[];
+}
+
+export type CustomerOrderStatus =
+  | 'menunggu-pembayaran'
+  | 'menunggu-konfirmasi'
+  | 'diproses'
+  | 'siap-diambil'
+  | 'selesai'
+  | 'dibatalkan';
+
+export interface PaymentOrderData {
+  orderId: string;
+  backendOrderId?: string;
+  items: CheckoutItem[];
+  primaryStore: {
+    storeId?: string;
+    storeName: string;
+    storeAvatar?: string;
+    storeAddress?: string;
+    rating?: number;
+    reviewCount?: number | string;
+  };
+  pickupDate: string;
+  pickupTimeSlot: string;
+  customerInfo: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  totalBoxes: number;
+  subtotal: number;
+  discountTotal: number;
+  serviceFee: number;
+  grandTotal: number;
+  source?: 'direct' | 'cart';
+  status?: CustomerOrderStatus | string;
+  snapToken?: string;
+  snapRedirectUrl?: string;
+  paymentConfirmedByGateway?: boolean;
+  createdAt?: string;
+}
+
 export interface CustomerMysteryBox {
   id: string;
+  name?: string;
+  stock?: number;
+  variantId?: string;
+  storeId?: string;
   storeName: string;
+  storeAvatar?: string;
   category: string;
   categoryBadge?: string;
   portionText?: string;
@@ -64,11 +144,14 @@ export interface CustomerMysteryBox {
   rating?: number;
   reviewCount?: number | string;
   imageSrc: string;
+  imageUrls?: string[];
   isRadiusItem?: boolean;
 }
 
 export interface CartItem {
   id: string;
+  productId?: string;
+  variantId?: string;
   name: string;
   categoryTags: string[];
   originalPrice: number;
@@ -76,12 +159,15 @@ export interface CartItem {
   discountPercent: number;
   quantity: number;
   imageSrc?: string;
+  currentStock?: number;
+  isAvailable?: boolean;
 }
 
 export interface StoreCartGroup {
   storeId: string;
   storeName: string;
   storeAvatar: string;
+  storeAddress?: string;
   rating: number;
   reviewCount: number | string;
   distanceText: string;
@@ -107,17 +193,20 @@ export interface ProductItem {
   rescuePrice: number;
   stock: number;
   maxStock: number;
-  status: 'aktif' | 'segera_habis' | 'habis';
+  status: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
+  isActive?: boolean;
   imageUrl?: string;
   createdAt: string;
 }
 
-export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis';
+export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
 
 export type OrderStatusTab =
+  | 'perlu-konfirmasi'
   | 'diproses'
-  | 'konfirmasi'
+  | 'siap-diambil'
   | 'selesai'
+  | 'konfirmasi'
   | 'habis'
   | 'kendala'
   | 'batal';
@@ -147,9 +236,13 @@ export type PerformanceFilterKey = 'bulan-ini' | 'minggu-ini' | 'tahun-ini';
 export interface UserPayload {
   avatar_url: string;
   created_at: string;
+  date_of_birth?: string;
   email: string;
+  gender?: number;
+  gender_name?: string;
   id: string;
   name: string;
+  phone_number?: string;
   provider: 'LOCAL' | 'GOOGLE' | string;
   role: string;
   role_id: number;

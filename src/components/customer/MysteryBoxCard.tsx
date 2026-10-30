@@ -1,9 +1,11 @@
 import { CustomerMysteryBox } from '../../types';
+import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 
 export interface MysteryBoxCardProps {
   item: CustomerMysteryBox;
   variant?: 'popular' | 'radius';
   onOrderClick: (item: CustomerMysteryBox) => void;
+  onStoreClick?: (storeName: string) => void;
 }
 
 /**
@@ -11,6 +13,18 @@ export interface MysteryBoxCardProps {
  */
 function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * Strip emoji and icons from product name, returning clean text only
+ */
+function cleanProductName(raw?: string): string {
+  if (!raw) return 'SURPRISE BOX';
+  return raw
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, '')
+    .replace(/^[^\w\s]+/, '')
+    .trim()
+    .toUpperCase();
 }
 
 /**
@@ -58,12 +72,14 @@ export function MysteryBoxCard({
   item,
   variant = 'popular',
   onOrderClick,
+  onStoreClick,
 }: MysteryBoxCardProps) {
   const isPopular = variant === 'popular';
 
   // Check stock quantity from text (e.g. "Sisa 4 Box" -> 4, "Sisa 2 Box!" -> 2, "Hanya 1 Box Tersisa!" -> 1)
   const stockMatch = item.remainingBoxesText.match(/\d+/);
   const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
+  const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
   const isAboveTwo = stockCount > 2;
   const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
   const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
@@ -80,12 +96,28 @@ export function MysteryBoxCard({
       id={`box-card-${item.id}`}
     >
       {/* 1. Card Visual Header with Badges & Store Name Overlay */}
-      <div className="relative w-full h-52 sm:h-56 overflow-hidden bg-[#24201c]">
+      <div
+        onClick={() => onOrderClick(item)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOrderClick(item);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Lihat detail produk ${item.storeName}`}
+        title={`Lihat detail ${cleanProductName(item.categoryBadge || item.category)}`}
+        className="relative w-full h-52 sm:h-56 overflow-hidden bg-[#24201c] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2a24] focus-visible:ring-offset-2"
+      >
         <img
           src={item.imageSrc}
           alt={`Mystery Box ${item.storeName}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = cardMonsieurSpoon;
+          }}
         />
 
         {/* Top Badges Overlay (Stock, Distance / Rating, Discount) */}
@@ -93,8 +125,27 @@ export function MysteryBoxCard({
           <div className="flex items-center gap-1.5">
             {isPopular ? (
               <>
-                {/* Stock Badge: Merah Muda jika > 2, Merah Tebal jika <= 2 */}
-                {isAboveTwo ? (
+                {/* Stock Badge: Abu-abu jika Habis, Merah Muda jika > 2, Merah Tebal jika <= 2 */}
+                {isOutOfStock ? (
+                  <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-500 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <polyline points="12 6 12 12 15 14" />
+                    </svg>
+                    <span>Sisa 0 Box</span>
+                  </span>
+                ) : isAboveTwo ? (
                   <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
                     <svg
                       width="12"
@@ -164,7 +215,7 @@ export function MysteryBoxCard({
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-[#3c6a00] shrink-0"
+                  className="text-brand-green shrink-0"
                   aria-hidden="true"
                 >
                   <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
@@ -177,30 +228,41 @@ export function MysteryBoxCard({
 
           {/* Discount Ratio Pill (Green for Both Popular and Radius) */}
           <div>
-            <span className="px-2.5 py-1 text-[11px] font-black shadow-xs rounded-full bg-[#3c6a00] text-white">
+            <span className="px-2.5 py-1 text-[11px] font-black shadow-xs rounded-full bg-brand-green text-white">
               -{displayDiscount}%
             </span>
           </div>
         </div>
 
         {/* Bottom Dark Gradient with Overlay Information */}
-        <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
-          {isPopular ? (
-            /* Popular Variant: Category Badge */
-            <div className="flex items-center gap-1.5 text-[#a3e635] text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-xs">
-              {item.categoryBadge || item.category}
-            </div>
-          ) : (
+        <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
+          {!isPopular && (
             /* Radius Variant: Star Rating & Review Count */
-            <div className="flex items-center gap-1 text-white/90 text-xs font-semibold drop-shadow-xs">
+            <div className="flex items-center gap-1 text-white/90 text-xs font-semibold drop-shadow-xs mb-0.5">
               <span className="text-amber-400">★</span>
               <span>{item.rating?.toFixed(1) || '4.9'}</span>
               <span className="text-white/70 font-normal">({item.reviewCount || '1.2k'} ulasan)</span>
             </div>
           )}
 
+          {/* Product Name (Text Only, No Emotes) above Store Name */}
+          <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">
+            {cleanProductName(item.categoryBadge || item.category)}
+          </span>
+
           {/* Store Name */}
-          <h3 className="text-white font-bold text-base sm:text-lg font-display leading-tight truncate mt-0.5 drop-shadow-sm">
+          <h3
+            onClick={(e) => {
+              if (onStoreClick) {
+                e.stopPropagation();
+                onStoreClick(item.storeName);
+              }
+            }}
+            className={`text-white font-bold text-base sm:text-lg font-display leading-tight truncate drop-shadow-sm ${
+              onStoreClick ? 'pointer-events-auto cursor-pointer hover:underline hover:text-[#b7e472]' : ''
+            }`}
+            title={`Lihat halaman toko ${item.storeName}`}
+          >
             {item.storeName}
           </h3>
         </div>
@@ -209,79 +271,9 @@ export function MysteryBoxCard({
       {/* 2. Card Content Body */}
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         {/* Description */}
-        <p className="text-xs sm:text-[13px] text-[#434844] leading-relaxed line-clamp-2">
+        <p className="text-xs sm:text-[13px] text-[#434844] leading-relaxed line-clamp-2 mb-3.5">
           {item.description}
         </p>
-
-        {/* Badges / Dietary & Certification Tags (Vibrant Lime Green Halal / Plant-Based) */}
-        <div className="flex items-center gap-2 flex-wrap my-3.5">
-          {item.tags.map((tag, idx) => {
-            const lowerTag = tag.toLowerCase();
-            const isHalal = lowerTag.includes('halal') || idx === 0 && !lowerTag.includes('porsi');
-            const isPlantBased = lowerTag.includes('plant') || lowerTag.includes('organik');
-
-            if (isHalal) {
-              return (
-                <span
-                  key={`${tag}-${idx}`}
-                  className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="shrink-0"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                  <span>{tag.replace(/^[✓\s]+/, '')}</span>
-                </span>
-              );
-            }
-
-            if (isPlantBased) {
-              return (
-                <span
-                  key={`${tag}-${idx}`}
-                  className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#9AE630] text-[#143805] font-semibold flex items-center gap-1 shadow-2xs"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="shrink-0"
-                    aria-hidden="true"
-                  >
-                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-                  </svg>
-                  <span>{tag}</span>
-                </span>
-              );
-            }
-
-            return (
-              <span
-                key={`${tag}-${idx}`}
-                className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs bg-[#F1F3F5] text-[#434844] font-medium"
-              >
-                {tag}
-              </span>
-            );
-          })}
-        </div>
 
         {/* Pickup Schedule: Gray Box with Stopwatch matching Mystery Box Populer */}
         {renderPickupSchedule(item.pickupTime)}
@@ -298,32 +290,28 @@ export function MysteryBoxCard({
             </span>
           </div>
 
-          {/* Action Button: 'Ambil Sekarang →' for Popular, 'Pesan Box' for Radius */}
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
-            id={`btn-order-${item.id}`}
-            onClick={() => onOrderClick(item)}
-            aria-label={`${isPopular ? 'Ambil' : 'Pesan'} Mystery Box dari ${item.storeName}`}
-          >
-            <span>{isPopular ? 'Ambil Sekarang' : 'Pesan Box'}</span>
-            {isPopular && (
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            )}
-          </button>
+          {/* Action Button: 'Pesan Sekarang' or 'Habis' */}
+          {isOutOfStock ? (
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-gray-200 text-gray-400 text-xs sm:text-sm font-bold shadow-xs cursor-not-allowed shrink-0 select-none"
+              id={`btn-order-${item.id}`}
+              aria-label={`Mystery Box dari ${item.storeName} telah habis`}
+            >
+              <span>Habis</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+              id={`btn-order-${item.id}`}
+              onClick={() => onOrderClick(item)}
+              aria-label={`Pesan Mystery Box dari ${item.storeName}`}
+            >
+              <span>Pesan Sekarang</span>
+            </button>
+          )}
         </div>
       </div>
     </article>

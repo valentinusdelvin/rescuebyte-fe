@@ -5,6 +5,65 @@ import { api } from './api';
 const AUTH_STORAGE_KEY = 'rescuebyte_auth';
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const ROLES_BY_EMAIL_KEY = 'rescuebyte_roles_by_email';
+
+/**
+ * Retrieve registered role associated with a specific email
+ */
+export function getRoleForEmail(email: string): 'seller' | 'customer' | null {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const raw = localStorage.getItem(ROLES_BY_EMAIL_KEY);
+    const map: Record<string, 'seller' | 'customer'> = raw ? JSON.parse(raw) : {};
+    if (map[cleanEmail]) {
+      return map[cleanEmail];
+    }
+  } catch {
+    // ignore parse error
+  }
+
+  // Fallback heuristic based on store email keywords
+  const storeKeywords = [
+    'toko',
+    'seller',
+    'mitra',
+    'resto',
+    'restaurant',
+    'restoran',
+    'warung',
+    'kedai',
+    'merchant',
+    'store',
+    'cafe',
+    'kafe',
+    'dapur',
+    'bakery',
+    'outlet',
+    'kuliner',
+  ];
+  if (storeKeywords.some((k) => cleanEmail.includes(k)) || cleanEmail === 'tokoreza@gmail.com') {
+    return 'seller';
+  }
+
+  return null;
+}
+
+/**
+ * Register or update the role associated with an email
+ */
+export function setRoleForEmail(email: string, role: 'seller' | 'customer'): void {
+  if (!email) return;
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const raw = localStorage.getItem(ROLES_BY_EMAIL_KEY);
+    const map: Record<string, 'seller' | 'customer'> = raw ? JSON.parse(raw) : {};
+    map[cleanEmail] = role;
+    localStorage.setItem(ROLES_BY_EMAIL_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
 
 type AuthListener = (user: UserPayload | null) => void;
 const authListeners: Set<AuthListener> = new Set();
@@ -35,11 +94,15 @@ export function extractApiErrorMessage(err: unknown, defaultMessage: string): st
           message?: string;
           error?: string;
           error_code?: string;
+          details?: unknown;
         };
       };
       message?: string;
     };
 
+    if (typeof data.payload?.error?.details === 'string' && data.payload.error.details) {
+      return data.payload.error.details;
+    }
     if (data.payload?.error?.message) {
       return data.payload.error.message;
     }
@@ -63,20 +126,37 @@ export function extractApiErrorMessage(err: unknown, defaultMessage: string): st
  */
 export function saveAuth(payload: AuthPayload): void {
   try {
-    // Provide default avatar fallback if backend returns null
+    const rawAvatar = payload.user.avatar_url;
+    const normalizedAvatar = rawAvatar && !rawAvatar.includes('dicebear.com') ? rawAvatar : '';
+
     const normalizedPayload: AuthPayload = {
       ...payload,
       user: {
         ...payload.user,
-        avatar_url:
-          payload.user.avatar_url ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(payload.user.name)}`,
+        avatar_url: normalizedAvatar,
       },
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizedPayload));
     localStorage.setItem(ACCESS_TOKEN_KEY, normalizedPayload.access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, normalizedPayload.refresh_token);
+
+    const roleId = Number(normalizedPayload.user.role_id);
+    const roleStr = typeof normalizedPayload.user.role === 'string' ? normalizedPayload.user.role.toLowerCase() : '';
+    const isSeller = roleId === 3 || roleStr.includes('seller') || roleStr.includes('mitra') || roleStr.includes('merchant');
+
+    if (isSeller) {
+      localStorage.setItem('rescuebyte_user_role', 'seller');
+    } else {
+      localStorage.setItem('rescuebyte_user_role', 'customer');
+      localStorage.removeItem('rescuebyte_store_logo');
+      localStorage.removeItem('rescuebyte_store_name');
+      localStorage.removeItem('rescuebyte_store_email');
+      localStorage.removeItem('rescuebyte_store_address');
+      localStorage.removeItem('rescuebyte_store_coordinates');
+      window.dispatchEvent(new Event('rescuebyte_store_updated'));
+    }
+
     notifyAuthListeners(normalizedPayload.user);
   } catch (err) {
     console.error('Failed to save auth to localStorage:', err);
@@ -101,7 +181,11 @@ export function getAuth(): AuthPayload | null {
  */
 export function getCurrentUser(): UserPayload | null {
   const auth = getAuth();
-  return auth ? auth.user : null;
+  if (!auth?.user) return null;
+  if (auth.user.avatar_url && auth.user.avatar_url.includes('dicebear.com')) {
+    return { ...auth.user, avatar_url: '' };
+  }
+  return auth.user;
 }
 
 /**
@@ -126,6 +210,13 @@ export function clearAuth(): void {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem('rescuebyte_user_role');
+    localStorage.removeItem('rescuebyte_store_logo');
+    localStorage.removeItem('rescuebyte_store_name');
+    localStorage.removeItem('rescuebyte_store_email');
+    localStorage.removeItem('rescuebyte_store_address');
+    localStorage.removeItem('rescuebyte_store_coordinates');
+    window.dispatchEvent(new Event('rescuebyte_store_updated'));
     notifyAuthListeners(null);
   } catch (err) {
     console.error('Failed to clear auth from localStorage:', err);
@@ -139,13 +230,19 @@ export async function registerUser(data: {
   name: string;
   email: string;
   password?: string;
+  role_id?: number;
 }): Promise<AuthPayload> {
   try {
-    const response = await api.post('/api/v1/auth/register', {
+    const requestBody: Record<string, unknown> = {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       password: data.password,
-    });
+    };
+    if (typeof data.role_id === 'number') {
+      requestBody.role_id = data.role_id;
+    }
+
+    const response = await api.post('/api/v1/auth/register', requestBody);
 
     if (response.data?.payload) {
       saveAuth(response.data.payload);
@@ -207,8 +304,9 @@ export async function logoutUser(): Promise<void> {
 export async function fetchCurrentUser(): Promise<UserPayload | null> {
   try {
     const response = await api.get('/api/v1/auth/me');
-    if (response.data?.payload?.user) {
-      const user = response.data.payload.user;
+    const payload = response.data?.payload;
+    const user = (payload?.user || (payload?.id || payload?.email ? payload : null)) as UserPayload | null;
+    if (user) {
       const currentAuth = getAuth();
       if (currentAuth) {
         saveAuth({
