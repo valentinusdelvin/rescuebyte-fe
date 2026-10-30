@@ -52,6 +52,10 @@ export interface ProductResponse {
   updated_at?: string;
 }
 
+export type DeleteProductResult =
+  | { type: 'deleted' }
+  | { type: 'deactivated'; product: ProductResponse };
+
 export interface GetMerchantProductsParams {
   page?: number;
   limit?: number;
@@ -149,6 +153,28 @@ export function deleteProduct(id: string): ProductItem[] {
   const products = getStoredProducts();
   const updated = products.filter((item) => item.id !== id);
   saveAllProducts(updated);
+
+  try {
+    const rawMarketplaceProducts = localStorage.getItem('rescuebyte_cached_marketplace_products');
+    if (rawMarketplaceProducts) {
+      const marketplaceProducts: unknown = JSON.parse(rawMarketplaceProducts);
+      if (Array.isArray(marketplaceProducts)) {
+        const remainingMarketplaceProducts = marketplaceProducts.filter(
+          (item) => item && typeof item === 'object' && 'id' in item && item.id !== id
+        );
+        localStorage.setItem(
+          'rescuebyte_cached_marketplace_products',
+          JSON.stringify(remainingMarketplaceProducts)
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to remove product from marketplace cache:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('rescuebyte_product_updated', { detail: { id, deleted: true } }));
+  }
   return updated;
 }
 
@@ -256,8 +282,8 @@ export async function createProduct(payload: CreateProductPayload): Promise<Prod
 }
 
 /**
- * Fetch merchant's product list from backend via GET /api/v1/products/me/list.
- * Falls back gracefully to public products and local cached products if network fails.
+ * Fetch the merchant's product list from GET /api/v1/products/me/list.
+ * A successful empty response is authoritative; cached data is used only when the request fails.
  */
 export async function getMerchantProducts(params?: GetMerchantProductsParams): Promise<ProductItem[]> {
   try {
@@ -272,53 +298,15 @@ export async function getMerchantProducts(params?: GetMerchantProductsParams): P
       ? rawList.items
       : null;
 
-    if (list && list.length > 0) {
+    if (list) {
       const mapped = list.map(mapBackendProductToItem);
       saveAllProducts(mapped);
       return mapped;
     }
-  } catch (err) {
-    console.warn('getMerchantProducts failed, attempting fallback to public products:', err);
-  }
 
-  // Fallback: fetch public products belonging to merchant store
-  try {
-    const storeName = (() => {
-      try {
-        return (
-          localStorage.getItem('rescuebyte_store_name') ||
-          localStorage.getItem('rescuebyte_selected_store') ||
-          ''
-        );
-      } catch {
-        return '';
-      }
-    })();
-    const cleanStore = storeName.trim().toLowerCase();
-    const publicItems = await getPublicProducts();
-    const matched = publicItems.filter((p) => {
-      const pStore = (p.store_name || '').toLowerCase();
-      if (!cleanStore) return true;
-      return (
-        pStore === cleanStore ||
-        pStore.includes(cleanStore) ||
-        cleanStore.includes(pStore)
-      );
-    });
-    if (matched.length > 0) {
-      const mapped = matched.map(mapBackendProductToItem);
-      const existing = getStoredProducts();
-      const merged = [...mapped];
-      existing.forEach((ep) => {
-        if (!merged.some((m) => m.id === ep.id || m.name.toLowerCase() === ep.name.toLowerCase())) {
-          merged.push(ep);
-        }
-      });
-      saveAllProducts(merged);
-      return merged;
-    }
+    throw new Error('Format daftar produk dari server tidak dikenali.');
   } catch (err) {
-    console.warn('Fallback to public products failed:', err);
+    console.warn('getMerchantProducts failed, using the local merchant cache:', err);
   }
 
   return getStoredProducts();
@@ -332,7 +320,15 @@ export async function toggleProductStatusApi(productId: string, isActive: boolea
     const response = await api.patch(`/api/v1/products/${productId}/status`, {
       is_active: isActive,
     });
-    const updated = response.data?.payload as ProductResponse;
+    const updated = response.data?.payload as ProductResponse | undefined;
+    if (
+      !updated ||
+      updated.id !== productId ||
+      typeof updated.is_active !== 'boolean' ||
+      updated.is_active !== isActive
+    ) {
+      throw new Error('Server tidak mengembalikan status produk terbaru.');
+    }
     return updated;
   } catch (err) {
     const msg = extractApiErrorMessage(err, 'Gagal mengubah status produk.');
@@ -343,11 +339,28 @@ export async function toggleProductStatusApi(productId: string, isActive: boolea
 /**
  * Delete product via DELETE /api/v1/products/:id
  */
-export async function deleteProductApi(productId: string): Promise<void> {
+export async function deleteProductApi(productId: string): Promise<DeleteProductResult> {
   try {
     await api.delete(`/api/v1/products/${productId}`);
+    return { type: 'deleted' };
   } catch (err) {
     const msg = extractApiErrorMessage(err, 'Gagal menghapus produk.');
+    if (/order_items|foreign key|still referenced/i.test(msg)) {
+      try {
+        const product = await toggleProductStatusApi(productId, false);
+        if (product.is_active) {
+          throw new Error('Server belum menonaktifkan produk.');
+        }
+        return { type: 'deactivated', product };
+      } catch (deactivateErr) {
+        const deactivateMsg = extractApiErrorMessage(
+          deactivateErr,
+          'Produk memiliki riwayat pesanan dan gagal dinonaktifkan.'
+        );
+        throw new Error(deactivateMsg);
+      }
+    }
+
     throw new Error(msg);
   }
 }
@@ -377,6 +390,7 @@ export function syncProductToMarketplaceCache(
       if (item.id === productId || (updates.name && item.productName === updates.name)) {
         return {
           ...item,
+          stock: stockDisplay,
           remainingBoxesText: `Sisa ${stockDisplay} Box`,
         };
       }
@@ -397,90 +411,59 @@ export async function updateProductStockApi(
   newStock: number,
   nextStatus?: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif'
 ): Promise<ProductItem> {
-  const validStock = Math.max(0, newStock);
-  const calculatedStatus: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif' =
-    nextStatus ??
-    (item.status === 'nonaktif'
-      ? 'nonaktif'
-      : validStock === 0
-      ? 'habis'
-      : validStock <= 2
-      ? 'segera_habis'
-      : 'aktif');
+  if (!Number.isInteger(newStock) || newStock < 0) {
+    throw new Error('Stok harus berupa bilangan bulat nol atau lebih.');
+  }
+  if (!item.id || item.id.startsWith('prod-')) {
+    throw new Error('Produk ini belum memiliki ID dari server, jadi stoknya tidak dapat disimpan.');
+  }
 
-  const nextMaxStock = Math.max(item.maxStock || 0, validStock);
-  const isActive = calculatedStatus !== 'nonaktif';
-
-  // 1. Update local storage merchant products
-  updateProduct(item.id, {
-    stock: validStock,
-    maxStock: nextMaxStock,
-    status: calculatedStatus,
-    isActive,
-  });
-
-  // 2. Synchronize to marketplace cached products
-  syncProductToMarketplaceCache(item.id, {
-    status: calculatedStatus,
-    isActive,
-    stock: validStock,
-    name: item.name,
-  });
-
-  // 3. Attempt backend API call (PUT /api/v1/products/:id)
   try {
-    await api.put(`/api/v1/products/${item.id}`, {
+    const response = await api.put(`/api/v1/products/${item.id}`, {
       name: item.name,
       description: item.description,
-      main_image_url: item.imageUrl,
-      is_active: isActive && validStock > 0,
-      variants: [
-        {
-          name: 'Reguler',
-          sequence: 1,
-          normal_price: item.normalPrice,
-          rescue_price: item.rescuePrice,
-          current_stock: validStock,
-          initial_stock: nextMaxStock,
-        },
-      ],
-      current_stock: validStock,
-      total_current_stock: validStock,
+      is_active: item.isActive ?? item.status !== 'nonaktif',
+      main_image_url: item.imageUrl || '',
+      stock: newStock,
     });
-  } catch (err) {
-    console.warn('Backend update product stock via PUT failed:', err);
-  }
-
-  // 4. Synchronize status via PATCH if active status toggled or stock is 0
-  if (isActive) {
-    try {
-      await toggleProductStatusApi(item.id, validStock > 0);
-    } catch (err) {
-      console.warn('Backend toggle product status sync failed:', err);
+    const updated = response.data?.payload as ProductResponse | undefined;
+    if (!updated || updated.id !== item.id) {
+      throw new Error('Server tidak mengembalikan data produk terbaru.');
     }
-  }
 
-  // 5. Broadcast change to all active tabs/views
-  try {
-    window.dispatchEvent(
-      new CustomEvent('rescuebyte_product_updated', {
+    const mapped = mapBackendProductToItem(updated);
+    if (mapped.stock !== newStock) {
+      throw new Error('Stok yang dikembalikan server tidak sesuai dengan perubahan.');
+    }
+
+    const confirmedItem = {
+      ...mapped,
+      createdAt: item.createdAt || mapped.createdAt,
+      status: nextStatus || mapped.status,
+    };
+    updateProduct(item.id, confirmedItem);
+    syncProductToMarketplaceCache(item.id, {
+      stock: confirmedItem.stock,
+      status: confirmedItem.status,
+      isActive: confirmedItem.isActive,
+      name: confirmedItem.name,
+    });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('rescuebyte_product_updated', {
         detail: {
           id: item.id,
-          stock: validStock,
-          status: calculatedStatus,
-          isActive,
+          stock: confirmedItem.stock,
+          status: confirmedItem.status,
+          isActive: confirmedItem.isActive,
         },
-      })
-    );
-  } catch {}
+      }));
+    }
 
-  return {
-    ...item,
-    stock: validStock,
-    maxStock: nextMaxStock,
-    status: calculatedStatus,
-    isActive,
-  };
+    return confirmedItem;
+  } catch (err) {
+    const message = extractApiErrorMessage(err, 'Gagal memperbarui stok produk.');
+    throw new Error(message);
+  }
 }
 
 export interface PublicProductItem {
@@ -515,14 +498,15 @@ export interface GetPublicProductsParams {
  */
 export async function getPublicProducts(params?: GetPublicProductsParams): Promise<PublicProductItem[]> {
   try {
-    const response = await api.get('/api/v1/products', { params, timeout: 4000 });
+    const response = await api.get('/api/v1/products', { params });
     const payload = response.data?.payload;
     if (payload && Array.isArray(payload.products)) {
       return payload.products as PublicProductItem[];
     }
-    return [];
+
+    throw new Error('Format daftar produk publik dari server tidak dikenali.');
   } catch (err) {
-    console.warn('getPublicProducts failed, fallback to local/mock products:', err);
-    return [];
+    console.warn('getPublicProducts failed:', err);
+    throw err;
   }
 }

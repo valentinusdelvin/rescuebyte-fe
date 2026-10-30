@@ -19,14 +19,15 @@ import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import {
   createCustomerOrder,
   checkoutOrderApi,
-  updateCustomerOrderStatus,
+  fetchPaymentStatusApi,
+  fetchOrderDetailApi,
   mapBackendStatusToCustomerStatus,
 } from '../services/orderService';
 import { getProductVariantId } from '../services/cartService';
 import { getCurrentUser } from '../services/authService';
 import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../services/locationService';
 import { getAllStores, StoreProfileData } from '../services/storeService';
-import { MidtransPaymentModal } from '../components/payment/MidtransPaymentModal';
+import { launchMidtransPayment } from '../services/midtransService';
 
 export interface CustomerCheckoutProps {
   payload?: CheckoutPayload | null;
@@ -58,6 +59,42 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function getApiPickupWindow(pickupHours: string): { start: string; end: string } {
+  const match = pickupHours.match(/(\d{2})[.:](\d{2})\s*[–-]\s*(\d{2})[.:](\d{2})/);
+  return {
+    start: match ? `${match[1]}:${match[2]}:00` : '08:00:00',
+    end: match ? `${match[3]}:${match[4]}:00` : '22:00:00',
+  };
+}
+
+function getApiPickupDate(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+async function getApiCheckoutItems(items: CheckoutItem[]) {
+  const apiItems: Array<{ product_variant_id: string; quantity: number }> = [];
+
+  for (const item of items) {
+    let variantId = item.variantId;
+    if (!variantId && item.productId) {
+      variantId = (await getProductVariantId(item.productId)) || undefined;
+    }
+    if (!variantId) {
+      variantId = (await getProductVariantId(item.id)) || undefined;
+    }
+    if (!variantId) {
+      throw new Error(`Varian produk ${item.name} tidak ditemukan di server.`);
+    }
+    apiItems.push({ product_variant_id: variantId, quantity: item.quantity });
+  }
+
+  return apiItems;
+}
+
 function getOrderDateFormatted(): string {
   const now = new Date();
   const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -86,33 +123,8 @@ export function CustomerCheckout({
   const [customerPhone, setCustomerPhone] = useState(() => currentUser?.phone_number || '');
   const [customerEmail] = useState(() => currentUser?.email || '');
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
-  const [midtransModalData, setMidtransModalData] = useState<PaymentOrderData | null>(null);
-
-  const handleCheckoutPaymentSuccess = () => {
-    if (!midtransModalData) return;
-    const paidOrder = { ...midtransModalData, status: 'menunggu-konfirmasi' as CustomerOrderStatus };
-    updateCustomerOrderStatus(midtransModalData.orderId, 'menunggu-konfirmasi');
-    setMidtransModalData(null);
-    if (onShowToast) onShowToast('Pembayaran berhasil diverifikasi! Menuju detail pesanan...', 'success');
-    setTimeout(() => {
-      if (onNavigateOrderDetail) {
-        onNavigateOrderDetail(paidOrder);
-      } else if (onNavigatePayment) {
-        onNavigatePayment(paidOrder);
-      }
-    }, 400);
-  };
-
-  const handleCloseMidtransModal = () => {
-    if (!midtransModalData) return;
-    const pendingOrder = { ...midtransModalData };
-    setMidtransModalData(null);
-    if (onNavigateOrderDetail) {
-      onNavigateOrderDetail(pendingOrder);
-    } else if (onNavigatePayment) {
-      onNavigatePayment(pendingOrder);
-    }
-  };
+  const [customerPhoneError, setCustomerPhoneError] = useState('');
+  const [isSnapPopupOpen, setIsSnapPopupOpen] = useState(false);
 
   // Items State directly from checkout payload
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>(() => {
@@ -309,256 +321,216 @@ export function CustomerCheckout({
   }, [checkoutItems]);
 
 const handlePayNow = async () => {
+    if (isSubmitting || isSnapPopupOpen) return;
+
     if (totalBoxes === 0) {
       if (onShowToast) onShowToast('Tidak ada item untuk dipesan.');
       return;
     }
 
-    setIsSubmitting(true);
-    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(10000 + Math.random() * 90000).toString();
+    const checkoutCustomerPhone = customerPhone.trim();
+    if (!checkoutCustomerPhone) {
+      setCustomerPhoneError('Nomor HP wajib diisi untuk membuat pesanan. Pilih “Ubah Data” lalu isi nomor HP.');
+      setIsEditingCustomer(true);
+      if (onShowToast) onShowToast('Isi nomor HP terlebih dahulu agar pesanan bisa dibuat.', 'error');
+      return;
+    }
+    setCustomerPhoneError('');
+
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (!token) {
+      if (onShowToast) onShowToast('Silakan masuk terlebih dahulu sebelum membuat pesanan.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const successfulOrders: PaymentOrderData[] = [];
 
     try {
-      // Opsi 2 Alur B:
-      // Jika checkout dari lebih dari 1 toko -> Split orders per toko dan arahkan ke Pesanan Saya
-      // Jika hanya 1 toko -> Buat 1 pesanan dan langsung arahkan ke Detail Pesanan
-      if (storeGroups.length > 1) {
-        for (let idx = 0; idx < storeGroups.length; idx++) {
-          const group = storeGroups[idx];
-          let groupBoxes = 0;
-          let groupSub = 0;
-          let groupDisc = 0;
+      if (storeGroups.length === 0) {
+        throw new Error('Toko untuk pesanan ini tidak ditemukan.');
+      }
 
-          group.items.forEach((item) => {
-            groupBoxes += item.quantity;
-            const originalTotal = item.originalPrice * item.quantity;
-            const rescueTotal = item.rescuePrice * item.quantity;
-            groupSub += rescueTotal;
-            groupDisc += originalTotal - rescueTotal;
-          });
-
-          const groupServiceFee = 2000;
-          const groupGrandTotal = groupSub + groupServiceFee;
-          let storeOrderCode = `RB${todayStr}-${randomSuffix}-${idx + 1}`;
-          let snapToken: string | undefined;
-          let snapRedirectUrl: string | undefined;
-          let finalStatus: CustomerOrderStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : 'menunggu-konfirmasi';
-
-          if (token && group.storeId && !group.storeId.startsWith('store-')) {
-            try {
-              const apiItems: Array<{ product_variant_id: string; quantity: number }> = [];
-              for (const it of group.items) {
-                let vId = it.variantId;
-                if (!vId && it.productId) {
-                  vId = (await getProductVariantId(it.productId)) || undefined;
-                }
-                if (!vId) {
-                  vId = (await getProductVariantId(it.id)) || undefined;
-                }
-                if (vId) {
-                  apiItems.push({
-                    product_variant_id: vId,
-                    quantity: it.quantity,
-                  });
-                }
-              }
-
-              if (apiItems.length > 0) {
-                const opMatch = group.operationalHours.match(/(\d{2})[.:](\d{2})\s*-\s*(\d{2})[.:](\d{2})/);
-                const timeStart = opMatch ? `${opMatch[1]}:${opMatch[2]}:00` : '08:00:00';
-                const timeEnd = opMatch ? `${opMatch[3]}:${opMatch[4]}:00` : '22:00:00';
-
-                const now = new Date();
-                const yyyy = now.getFullYear();
-                const mm = String(now.getMonth() + 1).padStart(2, '0');
-                const dd = String(now.getDate()).padStart(2, '0');
-                const pickupDateStr = `${yyyy}-${mm}-${dd}`;
-
-                const checkoutRes = await checkoutOrderApi({
-                  store_id: group.storeId,
-                  customer_name: customerName,
-                  customer_phone: customerPhone,
-                  customer_email: customerEmail,
-                  payment_method: paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_PICKUP',
-                  pickup_date: pickupDateStr,
-                  pickup_time_start: timeStart,
-                  pickup_time_end: timeEnd,
-                  items: apiItems,
-                });
-
-                if (checkoutRes && checkoutRes.order) {
-                  storeOrderCode = checkoutRes.order.order_number || storeOrderCode;
-                  finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
-                  snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
-                  snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
-                }
-              }
-            } catch (err) {
-              console.warn(`Backend checkout failed for store ${group.storeName}:`, err);
-            }
-          }
-
-          const storeOrderData: PaymentOrderData = {
-            orderId: storeOrderCode,
-            items: group.items,
-            primaryStore: {
-              storeName: group.storeName,
-              storeAvatar: group.storeAvatar,
-              storeAddress: group.storeAddress,
-              rating: group.rating,
-              reviewCount: group.reviewCount,
-            },
-            pickupDate: orderDateFormatted,
-            pickupTimeSlot: group.operationalHours,
-            customerInfo: {
-              name: customerName,
-              phone: customerPhone,
-              email: customerEmail,
-            },
-            totalBoxes: groupBoxes,
-            subtotal: groupSub,
-            discountTotal: groupDisc,
-            serviceFee: groupServiceFee,
-            grandTotal: groupGrandTotal,
-            source: payload?.source,
-            status: finalStatus,
-            snapToken,
-            snapRedirectUrl,
-            createdAt: new Date().toISOString(),
-          };
-
-          createCustomerOrder(storeOrderData, finalStatus);
+      for (const group of storeGroups) {
+        if (!group.storeId || group.storeId.startsWith('store-')) {
+          throw new Error(`Toko ${group.storeName} belum terhubung ke server.`);
         }
 
-        if (onShowToast) {
-          onShowToast(`Pesanan berhasil dibuat untuk ${storeGroups.length} toko! Membuka Pesanan Saya...`);
+        const apiItems = await getApiCheckoutItems(group.items);
+        const { start, end } = getApiPickupWindow(group.operationalHours);
+        const checkoutRes = await checkoutOrderApi({
+          store_id: group.storeId,
+          customer_name: customerName,
+          customer_phone: checkoutCustomerPhone,
+          customer_email: customerEmail,
+          payment_method: paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_PICKUP',
+          pickup_date: getApiPickupDate(),
+          pickup_time_start: start,
+          pickup_time_end: end,
+          items: apiItems,
+        });
+        if (!checkoutRes?.order) {
+          throw new Error(`Server belum mengonfirmasi pesanan untuk ${group.storeName}.`);
         }
 
-        setTimeout(() => {
-          setIsSubmitting(false);
-          if (onNavigateOrders) {
-            onNavigateOrders();
-          } else {
-            window.location.assign('#pesanan-saya');
-          }
-        }, 350);
-      } else {
-        // Single store checkout -> langsung ke detail pesanan
-        const firstGroup = storeGroups[0];
-        let singleOrderCode = `RB${todayStr}-${randomSuffix}`;
-        let snapToken: string | undefined;
-        let snapRedirectUrl: string | undefined;
-        let finalStatus: CustomerOrderStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : 'menunggu-konfirmasi';
-
-        if (token && firstGroup?.storeId && !firstGroup.storeId.startsWith('store-')) {
-          try {
-            const apiItems: Array<{ product_variant_id: string; quantity: number }> = [];
-            for (const it of checkoutItems) {
-              let vId = it.variantId;
-              if (!vId && it.productId) {
-                vId = (await getProductVariantId(it.productId)) || undefined;
-              }
-              if (!vId) {
-                vId = (await getProductVariantId(it.id)) || undefined;
-              }
-              if (vId) {
-                apiItems.push({
-                  product_variant_id: vId,
-                  quantity: it.quantity,
-                });
-              }
-            }
-
-            if (apiItems.length > 0) {
-              const opMatch = (firstGroup.operationalHours || '').match(/(\d{2})[.:](\d{2})\s*-\s*(\d{2})[.:](\d{2})/);
-              const timeStart = opMatch ? `${opMatch[1]}:${opMatch[2]}:00` : '08:00:00';
-              const timeEnd = opMatch ? `${opMatch[3]}:${opMatch[4]}:00` : '22:00:00';
-
-              const now = new Date();
-              const yyyy = now.getFullYear();
-              const mm = String(now.getMonth() + 1).padStart(2, '0');
-              const dd = String(now.getDate()).padStart(2, '0');
-              const pickupDateStr = `${yyyy}-${mm}-${dd}`;
-
-              const checkoutRes = await checkoutOrderApi({
-                store_id: firstGroup.storeId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                customer_email: customerEmail,
-                payment_method: paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_PICKUP',
-                pickup_date: pickupDateStr,
-                pickup_time_start: timeStart,
-                pickup_time_end: timeEnd,
-                items: apiItems,
-              });
-
-              if (checkoutRes && checkoutRes.order) {
-                singleOrderCode = checkoutRes.order.order_number || singleOrderCode;
-                finalStatus = paymentMethod === 'online' ? 'menunggu-pembayaran' : mapBackendStatusToCustomerStatus(checkoutRes.order.status);
-                snapToken = checkoutRes.snap_token || (checkoutRes.order as any)?.payment?.snap_token;
-                snapRedirectUrl = checkoutRes.snap_redirect_url || (checkoutRes.order as any)?.payment?.snap_redirect_url;
-              }
-            }
-          } catch (err) {
-            console.warn('Backend single checkout failed:', err);
-          }
-        }
+        const backendOrder = checkoutRes.order;
+        const groupBoxes = group.items.reduce((sum, item) => sum + item.quantity, 0);
+        const groupSubtotal = group.items.reduce((sum, item) => sum + item.rescuePrice * item.quantity, 0);
+        const groupOriginal = group.items.reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
+        const finalStatus: CustomerOrderStatus = paymentMethod === 'online'
+          ? 'menunggu-pembayaran'
+          : mapBackendStatusToCustomerStatus(backendOrder.status);
 
         const orderData: PaymentOrderData = {
-          orderId: singleOrderCode,
-          items: checkoutItems,
+          orderId: backendOrder.order_number || backendOrder.id,
+          backendOrderId: backendOrder.id,
+          items: group.items,
           primaryStore: {
-            storeName: firstGroup?.storeName || checkoutItems[0]?.storeName || 'Toko Mitra',
-            storeAvatar: firstGroup?.storeAvatar || checkoutItems[0]?.storeAvatar,
-            storeAddress: firstGroup?.storeAddress || checkoutItems[0]?.storeAddress,
-            rating: firstGroup?.rating || checkoutItems[0]?.rating || 4.9,
-            reviewCount: firstGroup?.reviewCount || checkoutItems[0]?.reviewCount || 48,
+            storeId: backendOrder.store_id || group.storeId,
+            storeName: group.storeName,
+            storeAvatar: group.storeAvatar,
+            storeAddress: group.storeAddress,
+            rating: group.rating,
+            reviewCount: group.reviewCount,
           },
-          pickupDate: orderDateFormatted,
-          pickupTimeSlot: firstGroup?.operationalHours || '08.00 - 22.00 WIB',
+          pickupDate: backendOrder.pickup_date || orderDateFormatted,
+          pickupTimeSlot: backendOrder.pickup_time || group.operationalHours,
           customerInfo: {
             name: customerName,
-            phone: customerPhone,
+            phone: checkoutCustomerPhone,
             email: customerEmail,
           },
-          totalBoxes,
-          subtotal,
-          discountTotal,
-          serviceFee,
-          grandTotal,
+          totalBoxes: groupBoxes,
+          subtotal: backendOrder.subtotal ?? groupSubtotal,
+          discountTotal: backendOrder.total_discount ?? Math.max(0, groupOriginal - groupSubtotal),
+          serviceFee: backendOrder.service_fee ?? 2000,
+          grandTotal: backendOrder.total_amount ?? groupSubtotal + 2000,
           source: payload?.source,
           status: finalStatus,
-          snapToken,
-          snapRedirectUrl,
-          createdAt: new Date().toISOString(),
+          snapToken: checkoutRes.snap_token || (backendOrder as any)?.payment?.snap_token,
+          snapRedirectUrl: checkoutRes.snap_redirect_url || (backendOrder as any)?.payment?.snap_redirect_url,
+          createdAt: backendOrder.created_at,
         };
 
+        // Backend checkout is the source of truth for stock; this only saves the order view/cache.
         createCustomerOrder(orderData, finalStatus);
-        setIsSubmitting(false);
+        successfulOrders.push(orderData);
+      }
 
-        if (paymentMethod === 'online') {
-          if (snapRedirectUrl) {
-            try {
-              window.open(snapRedirectUrl, '_blank');
-            } catch { }
-          }
-          setMidtransModalData(orderData);
-        } else {
-          if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.');
-          setTimeout(() => {
-            if (onNavigateOrderDetail) {
-              onNavigateOrderDetail(orderData);
-            } else if (onNavigatePayment) {
-              onNavigatePayment(orderData);
-            }
-          }, 300);
+      if (successfulOrders.length > 1) {
+        if (onShowToast) {
+          onShowToast(`Pesanan berhasil dibuat untuk ${successfulOrders.length} toko! Membuka Pesanan Saya...`, 'success');
         }
+        setTimeout(() => {
+          setIsSubmitting(false);
+          if (onNavigateOrders) onNavigateOrders();
+          else window.location.assign('#pesanan-saya');
+        }, 350);
+        return;
+      }
+
+      const orderData = successfulOrders[0];
+      setIsSubmitting(false);
+      if (paymentMethod === 'online') {
+        const goToPendingOrder = (message?: string) => {
+          if (message && onShowToast) onShowToast(message, 'info');
+          if (onNavigateOrderDetail) onNavigateOrderDetail(orderData);
+          else if (onNavigatePayment) onNavigatePayment(orderData);
+          else if (onNavigateOrders) onNavigateOrders();
+        };
+
+        const confirmPaidOrder = async () => {
+          if (!orderData.backendOrderId) {
+            goToPendingOrder('Pembayaran belum dapat diverifikasi karena ID order backend tidak tersedia.');
+            return;
+          }
+
+          let paymentVerified = false;
+          let paidStatus: CustomerOrderStatus = 'menunggu-konfirmasi';
+          for (let attempt = 0; attempt < 6; attempt++) {
+            const [paymentState, latest] = await Promise.all([
+              fetchPaymentStatusApi(orderData.backendOrderId),
+              fetchOrderDetailApi(orderData.backendOrderId),
+            ]);
+            const latestStatus = String(latest?.status || '').toUpperCase();
+            const orderHasConfirmedPayment = [
+              'PAID', 'SETTLEMENT', 'CAPTURE', 'PAYMENT_SUCCESS', 'SUCCESS',
+              'WAITING_CONFIRMATION', 'WAITING_FOR_CONFIRMATION', 'IN_PROCESS', 'PROCESSING',
+              'READY_FOR_PICKUP', 'COMPLETED', 'FINISHED',
+            ].includes(latestStatus);
+            if (paymentState === 'paid' || orderHasConfirmedPayment) {
+              paymentVerified = true;
+              if (orderHasConfirmedPayment && latest?.status) {
+                paidStatus = mapBackendStatusToCustomerStatus(latest.status);
+              }
+              break;
+            }
+            if (paymentState === 'failed') break;
+            if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+
+          if (!paymentVerified) {
+            goToPendingOrder('Midtrans belum terkonfirmasi di backend. Pesanan tetap menunggu pembayaran dan bisa diperiksa lagi dari detail pesanan.');
+            return;
+          }
+
+          const paidOrder: PaymentOrderData = {
+            ...orderData,
+            status: paidStatus,
+            paymentConfirmedByGateway: true,
+          };
+          createCustomerOrder(paidOrder, paidStatus);
+          if (onShowToast) onShowToast('Pembayaran berhasil diverifikasi backend. Pesanan menunggu konfirmasi toko.', 'success');
+          if (onNavigateOrderDetail) onNavigateOrderDetail(paidOrder);
+          else if (onNavigatePayment) onNavigatePayment(paidOrder);
+          else if (onNavigateOrders) onNavigateOrders();
+        };
+
+        try {
+          setIsSnapPopupOpen(true);
+          launchMidtransPayment(orderData.snapToken, {
+            onSuccess: () => {
+              setIsSnapPopupOpen(false);
+              return confirmPaidOrder();
+            },
+            onPending: () => {
+              setIsSnapPopupOpen(false);
+              goToPendingOrder('Pembayaran masih menunggu. Kamu bisa melanjutkannya dari detail pesanan.');
+            },
+            onError: () => {
+              setIsSnapPopupOpen(false);
+              goToPendingOrder('Pembayaran belum berhasil. Pesanan tersimpan dan bisa dibayar lagi dari detail pesanan.');
+            },
+            onClose: () => {
+              setIsSnapPopupOpen(false);
+              goToPendingOrder('Pesanan tersimpan dengan status menunggu pembayaran.');
+            },
+          });
+        } catch (err) {
+          setIsSnapPopupOpen(false);
+          const message = err instanceof Error ? err.message : 'Pembayaran Midtrans belum bisa dibuka.';
+          goToPendingOrder(message);
+        }
+      } else {
+        if (onShowToast) onShowToast('Pesanan berhasil dibuat! Menunggu konfirmasi toko.', 'success');
+        setTimeout(() => {
+          if (onNavigateOrderDetail) onNavigateOrderDetail(orderData);
+          else if (onNavigatePayment) onNavigatePayment(orderData);
+        }, 300);
       }
     } catch (err) {
       setIsSubmitting(false);
       console.error('Checkout error:', err);
-      if (onShowToast) onShowToast('Gagal membuat pesanan.', 'error');
+      const errorMessage = err instanceof Error ? err.message : 'Gagal membuat pesanan.';
+      if (successfulOrders.length > 0) {
+        if (onShowToast) {
+          onShowToast(`${successfulOrders.length} pesanan berhasil; pesanan lainnya gagal. Buka Riwayat Pesanan untuk melihat yang berhasil.`, 'warning');
+        }
+        if (onNavigateOrders) onNavigateOrders();
+        else window.location.assign('#pesanan-saya');
+      } else if (onShowToast) {
+        onShowToast(errorMessage, 'error');
+      }
     }
   };
 
@@ -633,10 +605,21 @@ const handlePayNow = async () => {
                   <input
                     type="tel"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value);
+                      if (e.target.value.trim()) setCustomerPhoneError('');
+                    }}
                     disabled={!isEditingCustomer}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-[#fbfbf9] text-xs sm:text-sm font-medium text-gray-900 focus:outline-none focus:border-gray-400 focus:bg-white disabled:opacity-85 transition-colors"
+                    autoComplete="tel"
+                    aria-invalid={Boolean(customerPhoneError)}
+                    aria-describedby={customerPhoneError ? 'checkout-phone-error' : undefined}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${customerPhoneError ? 'border-[#ba1a1a]' : 'border-gray-200'} bg-[#fbfbf9] text-xs sm:text-sm font-medium text-gray-900 focus:outline-none focus:border-gray-400 focus:bg-white disabled:opacity-85 transition-colors`}
                   />
+                  {customerPhoneError && (
+                    <p id="checkout-phone-error" className="mt-1.5 text-xs text-[#ba1a1a]" role="alert">
+                      {customerPhoneError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1117,31 +1100,17 @@ const handlePayNow = async () => {
               <button
                 type="button"
                 onClick={handlePayNow}
-                disabled={isSubmitting || totalBoxes === 0}
+                disabled={isSubmitting || isSnapPopupOpen || totalBoxes === 0}
                 className="w-full sm:w-auto min-w-55 py-3.5 px-6 rounded-2xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer disabled:cursor-not-allowed select-none"
                 id="btn-bayar-sekarang"
               >
                 <ShoppingBag className="w-4 h-4" />
-                <span>{isSubmitting ? 'Memproses Pesanan...' : 'Bayar Sekarang →'}</span>
+                <span>{isSubmitting ? 'Memproses Pesanan...' : isSnapPopupOpen ? 'Popup pembayaran terbuka…' : 'Bayar Sekarang →'}</span>
               </button>
             </div>
           </div>
         </main>
       </div>
-
-      {/* Midtrans Sandbox Payment Modal */}
-      {midtransModalData && (
-        <MidtransPaymentModal
-          isOpen={Boolean(midtransModalData)}
-          orderId={midtransModalData.orderId}
-          storeName={midtransModalData.primaryStore.storeName}
-          totalAmount={midtransModalData.grandTotal}
-          snapToken={midtransModalData.snapToken}
-          snapRedirectUrl={midtransModalData.snapRedirectUrl}
-          onSuccess={handleCheckoutPaymentSuccess}
-          onClose={handleCloseMidtransModal}
-        />
-      )}
 
       {/* 3. Footer */}
       <CustomerFooter

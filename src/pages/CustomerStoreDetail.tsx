@@ -360,7 +360,7 @@ export function CustomerStoreDetail({
         const sellerStoreName = (localStorage.getItem('rescuebyte_store_name') || '').toLowerCase();
         if (sellerStoreName && (sellerStoreName === currentTarget || currentTarget.includes(sellerStoreName))) {
           localStored
-            .filter((lp) => lp.isActive && lp.status !== 'nonaktif')
+            .filter((lp) => lp.isActive !== false && lp.status !== 'nonaktif')
             .forEach((lp) => {
               if (!liveItems.some((item) => item.id === lp.id || item.name === lp.name)) {
                 const discount =

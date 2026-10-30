@@ -30,6 +30,15 @@ import {
 } from './services/authService';
 import { getStoreProfile } from './services/storeService';
 
+function isCustomerOrderDetailHash(hash: string): boolean {
+  return (
+    hash.startsWith('#pembayaran') ||
+    hash.startsWith('#payment') ||
+    hash.startsWith('#detail-pesanan') ||
+    hash.startsWith('#order-detail')
+  );
+}
+
 /**
  * Root Application Component
  * Coordinates customer and seller views, URL hash navigation (#namapage-seller),
@@ -46,6 +55,8 @@ export function App() {
     if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) return 'view-riwayat';
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'view-buat-dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
+    // Order detail data is held in memory, so a fresh page load returns to the landing page.
+    if (isCustomerOrderDetailHash(hash)) return 'view-customer-home';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-product-detail';
@@ -138,6 +149,7 @@ export function App() {
     if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'Buat Dagangan';
     if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'Daganganku';
     if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
+    if (isCustomerOrderDetailHash(hash)) return 'Beranda Pelanggan';
     if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Detail Produk';
@@ -193,6 +205,12 @@ export function App() {
     }
     return 'Beranda Pelanggan';
   });
+
+  useEffect(() => {
+    if (isCustomerOrderDetailHash(window.location.hash.toLowerCase())) {
+      window.history.replaceState(null, '', '#beranda-customer');
+    }
+  }, []);
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [storeName, setStoreName] = useState<string>(() => {
@@ -258,16 +276,42 @@ export function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
+    const oauthError = urlParams.get('error');
+
+    if (oauthError) {
+      sessionStorage.removeItem('oauth_state');
+      showToast(
+        urlParams.get('error_description') || 'Google membatalkan proses masuk. Coba lagi.',
+        'error'
+      );
+      return;
+    }
 
     if (code && state) {
+      const expectedState = sessionStorage.getItem('oauth_state');
+      sessionStorage.removeItem('oauth_state');
+
+      if (!expectedState || state !== expectedState) {
+        showToast('Verifikasi Google tidak cocok. Silakan mulai proses masuk lagi.', 'error');
+        return;
+      }
+
       handleGoogleCallback(code, state)
         .then((payload) => {
           showToast(`Berhasil masuk dengan akun Google (${payload.user.name})!`, 'success');
-          // Clean query params
-          const cleanUrl = window.location.pathname + '#beranda-customer';
+          const user = getCurrentUser();
+          const role = (user?.role || '').toLowerCase();
+          const isSeller =
+            user?.role_id === 3 ||
+            role.includes('seller') ||
+            role.includes('merchant') ||
+            role.includes('mitra') ||
+            localStorage.getItem('rescuebyte_user_role') === 'seller';
+          const nextHash = isSeller ? '#beranda-seller' : '#beranda-customer';
+          const cleanUrl = window.location.pathname + nextHash;
           window.history.replaceState(null, '', cleanUrl);
-          setActiveView('view-customer-home');
-          setActiveLabel('Beranda Pelanggan');
+          setActiveView(isSeller ? 'view-beranda' : 'view-customer-home');
+          setActiveLabel(isSeller ? 'Beranda Toko' : 'Beranda Pelanggan');
         })
         .catch((err) => {
           showToast(extractApiErrorMessage(err, 'Gagal menyelesaikan otentikasi Google.'), 'error');
@@ -387,6 +431,22 @@ export function App() {
       } else if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) {
         setActiveView('view-daganganku');
         setActiveLabel('Daganganku');
+      } else if (isCustomerOrderDetailHash(hash)) {
+        if (!getCurrentUser()) {
+          showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
+          return;
+        }
+        if (!paymentOrderData) {
+          setActiveView('view-customer-home');
+          setActiveLabel('Beranda Pelanggan');
+          window.history.replaceState(null, '', '#beranda-customer');
+          return;
+        }
+        setActiveView('view-customer-order-detail');
+        setActiveLabel('Detail Pesanan');
       } else if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
         const user = getCurrentUser();
         if (!user) {
@@ -498,7 +558,7 @@ export function App() {
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [showToast]);
+  }, [showToast, paymentOrderData]);
 
   // If user logs out while on protected routes, automatically redirect to login
   useEffect(() => {

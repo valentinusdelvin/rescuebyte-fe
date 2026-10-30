@@ -193,10 +193,10 @@ export async function getAllStores(params?: { name?: string; page?: number; limi
  */
 export async function getStoreById(id: string): Promise<StoreProfileData | null> {
   try {
-    const response = await api.get(`/api/v1/stores/${id}`);
+    const response = await api.get(`/api/v1/stores/${encodeURIComponent(id)}`);
     const payload = response.data?.payload;
     if (payload) {
-      return payload as StoreProfileData;
+      return (payload.store || payload) as StoreProfileData;
     }
     return null;
   } catch (err) {

@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, Check } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrderStatusTab, OrderTabItem } from '../types';
 import emptyOrdersIllustration from '../assets/pesanan-kosong.svg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
@@ -7,10 +7,11 @@ import {
   MerchantOrderItem,
   getMerchantOrders,
   fetchMerchantOrdersApi,
+  fetchOrderDetailApi,
+  saveMerchantOrders,
   confirmMerchantOrder,
   processMerchantOrder,
   completeMerchantOrder,
-  cancelMerchantOrder,
   subscribeToMerchantOrders,
 } from '../services/orderService';
 import { SellerOrderDetailModal } from '../components/seller/SellerOrderDetailModal';
@@ -27,9 +28,19 @@ const ORDER_TABS: OrderTabItem[] = [
   { id: 'siap-diambil', label: 'Siap Diambil' },
   { id: 'selesai', label: 'Pesanan Selesai' },
 ];
+const ORDERS_PER_PAGE = 5;
 
 function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function getOrderTimestamp(value: string): number {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getActionErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 /**
@@ -52,8 +63,10 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('semua');
   const [sortOrder, setSortOrder] = useState<string>('terbaru');
+  const [currentPage, setCurrentPage] = useState(1);
   const [orders, setOrders] = useState<MerchantOrderItem[]>(() => getMerchantOrders(currentStore));
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const customerDetailAttempts = useRef(new Set<string>());
 
   // Modal State for order confirmation popup
   const [selectedModalOrder, setSelectedModalOrder] = useState<MerchantOrderItem | null>(null);
@@ -62,8 +75,8 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
   useEffect(() => {
     setOrders(getMerchantOrders(currentStore));
     fetchMerchantOrdersApi(currentStore).then((apiOrders) => {
-      if (apiOrders && apiOrders.length > 0) {
-        setOrders(getMerchantOrders(currentStore));
+      if (apiOrders !== null) {
+        setOrders(apiOrders);
       }
     });
 
@@ -82,10 +95,11 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
       unsubscribe();
       window.removeEventListener('rescuebyte_store_updated', handleStoreChange);
     };
-  }, [currentStore, activeTab]);
+  }, [currentStore]);
 
   const handleTabChange = (tabId: OrderStatusTab) => {
     setActiveTab(tabId);
+    setCurrentPage(1);
   };
 
   // Filter & Search Logic
@@ -119,16 +133,57 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
       })
       .sort((a, b) => {
         if (sortOrder === 'terlama') {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return getOrderTimestamp(a.createdAt) - getOrderTimestamp(b.createdAt);
         } else if (sortOrder === 'nominal-tinggi') {
           return b.grandTotal - a.grandTotal;
         } else if (sortOrder === 'nominal-rendah') {
           return a.grandTotal - b.grandTotal;
         }
         // Default: terbaru
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return getOrderTimestamp(b.createdAt) - getOrderTimestamp(a.createdAt);
       });
   }, [orders, activeTab, searchQuery, filterType, sortOrder]);
+
+  const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
+  const visiblePage = Math.min(currentPage, Math.max(totalPages, 1));
+  const pageOrders = useMemo(
+    () => filteredOrders.slice((visiblePage - 1) * ORDERS_PER_PAGE, visiblePage * ORDERS_PER_PAGE),
+    [filteredOrders, visiblePage],
+  );
+
+  useEffect(() => {
+    const ordersNeedingCustomer = pageOrders.filter(
+      (order) => order.customerName === 'Pelanggan RescueByte' && !customerDetailAttempts.current.has(order.id),
+    );
+    if (ordersNeedingCustomer.length === 0) return;
+
+    ordersNeedingCustomer.forEach((order) => customerDetailAttempts.current.add(order.id));
+    let isCancelled = false;
+
+    Promise.all(ordersNeedingCustomer.map(async (order) => {
+      const detail = await fetchOrderDetailApi(order.id);
+      const customerName = typeof detail?.customer_name === 'string' ? detail.customer_name.trim() : '';
+      return customerName ? { id: order.id, customerName } : null;
+    })).then((resolvedCustomers) => {
+      if (isCancelled) return;
+      const namesByOrderId = new Map<string, string>();
+      resolvedCustomers.forEach((entry) => {
+        if (entry) namesByOrderId.set(entry.id, entry.customerName);
+      });
+      if (namesByOrderId.size === 0) return;
+
+      const updatedOrders = getMerchantOrders(currentStore).map((order) => ({
+        ...order,
+        customerName: namesByOrderId.get(order.id) || order.customerName,
+      }));
+      saveMerchantOrders(updatedOrders);
+      setOrders(updatedOrders);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pageOrders, currentStore]);
 
   const handleOpenConfirmModal = (order: MerchantOrderItem) => {
     setSelectedModalOrder(order);
@@ -147,25 +202,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
       }
     } catch (err) {
       console.warn('Gagal konfirmasi pesanan:', err);
-      if (onShowToast) onShowToast('Gagal mengonfirmasi pesanan.', 'error');
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleModalCancel = async (order: MerchantOrderItem) => {
-    setProcessingId(order.id);
-    try {
-      await cancelMerchantOrder(order.id);
-      setOrders(getMerchantOrders(currentStore));
-      setIsModalOpen(false);
-      setSelectedModalOrder(null);
-      if (onShowToast) {
-        onShowToast(`Pesanan ${order.orderNumber} telah dibatalkan.`, 'info');
-      }
-    } catch (err) {
-      console.warn('Gagal membatalkan pesanan:', err);
-      if (onShowToast) onShowToast('Gagal membatalkan pesanan.', 'error');
+      if (onShowToast) onShowToast(getActionErrorMessage(err, 'Gagal mengonfirmasi pesanan.'), 'error');
     } finally {
       setProcessingId(null);
     }
@@ -181,7 +218,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
       }
     } catch (err) {
       console.warn('Gagal memproses pesanan:', err);
-      if (onShowToast) onShowToast('Gagal memproses pesanan.', 'error');
+      if (onShowToast) onShowToast(getActionErrorMessage(err, 'Gagal memproses pesanan.'), 'error');
     } finally {
       setProcessingId(null);
     }
@@ -197,7 +234,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
       }
     } catch (err) {
       console.warn('Gagal selesaikan pesanan:', err);
-      if (onShowToast) onShowToast('Gagal memproses pesanan.', 'error');
+      if (onShowToast) onShowToast(getActionErrorMessage(err, 'Gagal menyelesaikan pesanan.'), 'error');
     } finally {
       setProcessingId(null);
     }
@@ -227,14 +264,17 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
                   id={`tab-${tab.id}`}
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
-                  className={`py-4 px-2 text-center text-xs sm:text-sm md:text-base font-bold border-b-2 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#3c6a00] focus-visible:outline-offset-[-2px] ${
+                  className={`flex items-center justify-center gap-2 py-4 px-2 text-center text-xs sm:text-sm md:text-base font-bold border-b-2 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#3c6a00] focus-visible:outline-offset-[-2px] ${
                     isActive
                       ? 'border-[#3c6a00] text-[#3c6a00]'
                       : 'border-transparent text-gray-800 hover:text-[#3c6a00]'
                   }`}
                   onClick={() => handleTabChange(tab.id)}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  <span className={`min-w-6 rounded-full px-2 py-0.5 text-xs leading-5 ${isActive ? 'bg-[#1b1c1c] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    {orders.filter((order) => order.status === tab.id).length}
+                  </span>
                 </button>
               );
             })}
@@ -252,7 +292,10 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
               placeholder="Cari Nomor Pesanan"
               aria-label="Cari Nomor Pesanan"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
@@ -264,6 +307,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
               value={filterType}
               onChange={(e) => {
                 setFilterType(e.target.value);
+                setCurrentPage(1);
                 if (onShowToast) onShowToast('Filter kategori diperbarui', 'info');
               }}
             >
@@ -282,6 +326,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
               value={sortOrder}
               onChange={(e) => {
                 setSortOrder(e.target.value);
+                setCurrentPage(1);
                 if (onShowToast) onShowToast('Urutan tanggal diperbarui', 'info');
               }}
             >
@@ -319,7 +364,7 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
           ) : (
             /* Order Rows strictly matching Photo 2 UI */
             <div className="flex flex-col divide-y divide-gray-100">
-              {filteredOrders.map((order) => (
+              {pageOrders.map((order) => (
                 <article
                   key={order.id}
                   className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafaf8] transition-colors"
@@ -412,6 +457,40 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
               ))}
             </div>
           )}
+          {totalPages > 1 && (
+            <nav className="flex items-center justify-center gap-1.5 px-4 py-5" aria-label="Navigasi halaman riwayat pesanan">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(visiblePage - 1)}
+                disabled={visiblePage === 1}
+                aria-label="Halaman sebelumnya"
+                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  aria-current={visiblePage === page ? 'page' : undefined}
+                  aria-label={`Halaman ${page}`}
+                  className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${visiblePage === page ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'}`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(visiblePage + 1)}
+                disabled={visiblePage === totalPages}
+                aria-label="Halaman berikutnya"
+                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </nav>
+          )}
         </div>
       </div>
 
@@ -424,7 +503,6 @@ export function OrderHistory({ storeName: propStoreName, initialTab = 'perlu-kon
           setSelectedModalOrder(null);
         }}
         onConfirm={handleModalConfirm}
-        onCancel={handleModalCancel}
         onShowToast={onShowToast}
       />
     </section>

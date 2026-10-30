@@ -92,8 +92,10 @@ export type CustomerOrderStatus =
 
 export interface PaymentOrderData {
   orderId: string;
+  backendOrderId?: string;
   items: CheckoutItem[];
   primaryStore: {
+    storeId?: string;
     storeName: string;
     storeAvatar?: string;
     storeAddress?: string;
@@ -116,6 +118,7 @@ export interface PaymentOrderData {
   status?: CustomerOrderStatus | string;
   snapToken?: string;
   snapRedirectUrl?: string;
+  paymentConfirmedByGateway?: boolean;
   createdAt?: string;
 }
 

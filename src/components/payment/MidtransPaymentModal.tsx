@@ -7,7 +7,6 @@ export interface MidtransPaymentModalProps {
   storeName: string;
   totalAmount: number;
   snapToken?: string;
-  snapRedirectUrl?: string;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -22,7 +21,6 @@ export function MidtransPaymentModal({
   storeName,
   totalAmount,
   snapToken,
-  snapRedirectUrl,
   onSuccess,
   onClose,
 }: MidtransPaymentModalProps) {
@@ -129,7 +127,7 @@ export function MidtransPaymentModal({
         <div className="p-6 flex flex-col gap-5">
           {isPaid ? (
             <div className="py-8 flex flex-col items-center text-center gap-3">
-              <CheckCircle2 className="w-16 h-16 text-emerald-600 animate-bounce" />
+              <CheckCircle2 className="w-16 h-16 text-emerald-600" />
               <h3 className="text-xl font-extrabold text-slate-800">Pembayaran Berhasil!</h3>
               <p className="text-xs text-slate-500 max-w-xs">
                 Transaksi Anda sebesar Rp {formatRupiah(totalAmount)} telah berhasil diproses oleh Midtrans Sandbox.
@@ -222,19 +220,6 @@ export function MidtransPaymentModal({
                   </button>
                 </div>
               </div>
-
-              {snapRedirectUrl && (
-                <div className="text-center">
-                  <a
-                    href={snapRedirectUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-[#002b49] font-bold underline hover:text-[#001f35]"
-                  >
-                    Buka Halaman Snap Asli di Tab Baru &gt;
-                  </a>
-                </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-2 mt-2">

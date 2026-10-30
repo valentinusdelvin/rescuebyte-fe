@@ -8,7 +8,6 @@ export interface SellerOrderDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (order: MerchantOrderItem) => void;
-  onCancel: (order: MerchantOrderItem) => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
@@ -26,7 +25,6 @@ export function SellerOrderDetailModal({
   isOpen,
   onClose,
   onConfirm,
-  onCancel,
   onShowToast,
 }: SellerOrderDetailModalProps) {
   const [copied, setCopied] = useState(false);
@@ -46,15 +44,6 @@ export function SellerOrderDetailModal({
     setIsSubmitting(true);
     try {
       await onConfirm(order);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancelClick = async () => {
-    setIsSubmitting(true);
-    try {
-      await onCancel(order);
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +130,7 @@ export function SellerOrderDetailModal({
               WAKTU PESAN
             </span>
             <p className="font-bold text-xs sm:text-sm text-[#1b1c1c]">
-              {order.pickupDate || '29 Okt 2026, 14:15 WIB'}
+              {order.pickupDate || 'Waktu pesanan belum tersedia'}
             </p>
             <p className="text-[11px] text-gray-500 font-medium">Dibuat via RescueBite App</p>
           </div>
@@ -227,10 +216,10 @@ export function SellerOrderDetailModal({
             <div>
               <p className="text-xs font-semibold text-amber-900">Jadwal Pengambilan</p>
               <p className="text-xs sm:text-sm font-bold text-[#1b1c1c] mt-0.5">
-                {order.pickupDate || 'Hari Ini, 30 Oktober 2026'}
+                {order.pickupDate || 'Jadwal belum tersedia'}
               </p>
               <p className="text-[11px] text-amber-800 font-medium mt-0.5">
-                {order.pickupTime || '16.00 – 17.00 WIB'} (Sisa 40 menit)
+                {order.pickupTime || 'Waktu pengambilan belum tersedia'}
               </p>
             </div>
           </div>
@@ -273,11 +262,10 @@ export function SellerOrderDetailModal({
 
             <button
               type="button"
-              onClick={handleCancelClick}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-initial bg-[#ba1a1a] hover:bg-[#991414] active:scale-[0.98] text-white font-bold text-sm sm:text-base px-6 py-3 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              onClick={onClose}
+              className="flex-1 sm:flex-initial bg-gray-100 hover:bg-gray-200 active:scale-[0.98] text-gray-700 font-bold text-sm sm:text-base px-6 py-3 rounded-xl transition-all cursor-pointer"
             >
-              Batalkan!
+              Tutup
             </button>
           </div>
         </div>

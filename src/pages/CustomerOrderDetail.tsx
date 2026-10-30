@@ -21,6 +21,8 @@ import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
 import {
   fetchOrderDetailApi,
+  fetchPaymentDetailsApi,
+  fetchPaymentStatusApi,
   mapBackendStatusToCustomerStatus,
   updateCustomerOrderStatus,
   createCustomerOrder,
@@ -30,7 +32,8 @@ import {
 import { getPublicProducts, PublicProductItem } from '../services/productService';
 import { getUserCoordinates } from '../services/locationService';
 import { getCurrentUser } from '../services/authService';
-import { MidtransPaymentModal } from '../components/payment/MidtransPaymentModal';
+import { launchMidtransPayment } from '../services/midtransService';
+import { getStoreById, StoreProfileData } from '../services/storeService';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 
 import saladStopCard from '../assets/customer/card-saladstop.jpg';
@@ -49,6 +52,22 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function formatPickupDate(value?: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function hasConfirmedPayment(orderStatus: unknown): boolean {
+  const status = String(orderStatus || '').toUpperCase();
+  return [
+    'PAID', 'SETTLEMENT', 'CAPTURE', 'PAYMENT_SUCCESS', 'SUCCESS',
+    'WAITING_CONFIRMATION', 'WAITING_FOR_CONFIRMATION', 'IN_PROCESS', 'PROCESSING',
+    'READY_FOR_PICKUP', 'COMPLETED', 'FINISHED',
+  ].includes(status);
+}
+
 export function CustomerOrderDetail({
   orderData,
   onNavigateHome,
@@ -63,6 +82,14 @@ export function CustomerOrderDetail({
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isSnapPopupOpen, setIsSnapPopupOpen] = useState(false);
+  const [isPaymentSessionLoading, setIsPaymentSessionLoading] = useState(false);
+  const [retrievedPayment, setRetrievedPayment] = useState<{
+    backendOrderId: string;
+    snapToken?: string;
+  } | null>(null);
+  const [storeProfile, setStoreProfile] = useState<StoreProfileData | null>(null);
   const [recommendations, setRecommendations] = useState<PublicProductItem[]>([]);
 
   useEffect(() => {
@@ -79,8 +106,6 @@ export function CustomerOrderDetail({
     };
   }, []);
 
-
-  const [isMidtransModalOpen, setIsMidtransModalOpen] = useState(false);
 
   const effectiveOrderData = useMemo<PaymentOrderData | null>(() => {
     if (orderData) return orderData;
@@ -103,6 +128,7 @@ export function CustomerOrderDetail({
           },
         ],
         primaryStore: {
+          storeId: latest.storeId,
           storeName: latest.storeName,
           storeAddress: latest.storeAddress,
         },
@@ -117,11 +143,23 @@ export function CustomerOrderDetail({
         subtotal: latest.finalPrice,
         grandTotal: latest.finalPrice,
         status: latest.status,
-        createdAt: latest.pickupDate || new Date().toISOString(),
+        createdAt: latest.createdAt,
       } as PaymentOrderData;
     }
     return null;
   }, [orderData]);
+
+  const profileStoreId = effectiveOrderData?.primaryStore?.storeId;
+  useEffect(() => {
+    let isMounted = true;
+    setStoreProfile(null);
+    if (!profileStoreId) return () => { isMounted = false; };
+
+    getStoreById(profileStoreId).then((profile) => {
+      if (isMounted) setStoreProfile(profile);
+    });
+    return () => { isMounted = false; };
+  }, [profileStoreId]);
 
   const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
     const s = effectiveOrderData?.status || orderData?.status;
@@ -142,20 +180,65 @@ export function CustomerOrderDetail({
         setCurrentStatus(s);
       }
     }
-    const orderIdToFetch = (data as any)?.id || (data?.items?.[0] as any)?.id;
-    if (orderIdToFetch && typeof orderIdToFetch === 'string' && !orderIdToFetch.startsWith('ord-') && !orderIdToFetch.startsWith('item-')) {
-      fetchOrderDetailApi(orderIdToFetch).then((payload) => {
-        if (payload) {
-          if (payload.status) {
-            setCurrentStatus(mapBackendStatusToCustomerStatus(payload.status));
-          }
-          const redirectUrl = payload.payment?.snap_redirect_url || payload.snap_redirect_url;
-          if (redirectUrl && data && !data.snapRedirectUrl) {
-            data.snapRedirectUrl = redirectUrl;
-          }
+    const backendOrderId = data?.backendOrderId;
+    if (!backendOrderId) return;
+
+    const needsSnapToken = !data.snapToken;
+    if (needsSnapToken) setIsPaymentSessionLoading(true);
+    let cancelled = false;
+    let statusPollId: number | undefined;
+
+    const refreshOrderStatus = async (includePaymentDetails: boolean) => {
+      const latest = await fetchOrderDetailApi(backendOrderId);
+      const payment = includePaymentDetails
+        ? await fetchPaymentDetailsApi(backendOrderId)
+        : null;
+      if (cancelled) return null;
+
+      const snapToken = payment?.snap_token || latest?.payment?.snap_token || latest?.snap_token;
+      if (snapToken) {
+        setRetrievedPayment({ backendOrderId, snapToken });
+      }
+
+      if (!latest?.status) return null;
+
+      const backendStatus = mapBackendStatusToCustomerStatus(latest.status);
+      if (!(data.paymentConfirmedByGateway && backendStatus === 'menunggu-pembayaran')) {
+        setCurrentStatus(backendStatus);
+      }
+      return backendStatus;
+    };
+
+    const loadInitialStatus = async () => {
+      const attempts = data.paymentConfirmedByGateway ? 6 : 1;
+      let latestStatus: CustomerOrderStatus | null = null;
+      try {
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          latestStatus = await refreshOrderStatus(true);
+          if (cancelled || (latestStatus && latestStatus !== 'menunggu-pembayaran')) break;
+          if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-      }).catch(() => { });
-    }
+      } finally {
+        if (!cancelled && needsSnapToken) setIsPaymentSessionLoading(false);
+      }
+
+      const pollOrderStatus = async () => {
+        const status = await refreshOrderStatus(false);
+        if (!cancelled && status !== 'selesai' && status !== 'dibatalkan') {
+          statusPollId = window.setTimeout(() => void pollOrderStatus(), 5000);
+        }
+      };
+
+      if (!cancelled && latestStatus !== 'selesai' && latestStatus !== 'dibatalkan') {
+        statusPollId = window.setTimeout(() => void pollOrderStatus(), 5000);
+      }
+    };
+
+    void loadInitialStatus();
+    return () => {
+      cancelled = true;
+      if (statusPollId) window.clearTimeout(statusPollId);
+    };
   }, [effectiveOrderData, orderData]);
 
   const orderId = effectiveOrderData?.orderId || orderData?.orderId || 'RB261030-001';
@@ -182,24 +265,59 @@ export function CustomerOrderDetail({
     return 2;
   }, [currentStatus]);
 
-  const handlePaymentSuccess = () => {
-    setIsMidtransModalOpen(false);
-    setCurrentStatus('menunggu-konfirmasi');
-    const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
+  const handlePaymentSuccess = async () => {
     const targetData = effectiveOrderData || orderData;
-    if (targetId) {
-      const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
-      if (!updated && targetData) {
+    const backendOrderId = targetData?.backendOrderId;
+    if (!backendOrderId) {
+      onShowToast?.('Pesanan ini belum memiliki ID backend, jadi status pembayaran belum bisa diverifikasi.', 'error');
+      return;
+    }
+
+    setIsVerifyingPayment(true);
+    try {
+      let verifiedStatus: CustomerOrderStatus = 'menunggu-konfirmasi';
+      let paymentVerified = false;
+      let latestPaymentState: Awaited<ReturnType<typeof fetchPaymentStatusApi>> = 'unknown';
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const [paymentState, latestOrder] = await Promise.all([
+          fetchPaymentStatusApi(backendOrderId),
+          fetchOrderDetailApi(backendOrderId),
+        ]);
+        latestPaymentState = paymentState;
+        if (paymentState === 'paid' || hasConfirmedPayment(latestOrder?.status)) {
+          paymentVerified = true;
+          if (latestOrder?.status && hasConfirmedPayment(latestOrder.status)) {
+            verifiedStatus = mapBackendStatusToCustomerStatus(latestOrder.status);
+          }
+          break;
+        }
+        if (paymentState === 'failed') break;
+        if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (!paymentVerified) {
+        setCurrentStatus('menunggu-pembayaran');
+        if (latestPaymentState === 'failed') {
+          onShowToast?.('Midtrans melaporkan pembayaran gagal atau kedaluwarsa. Pesanan tetap menunggu pembayaran; silakan coba lagi.', 'warning');
+        } else if (latestPaymentState === 'pending') {
+          onShowToast?.('Pembayaran masih diproses Midtrans. Status pesanan tetap menunggu pembayaran sampai backend mengonfirmasi.', 'info');
+        } else {
+          onShowToast?.('Backend belum mengonfirmasi pembayaran. Status pesanan tetap menunggu pembayaran; coba periksa lagi sebentar.', 'info');
+        }
+        return;
+      }
+
+      setCurrentStatus(verifiedStatus);
+      if (targetData) {
         createCustomerOrder(
-          {
-            ...targetData,
-            status: 'menunggu-konfirmasi',
-          },
-          'menunggu-konfirmasi'
+          { ...targetData, status: verifiedStatus, paymentConfirmedByGateway: true },
+          verifiedStatus
         );
       }
+      onShowToast?.('Pembayaran berhasil diverifikasi oleh backend. Menunggu konfirmasi toko mitra.', 'success');
+    } finally {
+      setIsVerifyingPayment(false);
     }
-    onShowToast?.('Pembayaran berhasil diverifikasi! Menunggu konfirmasi toko mitra.', 'success');
   };
 
   useEffect(() => {
@@ -222,17 +340,27 @@ export function CustomerOrderDetail({
   }, [currentStatus, orderId, effectiveOrderData, orderData]);
 
   const activeData = effectiveOrderData || orderData;
+  const paymentSnapToken = activeData?.snapToken || (
+    retrievedPayment?.backendOrderId === activeData?.backendOrderId
+      ? retrievedPayment?.snapToken
+      : undefined
+  );
   const items = activeData?.items && activeData.items.length > 0 ? activeData.items : null;
   const primaryItem = items?.[0];
 
   const itemName = primaryItem?.name || 'Paket Makanan Surplus';
-  const storeName = activeData?.primaryStore?.storeName || primaryItem?.storeName || 'Toko Mitra';
-  const storeAddress =
-    activeData?.primaryStore?.storeAddress ||
-    (activeData?.primaryStore?.storeName ? `${activeData.primaryStore.storeName}, Kota Malang` : 'Kota Malang, Jawa Timur');
-  const storeRating = activeData?.primaryStore?.rating || 5.0;
-  const storeReviewCount = activeData?.primaryStore?.reviewCount || 0;
-  const storeAvatar = activeData?.primaryStore?.storeAvatar || storeName.slice(0, 2).toUpperCase();
+  const storeName = storeProfile?.name || activeData?.primaryStore?.storeName || primaryItem?.storeName || 'Mitra F&B';
+  const profileAddress = [storeProfile?.address, storeProfile?.district, storeProfile?.city]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(', ');
+  const storeAddress = profileAddress || activeData?.primaryStore?.storeAddress || '';
+  const storeAvatar = storeProfile?.profile_picture_url || activeData?.primaryStore?.storeAvatar || storeName.slice(0, 2).toUpperCase();
+  const profilePickupHours = storeProfile?.operational_start && storeProfile?.operational_end
+    ? `${storeProfile.operational_start.slice(0, 5).replace(':', '.')}–${storeProfile.operational_end.slice(0, 5).replace(':', '.')} WIB`
+    : '';
+  const pickupSchedule = [formatPickupDate(activeData?.pickupDate), activeData?.pickupTimeSlot || profilePickupHours]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(' | ');
 
   const recipientName = activeData?.customerInfo?.name || getCurrentUser()?.name || 'Pengguna';
   const totalBoxes = activeData?.totalBoxes || primaryItem?.quantity || 1;
@@ -255,12 +383,12 @@ export function CustomerOrderDetail({
 
   const orderTimeFormatted = useMemo(() => {
     if (orderCreatedAt) {
-      try {
-        const d = new Date(orderCreatedAt);
+      const d = new Date(orderCreatedAt);
+      if (!Number.isNaN(d.getTime())) {
         const day = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
         return `${day} • ${time} WIB`;
-      } catch { }
+      }
     }
     return '';
   }, [orderCreatedAt]);
@@ -295,22 +423,22 @@ export function CustomerOrderDetail({
 
   const completionTimestamp = useMemo(() => {
     if (orderCreatedAt) {
-      try {
-        const d = new Date(orderCreatedAt);
+      const d = new Date(orderCreatedAt);
+      if (!Number.isNaN(d.getTime())) {
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-      } catch { }
+      }
     }
-    return '23 Okt 2026, 15:42 WIB';
+    return 'Waktu belum tersedia';
   }, [orderCreatedAt]);
 
   const fullOrderDate = useMemo(() => {
     if (orderCreatedAt) {
-      try {
-        const d = new Date(orderCreatedAt);
+      const d = new Date(orderCreatedAt);
+      if (!Number.isNaN(d.getTime())) {
         return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-      } catch { }
+      }
     }
-    return '23 Oktober 2026, 15:42 WIB';
+    return 'Tanggal belum tersedia';
   }, [orderCreatedAt]);
 
   const statusConfig = useMemo(() => {
@@ -324,11 +452,11 @@ export function CustomerOrderDetail({
             <>
               Pesanan paket surplus dari{' '}
               <strong className="text-slate-800 font-semibold">{storeName}</strong> sudah berhasil dibuat. Selesaikan
-              pembayaranmu sebelum batas waktu berakhir agar mitra toko dapat segera memproses dan menyiapkan makananmu.
+              pembayaranmu melalui Midtrans agar mitra toko dapat memproses pesanan setelah pembayaran terverifikasi.
             </>
           ),
-          timeLabel: 'Batas Pembayaran',
-          timeValue: '15 Menit Setelah Pesanan Dibuat',
+          timeLabel: '',
+          timeValue: '',
           timelineNote: 'Pesanan telah dibuat dan menunggu penyelesaian pembayaran dari pelanggan.',
         };
       case 2:
@@ -490,15 +618,17 @@ export function CustomerOrderDetail({
                     <p className="text-sm font-bold text-[#1b1c1c]">{recipientName}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-2 sm:pt-0 lg:pt-2 border-t sm:border-t-0 lg:border-t border-slate-100">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
-                    <Clock className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                {statusConfig.timeLabel && statusConfig.timeValue && (
+                  <div className="flex items-center gap-3 pt-2 sm:pt-0 lg:pt-2 border-t sm:border-t-0 lg:border-t border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                      <Clock className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-500 font-medium">{statusConfig.timeLabel}</p>
+                      <p className="text-sm font-bold text-[#1b1c1c]">{statusConfig.timeValue}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[11px] text-slate-500 font-medium">{statusConfig.timeLabel}</p>
-                    <p className="text-sm font-bold text-[#1b1c1c]">{statusConfig.timeValue}</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </section>
@@ -690,21 +820,18 @@ export function CustomerOrderDetail({
                       >
                         {storeName}
                       </h4>
-                      <span className="text-xs text-slate-500 font-medium">
-                        ★ {storeRating} ({storeReviewCount} ulasan)
-                      </span>
                     </div>
 
                     <div className="flex items-start gap-1.5 mt-1 text-xs text-slate-500">
                       <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" aria-hidden="true" />
-                      <p className="line-clamp-2">{storeAddress}</p>
+                      <p className="line-clamp-2">{storeAddress || 'Alamat toko belum tersedia'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-100">
                   <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
-                    Jadwal Ambil: {orderData?.pickupTimeSlot || '15.00 - 18.00 WIB'}
+                    Jadwal Ambil: {pickupSchedule || 'Belum tersedia'}
                   </span>
                   <button
                     type="button"
@@ -814,26 +941,38 @@ export function CustomerOrderDetail({
                     <div className="mt-3 flex flex-col gap-2">
                       <button
                         type="button"
+                        disabled={isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading}
                         onClick={() => {
-                          if (activeData?.snapRedirectUrl) {
-                            try {
-                              window.open(activeData.snapRedirectUrl, '_blank');
-                            } catch { }
+                          if (isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading) return;
+                          setIsSnapPopupOpen(true);
+                          try {
+                            launchMidtransPayment(paymentSnapToken, {
+                              onSuccess: () => {
+                                setIsSnapPopupOpen(false);
+                                return handlePaymentSuccess();
+                              },
+                              onPending: () => {
+                                setIsSnapPopupOpen(false);
+                                onShowToast?.('Pembayaran masih menunggu. Status pesanan tetap menunggu pembayaran.', 'info');
+                              },
+                              onError: () => {
+                                setIsSnapPopupOpen(false);
+                                onShowToast?.('Pembayaran belum berhasil. Silakan coba lagi.', 'error');
+                              },
+                              onClose: () => {
+                                setIsSnapPopupOpen(false);
+                                onShowToast?.('Pesanan tetap menunggu pembayaran.', 'info');
+                              },
+                            });
+                          } catch (err) {
+                            setIsSnapPopupOpen(false);
+                            onShowToast?.(err instanceof Error ? err.message : 'Halaman Midtrans belum tersedia.', 'error');
                           }
-                          setIsMidtransModalOpen(true);
                         }}
-                        className="w-full py-3.5 bg-[#002b49] hover:bg-[#001f35] text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-[#002b49] hover:bg-[#001f35] disabled:opacity-60 disabled:cursor-wait text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
                       >
                         <CreditCard className="w-4 h-4 text-[#00b4d8]" />
-                        <span>Bayar Sekarang via Midtrans</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handlePaymentSuccess}
-                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer text-center"
-                      >
-                        Simulasikan Pembayaran Berhasil
+                        <span>{isVerifyingPayment ? 'Memverifikasi pembayaran…' : isPaymentSessionLoading ? 'Memuat sesi pembayaran…' : isSnapPopupOpen ? 'Popup pembayaran terbuka…' : 'Bayar Sekarang via Midtrans'}</span>
                       </button>
                     </div>
                   ) : (
@@ -1001,18 +1140,6 @@ export function CustomerOrderDetail({
           </div>
         </div>
       )}
-
-      {/* Midtrans Payment Simulator Modal */}
-      <MidtransPaymentModal
-        isOpen={isMidtransModalOpen}
-        orderId={orderId}
-        storeName={storeName}
-        totalAmount={grandTotal}
-        snapToken={activeData?.snapToken}
-        snapRedirectUrl={activeData?.snapRedirectUrl}
-        onSuccess={handlePaymentSuccess}
-        onClose={() => setIsMidtransModalOpen(false)}
-      />
 
       {/* Customer Footer */}
       <CustomerFooter onNavigateSeller={onNavigateSeller} />

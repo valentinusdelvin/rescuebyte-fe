@@ -7,6 +7,7 @@ import {
   deleteProduct,
   formatRupiah,
   getMerchantProducts,
+  mapBackendProductToItem,
   toggleProductStatusApi,
   deleteProductApi,
   updateProductStockApi,
@@ -51,9 +52,7 @@ export function Daganganku({
     getMerchantProducts()
       .then((serverProducts) => {
         if (!isMounted) return;
-        if (serverProducts && serverProducts.length > 0) {
-          setProducts(serverProducts);
-        }
+        setProducts(serverProducts);
       })
       .catch((err) => {
         console.warn('Gagal mengambil daftar produk dari backend, menggunakan cache:', err);
@@ -115,20 +114,6 @@ export function Daganganku({
   const handleToggleVisibility = async (item: ProductItem) => {
     const isCurrentlyActive = item.status !== 'nonaktif';
     const nextIsActive = !isCurrentlyActive;
-    let nextStatus: 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
-
-    if (nextIsActive) {
-      if (item.stock === 0) {
-        nextStatus = 'habis';
-      } else if (item.stock <= 2) {
-        nextStatus = 'segera_habis';
-      } else {
-        nextStatus = 'aktif';
-      }
-    } else {
-      nextStatus = 'nonaktif';
-    }
-
     if (onTriggerLoading) {
       await onTriggerLoading(
         'Memperbarui Status Produk...',
@@ -136,40 +121,48 @@ export function Daganganku({
       );
     }
 
-    // Try backend API toggle
+    let serverProduct: Awaited<ReturnType<typeof toggleProductStatusApi>>;
     try {
-      await toggleProductStatusApi(item.id, nextIsActive);
+      serverProduct = await toggleProductStatusApi(item.id, nextIsActive);
     } catch (err) {
-      console.warn('Backend toggle status failed, updated locally:', err);
+      console.warn('Backend toggle status failed:', err);
+      const message = err instanceof Error ? err.message : 'Gagal mengubah status produk. Coba lagi.';
+      onShowToast?.(message);
+      return;
     }
 
+    const confirmedProduct = mapBackendProductToItem(serverProduct);
+    const confirmedIsActive = serverProduct.is_active;
+    const confirmedStatus = confirmedProduct.status;
     const updated = updateProduct(item.id, {
-      status: nextStatus,
-      isActive: nextIsActive,
+      status: confirmedStatus,
+      isActive: confirmedIsActive,
+      stock: confirmedProduct.stock,
+      maxStock: confirmedProduct.maxStock,
     });
     setProducts(updated);
 
     // Sync to marketplace cache & notify
     syncProductToMarketplaceCache(item.id, {
-      status: nextStatus,
-      isActive: nextIsActive,
-      stock: item.stock,
+      status: confirmedStatus,
+      isActive: confirmedIsActive,
+      stock: confirmedProduct.stock,
       name: item.name,
     });
     window.dispatchEvent(
       new CustomEvent('rescuebyte_product_updated', {
         detail: {
           id: item.id,
-          status: nextStatus,
-          isActive: nextIsActive,
-          stock: item.stock,
+          status: confirmedStatus,
+          isActive: confirmedIsActive,
+          stock: confirmedProduct.stock,
         },
       })
     );
 
     if (onShowToast) {
       onShowToast(
-        `Produk "${item.name}" ${nextIsActive ? 'berhasil diaktifkan' : 'telah dinonaktifkan'}`
+        `Produk "${item.name}" ${confirmedIsActive ? 'berhasil diaktifkan' : 'telah dinonaktifkan'}`
       );
     }
   };
@@ -189,11 +182,13 @@ export function Daganganku({
       }
     }
 
-    const updatedItem = await updateProductStockApi(item, validStock, nextStatus);
-    setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
-
-    if (onShowToast) {
-      onShowToast(`Stok "${item.name}" berhasil diubah menjadi ${validStock} box`);
+    try {
+      const updatedItem = await updateProductStockApi(item, validStock, nextStatus);
+      setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
+      onShowToast?.(`Stok "${item.name}" berhasil diubah menjadi ${validStock} box`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal mengubah stok produk.';
+      onShowToast?.(message);
     }
   };
 
@@ -213,11 +208,13 @@ export function Daganganku({
       }
     }
 
-    const updatedItem = await updateProductStockApi(item, newStock, nextStatus);
-    setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
-
-    if (onShowToast) {
-      onShowToast(`Stok "${item.name}" berhasil diubah menjadi ${newStock} box`);
+    try {
+      const updatedItem = await updateProductStockApi(item, newStock, nextStatus);
+      setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
+      onShowToast?.(`Stok "${item.name}" berhasil diubah menjadi ${newStock} box`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal mengubah stok produk.';
+      onShowToast?.(message);
     }
   };
 
@@ -230,10 +227,47 @@ export function Daganganku({
     const target = itemToDelete;
 
     // Try backend API delete
+    let deletionResult: Awaited<ReturnType<typeof deleteProductApi>>;
     try {
-      await deleteProductApi(target.id);
+      deletionResult = await deleteProductApi(target.id);
     } catch (err) {
-      console.warn('Backend delete product failed, removed locally:', err);
+      console.warn('Backend delete product failed:', err);
+      const message = err instanceof Error ? err.message : 'Gagal menghapus produk. Coba lagi.';
+      onShowToast?.(message);
+      setItemToDelete(null);
+      return;
+    }
+
+    if (deletionResult.type === 'deactivated') {
+      const confirmedProduct = mapBackendProductToItem(deletionResult.product);
+      const updated = updateProduct(target.id, {
+        status: confirmedProduct.status,
+        isActive: deletionResult.product.is_active,
+        stock: confirmedProduct.stock,
+        maxStock: confirmedProduct.maxStock,
+      });
+      setProducts(updated);
+      syncProductToMarketplaceCache(target.id, {
+        status: confirmedProduct.status,
+        isActive: deletionResult.product.is_active,
+        stock: confirmedProduct.stock,
+        name: target.name,
+      });
+      window.dispatchEvent(
+        new CustomEvent('rescuebyte_product_updated', {
+          detail: {
+            id: target.id,
+            status: confirmedProduct.status,
+            isActive: deletionResult.product.is_active,
+            stock: confirmedProduct.stock,
+          },
+        })
+      );
+      setItemToDelete(null);
+      onShowToast?.(
+        `Produk masih terhubung dengan riwayat pesanan, jadi dinonaktifkan dan disembunyikan dari marketplace.`
+      );
+      return;
     }
 
     const updated = deleteProduct(target.id);

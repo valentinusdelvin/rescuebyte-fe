@@ -133,7 +133,7 @@ export function CustomerCart({
           return prev;
         });
       }
-    }).catch(() => {});
+    }).catch(() => { });
     return () => {
       isCancelled = true;
     };
@@ -202,7 +202,7 @@ export function CustomerCart({
           return currentStores;
         });
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       isCancelled = true;
     };
@@ -237,32 +237,29 @@ export function CustomerCart({
     });
   };
 
-  // Calculate totals based on real selected item prices from database/cart
+  // Calculate totals matching the design based on SELECTED items
   const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal, selectedCount } = useMemo(() => {
     let boxes = 0;
-    let origTotal = 0;
-    let rescTotal = 0;
+    let sub = 0;
     let count = 0;
     cartStores.forEach((store) => {
       store.items.forEach((item) => {
         if (selectedItemIds.has(item.id)) {
           boxes += item.quantity;
-          const itemPrice = item.rescuePrice || (item as any).price || 0;
-          const origPrice = item.originalPrice && item.originalPrice > itemPrice ? item.originalPrice : itemPrice;
-          origTotal += origPrice * item.quantity;
-          rescTotal += itemPrice * item.quantity;
+          sub += item.originalPrice * item.quantity;
           count += 1;
         }
       });
     });
 
-    const disc = Math.max(0, origTotal - rescTotal);
-    const fee = boxes > 0 ? 2000 : 0;
-    const finalTotal = rescTotal + fee;
+    // Discount matching 50%
+    const disc = Math.round(sub * 0.5);
+    const fee = boxes > 0 ? 4000 : 0;
+    const finalTotal = sub - disc + fee;
 
     return {
       totalBoxes: boxes,
-      subtotal: origTotal,
+      subtotal: sub,
       discountTotal: disc,
       serviceFee: fee,
       grandTotal: finalTotal,
@@ -290,7 +287,7 @@ export function CustomerCart({
     saveCart(updated);
     const targetItem = cartStores.find((s) => s.storeId === storeId)?.items.find((i) => i.id === itemId);
     if (targetItem && targetItem.quantity < 5) {
-      updateCartItemQtyApi(itemId, targetItem.quantity + 1).catch(() => {});
+      updateCartItemQtyApi(itemId, targetItem.quantity + 1).catch(() => { });
     }
   };
 
@@ -321,7 +318,7 @@ export function CustomerCart({
 
     setCartStores(updated);
     saveCart(updated);
-    updateCartItemQtyApi(item.id, Math.max(1, item.quantity - 1)).catch(() => {});
+    updateCartItemQtyApi(item.id, Math.max(1, item.quantity - 1)).catch(() => { });
   };
 
   const handlePromptRemoveItem = (storeId: string, storeName: string, item: CartItem) => {
@@ -346,7 +343,7 @@ export function CustomerCart({
     if (!deleteTarget) return;
 
     if (deleteTarget.type === 'store') {
-      removeCartStoreApi(deleteTarget.storeId).catch(() => {});
+      removeCartStoreApi(deleteTarget.storeId).catch(() => { });
       removeCartStore(deleteTarget.storeId);
       setSelectedItemIds((prev) => {
         const next = new Set(prev);
@@ -358,7 +355,7 @@ export function CustomerCart({
       });
       if (onShowToast) onShowToast(`Semua pesanan dari ${deleteTarget.storeName} dihapus.`);
     } else if (deleteTarget.type === 'item' && deleteTarget.itemId) {
-      removeCartItemApi(deleteTarget.storeId, deleteTarget.itemId).catch(() => {});
+      removeCartItemApi(deleteTarget.storeId, deleteTarget.itemId).catch(() => { });
       removeCartItem(deleteTarget.storeId, deleteTarget.itemId);
       setSelectedItemIds((prev) => {
         const next = new Set(prev);
@@ -467,10 +464,10 @@ export function CustomerCart({
                           aria-checked={isStoreAllSelected(store)}
                           onClick={() => toggleStoreSelection(store)}
                           className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${isStoreAllSelected(store)
-                              ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
-                              : store.items.some((it) => selectedItemIds.has(it.id))
-                                ? 'bg-[#16a34a]/15 border-[#16a34a] text-[#16a34a]'
-                                : 'bg-white border-gray-300 hover:border-gray-400'
+                            ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
+                            : store.items.some((it) => selectedItemIds.has(it.id))
+                              ? 'bg-[#16a34a]/15 border-[#16a34a] text-[#16a34a]'
+                              : 'bg-white border-gray-300 hover:border-gray-400'
                             }`}
                           aria-label={`Pilih semua produk dari ${store.storeName}`}
                         >
@@ -565,8 +562,8 @@ export function CustomerCart({
                               aria-checked={selectedItemIds.has(item.id)}
                               onClick={() => toggleItemSelection(item.id)}
                               className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${selectedItemIds.has(item.id)
-                                  ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
-                                  : 'bg-white border-gray-300 hover:border-gray-400'
+                                ? 'bg-[#16a34a] border-[#16a34a] text-white shadow-2xs'
+                                : 'bg-white border-gray-300 hover:border-gray-400'
                                 }`}
                               aria-label={`Pilih ${item.name}`}
                             >

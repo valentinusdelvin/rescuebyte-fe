@@ -44,6 +44,8 @@ function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+const ORDERS_PER_PAGE = 5;
+
 export function CustomerOrderHistory({
   onNavigateHome,
   onNavigateMarketplace,
@@ -97,6 +99,7 @@ export function CustomerOrderHistory({
 
   useEffect(() => {
     let isCancelled = false;
+    let refreshTimer: number | undefined;
     async function loadBackendOrders() {
       try {
         const backendOrders = await fetchCustomerOrdersApi();
@@ -105,11 +108,18 @@ export function CustomerOrderHistory({
         }
       } catch (err) {
         console.warn('Gagal memuat pesanan dari backend:', err);
+      } finally {
+        if (!isCancelled) {
+          refreshTimer = window.setTimeout(() => {
+            void loadBackendOrders();
+          }, 15000);
+        }
       }
     }
-    loadBackendOrders();
+    void loadBackendOrders();
     return () => {
       isCancelled = true;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
     };
   }, []);
 
@@ -158,15 +168,16 @@ export function CustomerOrderHistory({
 
     const paymentData: PaymentOrderData = {
       orderId: order.orderNumber,
+      backendOrderId: order.id,
       status: order.status,
       items: [
         {
           id: order.id,
           name: order.productName,
-          storeId: 'store-1',
+          storeId: order.storeId,
           storeName: order.storeName,
           storeAvatar: resolvedAvatar,
-          storeAddress: `${order.storeName}, Area Terdekat`,
+          storeAddress: order.storeAddress,
           rating: order.storeRating,
           reviewCount: order.storeReviewCount,
           distanceText: order.storeDistance,
@@ -179,9 +190,10 @@ export function CustomerOrderHistory({
         },
       ],
       primaryStore: {
+        storeId: order.storeId,
         storeName: order.storeName,
         storeAvatar: resolvedAvatar,
-        storeAddress: `${order.storeName}, Area Terdekat`,
+        storeAddress: order.storeAddress,
         rating: order.storeRating,
         reviewCount: order.storeReviewCount,
       },
@@ -197,6 +209,7 @@ export function CustomerOrderHistory({
       discountTotal: 15000,
       serviceFee: 2000,
       grandTotal: order.finalPrice,
+      createdAt: order.createdAt,
     };
 
     if (onNavigateOrderDetail) {
@@ -232,6 +245,13 @@ export function CustomerOrderHistory({
         return matchStatus && matchSearch;
       });
   }, [orders, activeStatus, searchQuery]);
+
+  const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
+  const visiblePage = Math.min(currentPage, Math.max(totalPages, 1));
+  const pageOrders = filteredOrders.slice(
+    (visiblePage - 1) * ORDERS_PER_PAGE,
+    visiblePage * ORDERS_PER_PAGE
+  );
 
   // Tab count calculations
   const counts = useMemo(() => {
@@ -436,7 +456,7 @@ export function CustomerOrderHistory({
                     )}
                   </div>
                 ) : (
-                  filteredOrders.map((order) => {
+                  pageOrders.map((order) => {
                     return (
                       <article
                         key={order.id}
@@ -582,6 +602,11 @@ export function CustomerOrderHistory({
                         <div className="lg:w-1/4 shrink-0 flex flex-col items-start lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                           {/* Status Badge */}
                           <div>
+                            {order.status === 'menunggu-pembayaran' && (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                                Menunggu Pembayaran <ChevronRight className="w-3 h-3" />
+                              </span>
+                            )}
                             {order.status === 'menunggu-konfirmasi' && (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                 Menunggu Konfirmasi <ChevronRight className="w-3 h-3" />
@@ -598,8 +623,13 @@ export function CustomerOrderHistory({
                               </span>
                             )}
                             {order.status === 'selesai' && (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                Selesai <ChevronRight className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <Check className="w-3 h-3" aria-hidden="true" /> Selesai
+                              </span>
+                            )}
+                            {order.status === 'dibatalkan' && (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                Dibatalkan <ChevronRight className="w-3 h-3" />
                               </span>
                             )}
                           </div>
@@ -656,44 +686,35 @@ export function CustomerOrderHistory({
               </div>
 
               {/* Pagination */}
-              {filteredOrders.length > 0 && (
+              {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-1.5 pt-4">
                   <button
                     type="button"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(visiblePage - 1)}
+                    disabled={visiblePage === 1}
+                    aria-label="Halaman sebelumnya"
                     className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      aria-current={visiblePage === page ? 'page' : undefined}
+                      aria-label={`Halaman ${page}`}
+                      className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${visiblePage === page ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    onClick={() => setCurrentPage(1)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 1 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                  >
-                    1
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(2)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 2 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                  >
-                    2
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(3)}
-                    className={`w-8 h-8 rounded-full text-xs font-bold transition cursor-pointer ${currentPage === 3 ? 'bg-[#1b1c1c] text-white' : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                  >
-                    3
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((p) => Math.min(3, p + 1))}
-                    disabled={currentPage === 3}
+                    onClick={() => setCurrentPage(visiblePage + 1)}
+                    disabled={visiblePage === totalPages}
+                    aria-label="Halaman berikutnya"
                     className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />

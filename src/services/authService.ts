@@ -94,11 +94,15 @@ export function extractApiErrorMessage(err: unknown, defaultMessage: string): st
           message?: string;
           error?: string;
           error_code?: string;
+          details?: unknown;
         };
       };
       message?: string;
     };
 
+    if (typeof data.payload?.error?.details === 'string' && data.payload.error.details) {
+      return data.payload.error.details;
+    }
     if (data.payload?.error?.message) {
       return data.payload.error.message;
     }

@@ -22,7 +22,6 @@ import { getCartCount, subscribeToCart } from '../services/cartService';
 import {
   getPublicProducts,
   PublicProductItem,
-  getStoredProducts,
 } from '../services/productService';
 import { formatDistanceKm } from '../services/locationService';
 
@@ -45,6 +44,7 @@ export interface MarketplaceBoxItem extends CustomerMysteryBox {
   city: string;
   categoryType: 'pastry' | 'heavy' | 'beverage' | 'snack';
   productName?: string;
+  stock?: number;
 }
 
 /**
@@ -123,6 +123,7 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
     categoryBadge: realProductName,
     categoryType: 'heavy',
     city: fallbackCity,
+    stock: p.stock ?? 1,
     remainingBoxesText: `Sisa ${p.stock ?? 1} Box`,
     distanceText,
     discountPercent: discount,
@@ -142,73 +143,16 @@ function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Malang'): 
 export const MARKETPLACE_CACHE_KEY = 'rescuebyte_cached_marketplace_products';
 
 function getInitialMarketplaceProducts(): MarketplaceBoxItem[] {
-  const localProducts = getStoredProducts();
-  const savedStoreName = (() => {
-    try {
-      return localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
-    } catch {
-      return 'Toko Rejak';
-    }
-  })();
-
-  // 1. Prioritize cached products from previous API fetch (instant 0ms load)
+  // Use the last successful public API response for an instant first render.
   try {
     const cached = localStorage.getItem(MARKETPLACE_CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((item: any) => {
-          const match = localProducts.find(
-            (lp) => lp.id === item.id || lp.name.toLowerCase() === (item.productName || '').toLowerCase()
-          );
-          if (match) {
-            const isNonaktif = match.status === 'nonaktif' || !match.isActive;
-            const stockDisplay = isNonaktif ? 0 : match.stock;
-            return {
-              ...item,
-              remainingBoxesText: `Sisa ${stockDisplay} Box`,
-            };
-          }
-          return item;
-        });
+        return parsed;
       }
     }
   } catch {}
-
-  // 2. Fallback to local stored merchant products (do NOT filter out nonaktif!)
-  if (localProducts.length > 0) {
-    return localProducts.map((lp) => {
-      const isNonaktif = lp.status === 'nonaktif' || !lp.isActive;
-      const stockDisplay = isNonaktif ? 0 : lp.stock;
-      const discount =
-        lp.normalPrice > 0
-          ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
-          : 0;
-      return {
-        id: lp.id,
-        storeName: savedStoreName,
-        productName: lp.name,
-        category: lp.name,
-        categoryBadge: lp.name,
-        categoryType: 'heavy',
-        city: 'Malang',
-        remainingBoxesText: `Sisa ${stockDisplay} Box`,
-        distanceText: '0.0 km',
-        discountPercent: discount,
-        originalPrice: lp.normalPrice,
-        rescuePrice: lp.rescuePrice,
-        pickupTime: '08.00 - 23.59 WIB',
-        description:
-          lp.description ||
-          'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-        tags: [savedStoreName, lp.name, '✓ Halal MUI', 'Toko Mitra'],
-        imageSrc: lp.imageUrl || cardMonsieurSpoon,
-        rating: 5.0,
-        reviewCount: 12,
-      };
-    });
-  }
-
   return [];
 }
 
@@ -347,73 +291,10 @@ export function CustomerMarketplace({
 
         const mappedApi = publicItems.map((p) => mapPublicProductToItem(p, 'Malang'));
 
-        // Local stored products
-        const localProducts = getStoredProducts();
-        const savedStoreName = (() => {
-          try {
-            return localStorage.getItem('rescuebyte_store_name') || 'Toko Rejak';
-          } catch {
-            return 'Toko Rejak';
-          }
-        })();
-
-        // Update mappedApi with latest local stock / status
-        const syncedApi = mappedApi.map((ap) => {
-          const match = localProducts.find(
-            (lp) => lp.id === ap.id || lp.name.toLowerCase() === (ap.productName || '').toLowerCase()
-          );
-          if (match) {
-            const isNonaktif = match.status === 'nonaktif' || !match.isActive;
-            const stockDisplay = isNonaktif ? 0 : match.stock;
-            return {
-              ...ap,
-              remainingBoxesText: `Sisa ${stockDisplay} Box`,
-            };
-          }
-          return ap;
-        });
-
-        // Map local products not in syncedApi (including nonaktif products so they never vanish!)
-        const mappedLocal: MarketplaceBoxItem[] = localProducts
-          .filter((lp) => !syncedApi.some((ap) => ap.id === lp.id || (ap.productName && ap.productName.toLowerCase() === lp.name.toLowerCase())))
-          .map((lp) => {
-            const isNonaktif = lp.status === 'nonaktif' || !lp.isActive;
-            const stockDisplay = isNonaktif ? 0 : lp.stock;
-            const discount =
-              lp.normalPrice > 0
-                ? Math.round(((lp.normalPrice - lp.rescuePrice) / lp.normalPrice) * 100)
-                : 0;
-            return {
-              id: lp.id,
-              storeName: savedStoreName,
-              productName: lp.name,
-              category: lp.name,
-              categoryBadge: lp.name,
-              categoryType: 'heavy',
-              city: 'Malang',
-              remainingBoxesText: `Sisa ${stockDisplay} Box`,
-              distanceText: '0.0 km',
-              discountPercent: discount,
-              originalPrice: lp.normalPrice,
-              rescuePrice: lp.rescuePrice,
-              pickupTime: '08.00 - 23.59 WIB',
-              description:
-                lp.description ||
-                'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
-              tags: [savedStoreName, lp.name, 'Halal MUI', 'Toko Mitra'],
-              imageSrc: lp.imageUrl || cardMonsieurSpoon,
-              rating: 5.0,
-              reviewCount: 12,
-            };
-          });
-
-        const merged = [...syncedApi, ...mappedLocal];
-        if (merged.length > 0) {
-          setApiProducts(merged);
-          try {
-            localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(merged));
-          } catch {}
-        }
+        setApiProducts(mappedApi);
+        try {
+          localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(mappedApi));
+        } catch {}
       } catch (err) {
         console.warn('Gagal mengambil produk marketplace:', err);
       } finally {
