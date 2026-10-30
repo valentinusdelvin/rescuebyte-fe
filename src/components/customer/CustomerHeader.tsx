@@ -256,15 +256,6 @@ export function CustomerHeader({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateIndicatorPosition]);
 
-
-  const scrollToSection = (id: string) => {
-    setIsMobileMenuOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const handleSelectTab = (tab: PillTabType) => {
     // Guard: Redirect unauthenticated user to login when clicking marketplace
     if (tab === 'marketplace') {
@@ -302,7 +293,7 @@ export function CustomerHeader({
     } else if (tab === 'marketplace') {
       window.location.hash = '#marketplace';
     } else if (tab === 'kontak') {
-      scrollToSection('kontak-section');
+      window.location.hash = '#kontak';
     }
   };
 

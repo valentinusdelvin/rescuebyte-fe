@@ -166,14 +166,6 @@ export function CustomerFooter({
                     Gabung sebagai Mitra Toko
                   </a>
                 </li>
-                <li>
-                  <a
-                    href="#about-us-section"
-                    className="text-xs sm:text-[13px] text-slate-500 hover:text-emerald-700 transition-colors"
-                  >
-                    Program Donasi Pangan
-                  </a>
-                </li>
               </ul>
             </div>
 
@@ -181,16 +173,6 @@ export function CustomerFooter({
             <div className="flex flex-col">
               <h4 className="text-sm font-bold text-[#1b1c1c] mb-4">Bantuan & Layanan</h4>
               <ul className="flex flex-col gap-2.5">
-                <li>
-                  <button
-                    type="button"
-                    onClick={handleOpenHelp}
-                    className="text-left text-xs sm:text-[13px] text-slate-500 hover:text-emerald-700 transition-colors cursor-pointer"
-                    id="btn-footer-support"
-                  >
-                    Pusat Bantuan CS
-                  </button>
-                </li>
                 <li>
                   <button
                     type="button"

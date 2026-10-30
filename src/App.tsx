@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CustomerHome } from './pages/CustomerHome';
 import { CustomerMarketplace } from './pages/CustomerMarketplace';
+import { CustomerContact } from './pages/CustomerContact';
 import { CustomerProductDetail } from './pages/CustomerProductDetail';
 import { CustomerCart } from './pages/CustomerCart';
 import { CustomerCheckout } from './pages/CustomerCheckout';
@@ -94,6 +95,7 @@ export function App() {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-checkout';
     }
+    if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) return 'view-customer-contact';
     if (hash.startsWith('#marketplace')) {
       if (!getCurrentUser()) {
         return 'view-auth-role-selection';
@@ -185,6 +187,9 @@ export function App() {
     if (hash.startsWith('#checkout')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Checkout';
+    }
+    if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) {
+      return 'Kontak';
     }
     if (hash.startsWith('#marketplace')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
@@ -518,6 +523,9 @@ export function App() {
       ) {
         setActiveView('view-customer-store');
         setActiveLabel('Detail Toko');
+      } else if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) {
+        setActiveView('view-customer-contact');
+        setActiveLabel('Kontak');
       } else if (hash.startsWith('#marketplace')) {
         const user = getCurrentUser();
         if (!user) {
@@ -629,6 +637,16 @@ export function App() {
             setSelectedProduct(item);
             handleNavigate('view-customer-product-detail', 'Detail Produk');
           }}
+          onShowToast={showToast}
+        />
+      ) : activeView === 'view-customer-contact' ? (
+        <CustomerContact
+          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
+          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
+          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
+          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
+          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
+          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
           onShowToast={showToast}
         />
       ) : activeView === 'view-customer-marketplace' ? (

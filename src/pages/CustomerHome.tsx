@@ -345,6 +345,10 @@ export function CustomerHome({
           }
         }}
         onSelectTab={(tab) => {
+          if (tab === 'kontak') {
+            window.location.hash = '#kontak';
+            return;
+          }
           if (tab === 'marketplace') {
             if (!getCurrentUser()) {
               if (onShowToast) {
