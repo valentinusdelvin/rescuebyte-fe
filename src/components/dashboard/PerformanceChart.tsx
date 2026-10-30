@@ -174,7 +174,6 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
 
   // Safe defaults if loading or empty
   const totalPemasukan = analyticsData?.totalPemasukan ?? 0;
-  const totalOrders = analyticsData?.totalOrdersCount ?? 0;
   const totalBuyers = analyticsData?.totalBuyersCount ?? 0;
   const completedOrders = analyticsData?.completedOrdersCount ?? 0;
 
@@ -279,19 +278,11 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
               <span className="text-[0.95rem] font-bold text-[#111827]">Total Pemasukan</span>
 
               {isLoading && !analyticsData ? (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  <div className="h-8 w-44 bg-slate-200 rounded-lg animate-pulse" />
-                  <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
-                </div>
+                <div className="h-8 w-44 bg-slate-200 rounded-lg animate-pulse mt-1" />
               ) : (
-                <>
-                  <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">
-                    Rp {formatRupiah(totalPemasukan)}
-                  </span>
-                  <span className="text-[0.88rem] font-semibold text-[#6b7280] mt-0.5">
-                    {totalOrders} Pesanan
-                  </span>
-                </>
+                <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">
+                  Rp {formatRupiah(totalPemasukan)}
+                </span>
               )}
             </div>
 
