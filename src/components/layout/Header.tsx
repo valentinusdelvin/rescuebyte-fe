@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Store, ChevronDown, User, Globe, LogOut } from 'lucide-react';
-import rescueBiteLogo from '../../assets/logo.svg';
+import rescueBiteLogo from '../../assets/logo_new.svg';
 import { logoutUser } from '../../services/authService';
 import { getStoreProfile } from '../../services/storeService';
 
@@ -172,8 +172,12 @@ export function Header({
           <img
             src={rescueBiteLogo}
             alt="RescueBite"
-            className="h-15.5 max-md:h-12 w-auto max-w-47.5 object-contain block"
+            className="h-10 max-md:h-9 w-auto object-contain block"
           />
+          <span className="text-xl max-md:text-lg font-extrabold tracking-tight select-none">
+            <span className="text-[#191c1d]">Rescue</span>
+            <span className="text-[#237126]">Bite</span>
+          </span>
         </a>
       </div>
 

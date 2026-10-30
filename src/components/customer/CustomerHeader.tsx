@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import rescueBiteLogo from '../../assets/logo.svg';
+import rescueBiteLogo from '../../assets/logo_new.svg';
 import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
 import { UserPayload } from '../../types';
 import { CustomerProfileDropdown } from './CustomerProfileDropdown';
@@ -256,15 +256,6 @@ export function CustomerHeader({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateIndicatorPosition]);
 
-
-  const scrollToSection = (id: string) => {
-    setIsMobileMenuOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const handleSelectTab = (tab: PillTabType) => {
     // Guard: Redirect unauthenticated user to login when clicking marketplace
     if (tab === 'marketplace') {
@@ -294,15 +285,15 @@ export function CustomerHeader({
     }
 
     if (tab === 'beranda') {
-      if (window.location.hash.startsWith('#marketplace')) {
-        window.location.hash = '#beranda-customer';
-      } else {
+      if (window.location.hash === '' || window.location.hash === '#beranda-customer' || window.location.hash === '#beranda') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.location.hash = '#beranda-customer';
       }
     } else if (tab === 'marketplace') {
       window.location.hash = '#marketplace';
     } else if (tab === 'kontak') {
-      scrollToSection('kontak-section');
+      window.location.hash = '#kontak';
     }
   };
 

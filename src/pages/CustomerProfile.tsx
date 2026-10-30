@@ -154,8 +154,15 @@ export function CustomerProfile({
         currentUser={user}
         onNavigateHome={onNavigateHome}
         onSelectTab={(tab) => {
-          if (tab === 'beranda' && onNavigateHome) onNavigateHome();
-          else if (tab === 'marketplace' && onNavigateMarketplace) onNavigateMarketplace();
+          if (tab === 'beranda') {
+            if (onNavigateHome) onNavigateHome();
+            else window.location.hash = '#beranda-customer';
+          } else if (tab === 'marketplace') {
+            if (onNavigateMarketplace) onNavigateMarketplace();
+            else window.location.hash = '#marketplace';
+          } else if (tab === 'kontak') {
+            window.location.hash = '#kontak';
+          }
         }}
         onNavigateSeller={onNavigateSeller}
         onNavigateOrders={onNavigateOrders}
@@ -218,7 +225,7 @@ export function CustomerProfile({
         </div>
       </main>
 
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }

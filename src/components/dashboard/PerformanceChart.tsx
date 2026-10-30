@@ -1,7 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { PerformanceFilterKey, FilterSummaryItem } from '../../types';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { AlertCircle, RefreshCw, ChevronDown, Check } from 'lucide-react';
+import { PerformanceFilterKey } from '../../types';
+import {
+  getSellerPerformanceData,
+  SellerPerformanceData,
+  PerformanceTrendPoint,
+} from '../../services/sellerAnalyticsService';
+import { subscribeToMerchantOrders } from '../../services/orderService';
 
 export interface PerformanceChartProps {
+  storeName?: string;
   onShowToast?: (message: string) => void;
 }
 
@@ -12,31 +20,54 @@ interface ChartTooltipState {
   y: number;
 }
 
-const FILTER_SUMMARY: Record<PerformanceFilterKey, FilterSummaryItem> = {
-  'bulan-ini': {
-    total: 'Rp 1.237.000',
-    orders: '60 Pesanan',
-    toastMsg: 'Menampilkan performa bulan ini',
-  },
-  'minggu-ini': {
-    total: 'Rp 340.000',
-    orders: '16 Pesanan',
-    toastMsg: 'Menampilkan performa minggu ini',
-  },
-  'tahun-ini': {
-    total: 'Rp 14.850.000',
-    orders: '720 Pesanan',
-    toastMsg: 'Menampilkan performa tahun ini',
-  },
-};
+const FILTER_OPTIONS: { value: PerformanceFilterKey; label: string; toastMsg: string }[] = [
+  { value: 'bulan-ini', label: 'Bulan ini', toastMsg: 'Menampilkan performa bulan ini' },
+  { value: 'minggu-ini', label: 'Minggu ini', toastMsg: 'Menampilkan performa minggu ini' },
+  { value: 'tahun-ini', label: 'Tahun ini', toastMsg: 'Menampilkan performa tahun ini' },
+];
+
+function formatRupiah(amount: number): string {
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * Generate smooth cubic bezier SVG path between consecutive points
+ */
+function generateSmoothPath(points: { x: number; y: number }[]): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const curr = points[i];
+    const next = points[i + 1];
+    const cp1x = curr.x + 40;
+    const cp1y = curr.y;
+    const cp2x = next.x - 40;
+    const cp2y = next.y;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+  }
+  return d;
+}
 
 /**
  * PerformanceChart Component
- * Displays store analytics with interactive SVG lines, data points, dynamic tooltips, and time range filter.
- * Styled with Tailwind CSS classes.
+ * Integrated directly with backend orders API via the unified orderService mechanism:
+ * - Total Pemasukan & Jumlah Pesanan
+ * - Jumlah Pembeli (Unique Customers)
+ * - Pesanan Selesai
+ * - Interactive SVG trend lines and dynamic custom dropdown filter
  */
-export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
+export function PerformanceChart({ storeName, onShowToast }: PerformanceChartProps) {
   const [filterRange, setFilterRange] = useState<PerformanceFilterKey>('bulan-ini');
+  const [analyticsData, setAnalyticsData] = useState<SellerPerformanceData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Custom Dropdown state
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [tooltip, setTooltip] = useState<ChartTooltipState>({
     visible: false,
     text: '',
@@ -46,19 +77,81 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value as PerformanceFilterKey;
-    setFilterRange(val);
-    if (onShowToast && FILTER_SUMMARY[val]) {
-      onShowToast(FILTER_SUMMARY[val].toastMsg);
+  const loadData = useCallback(async (period: PerformanceFilterKey, silent = false) => {
+    if (!silent) setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await getSellerPerformanceData(period, storeName);
+      setAnalyticsData(data);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memuat data performa toko.';
+      setErrorMessage(msg);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, [storeName]);
+
+  // Initial load and sync with storeName and period
+  useEffect(() => {
+    loadData(filterRange);
+
+    const unsubscribe = subscribeToMerchantOrders(() => {
+      loadData(filterRange, true);
+    }, storeName);
+
+    const handleOrdersUpdated = () => {
+      loadData(filterRange, true);
+    };
+
+    window.addEventListener('rescuebyte_orders_updated', handleOrdersUpdated);
+    window.addEventListener('storage', handleOrdersUpdated);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('rescuebyte_orders_updated', handleOrdersUpdated);
+      window.removeEventListener('storage', handleOrdersUpdated);
+    };
+  }, [filterRange, storeName, loadData]);
+
+  // Close dropdown on outside click or escape key
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDropdownOpen]);
+
+  const handleSelectPeriod = (newPeriod: PerformanceFilterKey) => {
+    setFilterRange(newPeriod);
+    setIsDropdownOpen(false);
+    const opt = FILTER_OPTIONS.find((o) => o.value === newPeriod);
+    if (onShowToast && opt) {
+      onShowToast(opt.toastMsg);
     }
   };
 
   const handlePointMouseEnter = (
     e: React.MouseEvent<SVGCircleElement>,
     series: string,
-    month: string,
-    val: string,
+    label: string,
+    val: number | string,
   ) => {
     if (!chartContainerRef.current) return;
     const containerRect = chartContainerRef.current.getBoundingClientRect();
@@ -69,7 +162,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
     setTooltip({
       visible: true,
-      text: `${month}: ${series} (${val})`,
+      text: `${label}: ${series} (${val})`,
       x: leftPos,
       y: topPos,
     });
@@ -79,46 +172,168 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
     setTooltip((prev) => ({ ...prev, visible: false }));
   };
 
-  const activeData = FILTER_SUMMARY[filterRange] || FILTER_SUMMARY['bulan-ini'];
+  // Safe defaults if loading or empty
+  const totalPemasukan = analyticsData?.totalPemasukan ?? 0;
+  const totalBuyers = analyticsData?.totalBuyersCount ?? 0;
+  const completedOrders = analyticsData?.completedOrdersCount ?? 0;
+
+  const trendPoints: PerformanceTrendPoint[] = analyticsData?.trendPoints || [
+    { label: 'Jan', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Feb', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Mar', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Apr', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Mei', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Jun', totalOrders: 0, buyers: 0, completedOrders: 0 },
+  ];
+
+  // Dynamic Y scale math: Grid lines are at 30, 70, 110, 150, 190, 230
+  const allValues = trendPoints.flatMap((m) => [m.totalOrders, m.buyers, m.completedOrders]);
+  const maxDataVal = Math.max(10, ...allValues);
+  const step = Math.max(2, Math.ceil(maxDataVal / 5));
+  const yMax = step * 5;
+  const yTicks = [0, step, step * 2, step * 3, step * 4, yMax];
+
+  const getYCoord = (val: number): number => {
+    const clamped = Math.max(0, Math.min(val, yMax));
+    return 230 - (clamped / yMax) * 200;
+  };
+
+  const greenPoints = trendPoints.map((pt, idx) => ({
+    x: 85 + idx * 100,
+    y: getYCoord(pt.totalOrders),
+    val: pt.totalOrders,
+    label: pt.label,
+  }));
+
+  const yellowPoints = trendPoints.map((pt, idx) => ({
+    x: 85 + idx * 100,
+    y: getYCoord(pt.buyers),
+    val: pt.buyers,
+    label: pt.label,
+  }));
+
+  const redPoints = trendPoints.map((pt, idx) => ({
+    x: 85 + idx * 100,
+    y: getYCoord(pt.completedOrders),
+    val: pt.completedOrders,
+    label: pt.label,
+  }));
+
+  const greenPath = generateSmoothPath(greenPoints);
+  const yellowPath = generateSmoothPath(yellowPoints);
+  const redPath = generateSmoothPath(redPoints);
+
+  const selectedOption = FILTER_OPTIONS.find((o) => o.value === filterRange) || FILTER_OPTIONS[0];
 
   return (
     <section className="mb-9" aria-labelledby="section-title-performa">
-      <h2 className="text-[1.45rem] font-bold text-[#111827] tracking-[-0.015em] mb-[18px]" id="section-title-performa">
-        Performa Toko
-      </h2>
+      <div className="flex items-center justify-between mb-[18px]">
+        <h2 className="text-[1.45rem] font-bold text-[#111827] tracking-[-0.015em]" id="section-title-performa">
+          Performa Toko
+        </h2>
+
+        {/* Legend indicator */}
+        <div className="hidden sm:flex items-center gap-4 text-xs font-medium text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#65a30d]" aria-hidden="true" />
+            Total Pesanan
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#eab308]" aria-hidden="true" />
+            Jumlah Pembeli
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" aria-hidden="true" />
+            Pesanan Selesai
+          </span>
+        </div>
+      </div>
+
+      {/* Error state notification */}
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mb-4 bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl flex items-center justify-between text-xs sm:text-sm animate-in fade-in"
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => loadData(filterRange)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white font-semibold rounded-xl hover:bg-rose-700 transition cursor-pointer text-xs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Coba Lagi
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[2.15fr_1fr] gap-6 items-stretch">
         {/* Left Chart Card */}
-        <div className="bg-white rounded-2xl p-[24px_28px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-[24px_28px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] flex flex-col gap-4 relative">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <span className="text-[0.95rem] font-bold text-[#111827]">Total Pembelian</span>
-              <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">{activeData.total}</span>
-              <span className="text-[0.88rem] font-semibold text-[#6b7280] mt-0.5">{activeData.orders}</span>
+              <span className="text-[0.95rem] font-bold text-[#111827]">Total Pemasukan</span>
+
+              {isLoading && !analyticsData ? (
+                <div className="h-8 w-44 bg-slate-200 rounded-lg animate-pulse mt-1" />
+              ) : (
+                <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">
+                  Rp {formatRupiah(totalPemasukan)}
+                </span>
+              )}
             </div>
-            <div className="relative inline-flex items-center">
-              <select
-                className="appearance-none bg-transparent border-0 shadow-none py-1 pl-0 pr-[22px] font-sans text-[0.95rem] font-semibold text-[#111827] outline-none cursor-pointer hover:opacity-80 transition-opacity duration-150"
-                id="chart-filter"
+
+            {/* Custom Modern Styled Dropdown Filter */}
+            <div className="relative inline-block text-left" ref={dropdownRef}>
+              <button
+                type="button"
+                id="chart-filter-btn"
+                aria-haspopup="listbox"
+                aria-expanded={isDropdownOpen}
                 aria-label="Pilih Rentang Waktu"
-                value={filterRange}
-                onChange={handleFilterChange}
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                className="inline-flex items-center justify-between gap-2 px-3 py-1.5 bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl font-sans text-[0.88rem] sm:text-[0.92rem] font-semibold text-[#111827] shadow-2xs hover:bg-slate-50 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1F4D36]/20"
               >
-                <option value="bulan-ini">Bulan ini</option>
-                <option value="minggu-ini">Minggu ini</option>
-                <option value="tahun-ini">Tahun ini</option>
-              </select>
-              <svg
-                className="absolute right-0 pointer-events-none text-[#111827] flex items-center justify-center"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+                <span>{selectedOption.label}</span>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
+                    isDropdownOpen ? 'rotate-180 text-[#1F4D36]' : ''
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isDropdownOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-36 bg-white rounded-xl border border-slate-200/90 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right overflow-hidden"
+                  role="listbox"
+                  aria-label="Pilih Rentang Waktu"
+                >
+                  {FILTER_OPTIONS.map((opt) => {
+                    const isSelected = opt.value === filterRange;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => handleSelectPeriod(opt.value)}
+                        className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#1F4D36] text-white font-bold'
+                            : 'text-slate-700 hover:bg-emerald-50 hover:text-[#1F4D36] font-medium'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-white" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -136,7 +351,9 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
             </div>
 
             <svg
-              className="w-full h-[260px] block"
+              className={`w-full h-[260px] block transition-opacity duration-300 ${
+                isLoading && !analyticsData ? 'opacity-40 animate-pulse' : 'opacity-100'
+              }`}
               id="performance-chart"
               viewBox="0 0 620 280"
               preserveAspectRatio="none"
@@ -158,28 +375,28 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
                 <line x1="585" y1="30" x2="585" y2="230" stroke="#f8fafc" strokeWidth="1" />
               </g>
 
-              {/* Y-Axis Labels */}
+              {/* Y-Axis Labels aligned with ticks */}
               <g className="chart-y-axis" fontSize="12" fill="#64748b" textAnchor="end">
-                <text x="35" y="34">60</text>
-                <text x="35" y="74">50</text>
-                <text x="35" y="114">40</text>
-                <text x="35" y="154">30</text>
-                <text x="35" y="194">20</text>
-                <text x="35" y="234">10</text>
+                <text x="35" y="34">{yTicks[5]}</text>
+                <text x="35" y="74">{yTicks[4]}</text>
+                <text x="35" y="114">{yTicks[3]}</text>
+                <text x="35" y="154">{yTicks[2]}</text>
+                <text x="35" y="194">{yTicks[1]}</text>
+                <text x="35" y="234">{yTicks[0]}</text>
               </g>
 
-              {/* Data Series 1: Green Line (Kunjungan) */}
+              {/* Data Series 1: Green Line (Total Pesanan) */}
               <path
-                d="M 85 150 C 125 152, 145 156, 185 156 C 225 156, 245 142, 285 138 C 325 130, 345 50, 385 48 C 425 46, 445 74, 485 76 C 525 80, 545 140, 585 142"
+                d={greenPath}
                 fill="none"
                 stroke="#65a30d"
                 strokeWidth="2.8"
                 strokeLinecap="round"
               />
 
-              {/* Data Series 2: Yellow Line (Produk Dilihat) */}
+              {/* Data Series 2: Yellow Line (Jumlah Pembeli) */}
               <path
-                d="M 85 174 C 125 162, 145 146, 185 142 C 225 138, 245 125, 285 122 C 325 116, 345 98, 385 98 C 425 98, 445 98, 485 98 C 525 98, 545 32, 585 30"
+                d={yellowPath}
                 fill="none"
                 stroke="#eab308"
                 strokeWidth="2.8"
@@ -188,51 +405,65 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
               {/* Data Series 3: Red Line (Pesanan Selesai) */}
               <path
-                d="M 85 190 C 125 178, 145 168, 185 166 C 225 162, 245 156, 285 154 C 325 150, 345 148, 385 146 C 425 142, 445 140, 485 138 C 525 134, 545 130, 585 128"
+                d={redPath}
                 fill="none"
                 stroke="#ef4444"
                 strokeWidth="2.8"
                 strokeLinecap="round"
               />
 
-              {/* Interactive Data Points (Green - Kunjungan) */}
+              {/* Interactive Data Points (Green - Total Pesanan) */}
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
-                <circle cx="85" cy="150" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Jan', '30')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="185" cy="156" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Feb', '28')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="285" cy="138" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Mar', '34')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="385" cy="48" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Apr', '56')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="485" cy="76" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Mai', '49')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="585" cy="142" r="4.5" fill="#65a30d" onMouseEnter={(e) => handlePointMouseEnter(e, 'Kunjungan', 'Jun', '32')} onMouseLeave={handlePointMouseLeave} />
+                {greenPoints.map((pt, i) => (
+                  <circle
+                    key={`green-${pt.label}-${i}`}
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="4.5"
+                    fill="#65a30d"
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Total Pesanan', pt.label, pt.val)}
+                    onMouseLeave={handlePointMouseLeave}
+                  />
+                ))}
               </g>
 
-              {/* Interactive Data Points (Yellow - Produk Dilihat) */}
+              {/* Interactive Data Points (Yellow - Jumlah Pembeli) */}
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
-                <circle cx="85" cy="174" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Jan', '24')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="185" cy="142" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Feb', '32')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="285" cy="122" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Mar', '38')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="385" cy="98" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Apr', '43')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="485" cy="98" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Mai', '43')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="585" cy="30" r="4.5" fill="#eab308" onMouseEnter={(e) => handlePointMouseEnter(e, 'Produk Dilihat', 'Jun', '60')} onMouseLeave={handlePointMouseLeave} />
+                {yellowPoints.map((pt, i) => (
+                  <circle
+                    key={`yellow-${pt.label}-${i}`}
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="4.5"
+                    fill="#eab308"
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Jumlah Pembeli', pt.label, pt.val)}
+                    onMouseLeave={handlePointMouseLeave}
+                  />
+                ))}
               </g>
 
               {/* Interactive Data Points (Red - Pesanan Selesai) */}
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
-                <circle cx="85" cy="190" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Jan', '20')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="185" cy="166" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Feb', '26')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="285" cy="154" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Mar', '29')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="385" cy="146" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Apr', '31')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="485" cy="138" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Mai', '33')} onMouseLeave={handlePointMouseLeave} />
-                <circle cx="585" cy="128" r="4.5" fill="#ef4444" onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', 'Jun', '36')} onMouseLeave={handlePointMouseLeave} />
+                {redPoints.map((pt, i) => (
+                  <circle
+                    key={`red-${pt.label}-${i}`}
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="4.5"
+                    fill="#ef4444"
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', pt.label, pt.val)}
+                    onMouseLeave={handlePointMouseLeave}
+                  />
+                ))}
               </g>
 
               {/* X-Axis Labels */}
               <g className="chart-x-axis" fontSize="12" fill="#64748b" textAnchor="middle">
-                <text x="85" y="258">Jan</text>
-                <text x="185" y="258">Feb</text>
-                <text x="285" y="258">Mar</text>
-                <text x="385" y="258">Apr</text>
-                <text x="485" y="258">Mai</text>
-                <text x="585" y="258">Jun</text>
+                {trendPoints.map((m, idx) => (
+                  <text key={`period-lbl-${m.label}-${idx}`} x={85 + idx * 100} y="258">
+                    {m.label}
+                  </text>
+                ))}
               </g>
             </svg>
           </div>
@@ -240,20 +471,34 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
         {/* Right Stat Cards Stack */}
         <div className="flex flex-col justify-between gap-4 h-full">
+          {/* Card: Jumlah Pembeli */}
           <div
             className="flex-1 flex flex-col justify-between p-[24px_26px] min-h-[130px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Jumlah Pembeli</span>
-            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">60</span>
+            {isLoading && !analyticsData ? (
+              <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-3.5" />
+            ) : (
+              <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">
+                {totalBuyers}
+              </span>
+            )}
           </div>
 
+          {/* Card: Pesanan Selesai */}
           <div
             className="flex-1 flex flex-col justify-between p-[24px_26px] min-h-[130px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Selesai</span>
-            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">48</span>
+            {isLoading && !analyticsData ? (
+              <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-3.5" />
+            ) : (
+              <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">
+                {completedOrders}
+              </span>
+            )}
           </div>
         </div>
       </div>

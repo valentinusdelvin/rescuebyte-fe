@@ -419,7 +419,7 @@ const handlePayNow = async () => {
 
       if (successfulOrders.length > 1) {
         if (onShowToast) {
-          onShowToast(`Pesanan berhasil dibuat untuk ${successfulOrders.length} toko! Membuka Pesanan Saya...`, 'success');
+          onShowToast(`Pesanan berhasil dibuat untuk ${successfulOrders.length} toko! Membuka Riwayat Pesanan...`, 'success');
         }
         setTimeout(() => {
           setIsSubmitting(false);
@@ -535,10 +535,14 @@ const handlePayNow = async () => {
   };
 
   const handleHeaderTab = (tab: string) => {
-    if (tab === 'beranda' && onNavigateHome) {
-      onNavigateHome();
-    } else if (tab === 'marketplace' && onNavigateMarketplace) {
-      onNavigateMarketplace();
+    if (tab === 'beranda') {
+      if (onNavigateHome) onNavigateHome();
+      else window.location.hash = '#beranda-customer';
+    } else if (tab === 'marketplace') {
+      if (onNavigateMarketplace) onNavigateMarketplace();
+      else window.location.hash = '#marketplace';
+    } else if (tab === 'kontak') {
+      window.location.hash = '#kontak';
     }
   };
 
@@ -1113,11 +1117,8 @@ const handlePayNow = async () => {
       </div>
 
       {/* 3. Footer */}
-      <CustomerFooter
+      <CustomerFooter variant="compact"
         onNavigateSeller={onNavigateSeller}
-        onContactSupport={() => {
-          if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');
-        }}
       />
     </div>
   );
