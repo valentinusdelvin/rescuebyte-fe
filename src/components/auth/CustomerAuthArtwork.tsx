@@ -1,4 +1,4 @@
-import rescueBiteLogo from '../../assets/logo.svg';
+import rescueBiteLogo from '../../assets/logo_new.svg';
 import centerpieceLogin from '../../assets/Login & Register/Centerpiece_ Realistic Mystery Box & Fresh Harvest Artwork.svg';
 import centerpieceRegister from '../../assets/Login & Register/Centerpiece Illustration.svg';
 import merchantIllustration from '../../assets/Login & Register/Illustration Area_margin (1).svg';

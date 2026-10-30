@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import rescueBiteLogo from '../../assets/logo.svg';
+import rescueBiteLogo from '../../assets/logo_new.svg';
 import { getCurrentUser, subscribeToAuth, logoutUser, clearAuth } from '../../services/authService';
 import { UserPayload } from '../../types';
 import { CustomerProfileDropdown } from './CustomerProfileDropdown';

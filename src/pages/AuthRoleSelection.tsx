@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import rescueBiteLogo from '../assets/logo.svg';
+import rescueBiteLogo from '../assets/logo_new.svg';
 import customerIllustration from '../assets/Login & Register/Illustration Area_margin.svg';
 import merchantIllustration from '../assets/Login & Register/Illustration Area_margin (1).svg';
 

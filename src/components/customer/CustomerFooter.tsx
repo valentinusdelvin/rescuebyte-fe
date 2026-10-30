@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, Mail, Clock, ShieldCheck, X, FileText } from 'lucide-react';
-import rescueBiteLogo from '../../assets/logo.svg';
+import rescueBiteLogo from '../../assets/logo_new.svg';
 
 export interface CustomerFooterProps {
   variant?: 'full' | 'compact';

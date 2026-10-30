@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import rescuebyteLogo from '../../assets/logo.svg';
+import rescuebyteLogo from '../../assets/logo_new.svg';
 
 export interface BrandLoadingOverlayProps {
   isVisible: boolean;
