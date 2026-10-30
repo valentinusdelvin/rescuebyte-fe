@@ -62,23 +62,7 @@ export interface GetMerchantProductsParams {
 
 const STORAGE_KEY = 'rescuebyte_merchant_products';
 
-const INITIAL_PRODUCTS: ProductItem[] = [
-  {
-    id: '01a18829-c1da-71b4-afb9-2bac249a29c0',
-    name: 'Makanan rejak',
-    description:
-      'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin. Disiapkan langsung oleh chef dan aman dikonsumsi hingga 4 jam setelah pengambilan.',
-    normalPrice: 45000,
-    rescuePrice: 20000,
-    stock: 5,
-    maxStock: 10,
-    status: 'aktif',
-    isActive: true,
-    imageUrl:
-      'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/products/01a18829-ba1b-766b-8ac3-fe030c23a306.png',
-    createdAt: 'Dibuat 29 Okt 2026, 20:04',
-  },
-];
+const INITIAL_PRODUCTS: ProductItem[] = [];
 
 /**
  * Get all merchant products from localStorage.
@@ -304,21 +288,21 @@ export async function getMerchantProducts(params?: GetMerchantProductsParams): P
         return (
           localStorage.getItem('rescuebyte_store_name') ||
           localStorage.getItem('rescuebyte_selected_store') ||
-          'Toko Rejak'
+          ''
         );
       } catch {
-        return 'Toko Rejak';
+        return '';
       }
     })();
     const cleanStore = storeName.trim().toLowerCase();
     const publicItems = await getPublicProducts();
     const matched = publicItems.filter((p) => {
       const pStore = (p.store_name || '').toLowerCase();
+      if (!cleanStore) return true;
       return (
         pStore === cleanStore ||
         pStore.includes(cleanStore) ||
-        cleanStore.includes(pStore) ||
-        (cleanStore.includes('rejak') && (pStore.includes('rejak') || p.name.toLowerCase().includes('rejak')))
+        cleanStore.includes(pStore)
       );
     });
     if (matched.length > 0) {

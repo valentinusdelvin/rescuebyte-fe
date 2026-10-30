@@ -544,7 +544,7 @@ export function CustomerHome({
                 <span className="text-brand-green">Makanan Murah</span>
               </h2>
               <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
-                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
+                RescueBite menghubungkan bisnis kuliner dan masyarakat untuk menyelamatkan surplus pangan berkualitas sebelum jam tutup toko. Kami percaya setiap porsi makanan bernilai tinggi dan layak dinikmati dengan harga hemat sekaligus mengurangi limbah makanan.
               </p>
             </div>
 
@@ -581,7 +581,7 @@ export function CustomerHome({
                   <span className="text-brand-green">Second Chance</span>
                 </h2>
                 <p className="text-sm sm:text-[15px] leading-relaxed text-[#434844] font-normal text-justify sm:text-left">
-                  Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset&apos;s Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.
+                  Setiap harinya, beragam sajian lezat dan bergizi berisiko terbuang hanya karena pergantian hari operasional. Melalui RescueBite, kami memberi kesempatan kedua bagi hidangan terbaik untuk dinikmati serta berkontribusi nyata menjaga kelestarian lingkungan.
                 </p>
               </div>
             </div>

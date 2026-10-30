@@ -237,29 +237,32 @@ export function CustomerCart({
     });
   };
 
-  // Calculate totals matching the design based on SELECTED items
+  // Calculate totals based on real selected item prices from database/cart
   const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal, selectedCount } = useMemo(() => {
     let boxes = 0;
-    let sub = 0;
+    let origTotal = 0;
+    let rescTotal = 0;
     let count = 0;
     cartStores.forEach((store) => {
       store.items.forEach((item) => {
         if (selectedItemIds.has(item.id)) {
           boxes += item.quantity;
-          sub += item.originalPrice * item.quantity;
+          const itemPrice = item.rescuePrice || (item as any).price || 0;
+          const origPrice = item.originalPrice && item.originalPrice > itemPrice ? item.originalPrice : itemPrice;
+          origTotal += origPrice * item.quantity;
+          rescTotal += itemPrice * item.quantity;
           count += 1;
         }
       });
     });
 
-    // Discount matching 50%
-    const disc = Math.round(sub * 0.5);
-    const fee = boxes > 0 ? 4000 : 0;
-    const finalTotal = sub - disc + fee;
+    const disc = Math.max(0, origTotal - rescTotal);
+    const fee = boxes > 0 ? 2000 : 0;
+    const finalTotal = rescTotal + fee;
 
     return {
       totalBoxes: boxes,
-      subtotal: sub,
+      subtotal: origTotal,
       discountTotal: disc,
       serviceFee: fee,
       grandTotal: finalTotal,

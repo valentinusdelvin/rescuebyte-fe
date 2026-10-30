@@ -18,16 +18,16 @@ export interface CustomerProfileProps {
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-const DEFAULT_USER: UserPayload = {
-  id: 'usr_reza_1024',
-  name: 'Reza Pratama',
-  email: 'reza.pratama@email.com',
+const EMPTY_USER: UserPayload = {
+  id: '',
+  name: '',
+  email: '',
   avatar_url: '',
   provider: 'LOCAL',
   role: 'Customer',
   role_id: 1,
-  created_at: '2026-10-27T10:00:00Z',
-  updated_at: '2026-10-27T10:00:00Z',
+  created_at: '',
+  updated_at: '',
 };
 
 export function CustomerProfile({
@@ -37,7 +37,7 @@ export function CustomerProfile({
   onNavigateOrders,
   onShowToast,
 }: CustomerProfileProps) {
-  const [user, setUser] = useState<UserPayload>(() => getCurrentUser() || DEFAULT_USER);
+  const [user, setUser] = useState<UserPayload>(() => getCurrentUser() || EMPTY_USER);
   const [name, setName] = useState(user.name || '');
   const [email, setEmail] = useState(user.email || '');
   const [birthDate, setBirthDate] = useState(() =>

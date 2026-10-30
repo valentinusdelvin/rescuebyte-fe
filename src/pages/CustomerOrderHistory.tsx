@@ -120,8 +120,8 @@ export function CustomerOrderHistory({
   const [reviewText, setReviewText] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  const userName = currentUser?.name || 'Michael Dhinanta';
-  const userEmail = currentUser?.email || 'fahmimml001@gmail.com';
+  const userName = currentUser?.name || 'Pengguna';
+  const userEmail = currentUser?.email || '';
   const userAvatar = currentUser?.avatar_url || '';
 
   const handleLogout = () => {

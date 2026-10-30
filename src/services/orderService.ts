@@ -236,41 +236,52 @@ export function createCustomerOrder(
   const updatedOrders = [newOrder, ...existingOrders.filter((o) => o.orderNumber !== paymentData.orderId)];
   saveCustomerOrders(updatedOrders);
 
-  // 2. Also register in merchant order queue
-  try {
-    const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
-    const merchantOrders = rawMerchant ? JSON.parse(rawMerchant) : [];
-    if (Array.isArray(merchantOrders)) {
-      const primaryItem = paymentData.items[0];
-      const origPrice = originalTotal > paymentData.grandTotal ? originalTotal : (primaryItem?.originalPrice || newOrder.finalPrice * 2);
-      const rescPrice = primaryItem?.rescuePrice || newOrder.finalPrice;
-      const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
+  // 2. Also register in merchant order queue if already paid / waiting confirmation
+  if (initialStatus !== 'menunggu-pembayaran') {
+    try {
+      const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
+      const merchantOrders = rawMerchant ? JSON.parse(rawMerchant) : [];
+      if (Array.isArray(merchantOrders)) {
+        const primaryItem = paymentData.items[0];
+        const origPrice = originalTotal > paymentData.grandTotal ? originalTotal : (primaryItem?.originalPrice || newOrder.finalPrice * 2);
+        const rescPrice = primaryItem?.rescuePrice || newOrder.finalPrice;
+        const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
 
-      merchantOrders.unshift({
-        id: newOrder.id,
-        orderNumber: newOrder.orderNumber,
-        status: 'diproses',
-        storeName: newOrder.storeName,
-        customerName: paymentData.customerInfo.name,
-        customerPhone: paymentData.customerInfo.phone,
-        productName: newOrder.productName,
-        productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
-        totalBoxes: newOrder.productBoxCount,
-        rescuePrice: rescPrice,
-        originalPrice: origPrice,
-        discountPercent: disc,
-        grandTotal: newOrder.finalPrice,
-        pickupDate: newOrder.pickupDate,
-        pickupTime: newOrder.pickupTime,
-        createdAt: new Date().toISOString(),
-      });
-      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(merchantOrders));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: merchantOrders }));
+        const merchantStatus: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal' =
+          initialStatus === 'diproses'
+            ? 'diproses'
+            : initialStatus === 'siap-diambil'
+              ? 'siap-diambil'
+              : initialStatus === 'selesai'
+                ? 'selesai'
+                : 'perlu-konfirmasi';
+
+        merchantOrders.unshift({
+          id: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          status: merchantStatus,
+          storeName: newOrder.storeName,
+          customerName: paymentData.customerInfo.name,
+          customerPhone: paymentData.customerInfo.phone,
+          productName: newOrder.productName,
+          productImage: primaryItem?.imageSrc || cardMonsieurSpoon,
+          totalBoxes: newOrder.productBoxCount,
+          rescuePrice: rescPrice,
+          originalPrice: origPrice,
+          discountPercent: disc,
+          grandTotal: newOrder.finalPrice,
+          pickupDate: newOrder.pickupDate,
+          pickupTime: newOrder.pickupTime,
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(merchantOrders));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent(ORDERS_UPDATE_EVENT, { detail: merchantOrders }));
+        }
       }
+    } catch (err) {
+      console.warn('Failed to sync to merchant orders:', err);
     }
-  } catch (err) {
-    console.warn('Failed to sync to merchant orders:', err);
   }
 
   // 3. Deduct stock from local store inventory
@@ -371,6 +382,27 @@ export function updateCustomerOrderStatus(
       target.orderData.status = newStatus;
     }
     saveCustomerOrders(orders);
+
+    try {
+      const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
+      if (rawMerchant) {
+        const merchantOrders = JSON.parse(rawMerchant);
+        if (Array.isArray(merchantOrders)) {
+          const mTarget = merchantOrders.find((m) => m.id === cleanId || m.orderNumber === cleanId || m.id === orderIdOrNumber || m.orderNumber === orderIdOrNumber);
+          if (mTarget) {
+            if (newStatus === 'menunggu-konfirmasi') mTarget.status = 'perlu-konfirmasi';
+            else if (newStatus === 'diproses') mTarget.status = 'diproses';
+            else if (newStatus === 'siap-diambil') mTarget.status = 'siap-diambil';
+            else if (newStatus === 'selesai') mTarget.status = 'selesai';
+            else if (newStatus === 'dibatalkan') mTarget.status = 'batal';
+            localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(merchantOrders));
+          } else if (newStatus === 'menunggu-konfirmasi') {
+            getMerchantOrders();
+          }
+        }
+      }
+    } catch {}
+
     return true;
   } catch (err) {
     console.warn('Failed to update customer order status:', err);
@@ -595,7 +627,7 @@ export async function fetchCustomerOrdersApi(params?: {
 export interface MerchantOrderItem {
   id: string;
   orderNumber: string;
-  status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal';
+  status: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal';
   storeName: string;
   customerName: string;
   customerPhone?: string;
@@ -643,15 +675,23 @@ export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[
         return;
       }
 
+      if (co.status === 'menunggu-pembayaran') {
+        return;
+      }
+
       if (!orders.some((m) => m.orderNumber === co.orderNumber || m.id === co.id)) {
         const primaryItem = co.orderData?.items?.[0];
         const origPrice = primaryItem?.originalPrice || co.originalPrice || co.finalPrice * 2;
         const rescPrice = primaryItem?.rescuePrice || co.finalPrice;
         const disc = primaryItem?.discountPercent || Math.max(0, Math.round(((origPrice - rescPrice) / origPrice) * 100)) || 50;
 
-        let status: 'diproses' | 'konfirmasi' | 'selesai' | 'batal' = 'diproses';
-        if (co.status === 'siap-diambil' || co.status === 'diproses') {
-          status = 'konfirmasi';
+        let status: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal' = 'perlu-konfirmasi';
+        if (co.status === 'menunggu-konfirmasi') {
+          status = 'perlu-konfirmasi';
+        } else if (co.status === 'diproses') {
+          status = 'diproses';
+        } else if (co.status === 'siap-diambil') {
+          status = 'siap-diambil';
         } else if (co.status === 'selesai') {
           status = 'selesai';
         } else if (co.status === 'dibatalkan') {
@@ -676,6 +716,20 @@ export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[
           pickupTime: co.pickupTime,
           createdAt: co.orderData?.createdAt || new Date().toISOString(),
         });
+      }
+    });
+
+    orders.forEach((m) => {
+      if ((m.status as string) === 'konfirmasi') {
+        m.status = 'diproses';
+      }
+      const matched = customerOrders.find((co) => co.orderNumber === m.orderNumber || co.id === m.id);
+      if (matched) {
+        if (matched.status === 'menunggu-konfirmasi') m.status = 'perlu-konfirmasi';
+        else if (matched.status === 'diproses') m.status = 'diproses';
+        else if (matched.status === 'siap-diambil') m.status = 'siap-diambil';
+        else if (matched.status === 'selesai') m.status = 'selesai';
+        else if (matched.status === 'dibatalkan') m.status = 'batal';
       }
     });
 
@@ -712,11 +766,10 @@ export async function confirmMerchantOrder(orderId: string): Promise<boolean> {
   const orders = getMerchantOrders();
   const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
   if (target) {
-    target.status = 'konfirmasi';
+    target.status = 'diproses';
     saveMerchantOrders(orders);
   }
 
-  // Also update customer order state
   const customerOrders = getCustomerOrders();
   const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
   if (cTarget) {
@@ -725,10 +778,36 @@ export async function confirmMerchantOrder(orderId: string): Promise<boolean> {
     saveCustomerOrders(customerOrders);
   }
 
-  // If order id is UUID, sync with backend
   if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
     try {
-      await api.patch(`/api/v1/orders/${target.id}/status`, { status: 'IN_PROCESS' });
+      await api.patch('/api/v1/orders/' + target.id + '/status', { status: 'IN_PROCESS' });
+    } catch (err) {
+      console.warn('Failed to update status in backend:', err);
+    }
+  }
+
+  return true;
+}
+
+export async function processMerchantOrder(orderId: string): Promise<boolean> {
+  const orders = getMerchantOrders();
+  const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (target) {
+    target.status = 'siap-diambil';
+    saveMerchantOrders(orders);
+  }
+
+  const customerOrders = getCustomerOrders();
+  const cTarget = customerOrders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  if (cTarget) {
+    cTarget.status = 'siap-diambil';
+    cTarget.statusLabel = 'Siap Diambil';
+    saveCustomerOrders(customerOrders);
+  }
+
+  if (target && !target.id.startsWith('m-ord-') && !target.id.startsWith('ord-')) {
+    try {
+      await api.patch('/api/v1/orders/' + target.id + '/status', { status: 'READY_FOR_PICKUP' });
     } catch (err) {
       console.warn('Failed to update status in backend:', err);
     }
@@ -762,6 +841,22 @@ export async function completeMerchantOrder(orderId: string): Promise<boolean> {
   }
 
   return true;
+}
+
+export function subscribeToCustomerOrders(callback: (orders: CustomerOrderItem[]) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleUpdate = () => {
+    callback(getCustomerOrders());
+  };
+
+  window.addEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+  window.addEventListener('storage', handleUpdate);
+
+  return () => {
+    window.removeEventListener(ORDERS_UPDATE_EVENT, handleUpdate);
+    window.removeEventListener('storage', handleUpdate);
+  };
 }
 
 export function subscribeToMerchantOrders(callback: (orders: MerchantOrderItem[]) => void): () => void {

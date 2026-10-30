@@ -33,7 +33,7 @@ export function FinanceCard({ storeName }: FinanceCardProps) {
 
   // Transaksi Berjalan: pesanan yang sedang diproses / dikonfirmasi
   const ongoingTotal = orders
-    .filter((o) => o.status === 'diproses' || o.status === 'konfirmasi')
+    .filter((o) => o.status === 'diproses' || o.status === 'perlu-konfirmasi' || o.status === 'siap-diambil')
     .reduce((sum, o) => sum + (o.grandTotal || 0), 0);
 
   // Saldo Toko: pesanan selesai (plus saldo dasar jika ada)

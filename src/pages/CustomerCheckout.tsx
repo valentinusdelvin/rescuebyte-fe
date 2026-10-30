@@ -79,36 +79,17 @@ export function CustomerCheckout({
 }: CustomerCheckoutProps) {
   // Customer Info State from current user or defaults
   const currentUser = getCurrentUser();
-  const [customerName, setCustomerName] = useState(() => currentUser?.name || 'Reza Pratama');
-  const [customerPhone, setCustomerPhone] = useState(() => currentUser?.phone_number || '081234567890');
-  const [customerEmail] = useState(() => currentUser?.email || 'customer@rescuebite.com');
+  const [customerName, setCustomerName] = useState(() => currentUser?.name || 'Pengguna');
+  const [customerPhone, setCustomerPhone] = useState(() => currentUser?.phone_number || '');
+  const [customerEmail] = useState(() => currentUser?.email || '');
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
 
-  // Items State (defaults to TerasRasa Bakery Mystery Box matching Image 2 if payload empty)
+  // Items State directly from checkout payload
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>(() => {
     if (payload && payload.items && payload.items.length > 0) {
       return payload.items;
     }
-    return [
-      {
-        id: 'item-bakery-box-reguler',
-        name: 'Mystery Bakery Box',
-        storeId: 'store-terasa',
-        storeName: 'Toko Rejak',
-        storeAvatar: 'TR',
-        storeAddress: 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur',
-        rating: 4.8,
-        reviewCount: 320,
-        distanceText: '1.2 km',
-        categoryTags: ['Roti & Pastry', '✓ Halal'],
-        originalPrice: 40000,
-        rescuePrice: 20000,
-        discountPercent: 50,
-        quantity: 1,
-        imageSrc: cardMonsieurSpoon,
-        pickupTime: '15.00 - 18.00 WIB',
-      },
-    ];
+    return [];
   });
 
   // Keep items synced if payload changes

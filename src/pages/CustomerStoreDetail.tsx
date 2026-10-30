@@ -19,8 +19,6 @@ import { getAllStores } from '../services/storeService';
 import { getPublicProducts, getStoredProducts } from '../services/productService';
 
 import heroBannerImg from '../assets/customer/hero-full-banner.jpg';
-import avatarReza from '../assets/customer/avatar-reza.jpg';
-import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 import cardPastry from '../assets/customer/card-monsieur-spoon.jpg';
 
 export interface CustomerStoreDetailProps {
@@ -97,43 +95,6 @@ function getShortName(name: string): string {
   return firstWord.length > 9 ? firstWord.slice(0, 8) + '…' : firstWord;
 }
 
-// Toko Rejak is the primary real store connected to backend & Supabase
-const TOKO_REJAK_INFO: StoreDetailInfo = {
-  id: '01a187c3-82a3-7f06-afe1-e276c3c4a142',
-  name: 'Toko Rejak',
-  category: 'Aneka Makanan Berat & Kuliner',
-  status: 'Buka',
-  rating: 4.9,
-  reviewCount: 48,
-  distance: '1.2 km',
-  area: 'Lowokwaru, Kota Malang',
-  address: 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur',
-  operationalHours: 'Senin - Minggu\n08:00 - 23:59 WIB',
-  pickupHours: '08:00 - 23:59 WIB',
-  email: 'animeadventrue@gmail.com',
-  phone: '0812345678',
-  socialMedia: '@tokorejak',
-  description: 'Toko rejagone bapak beni',
-  avatarUrl:
-    'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/stores/01a187eb-f43d-764d-ac5b-a363a4ddf871.png',
-};
-
-const TOKO_REJAK_PRODUCTS: StoreProductItem[] = [
-  {
-    id: '01a18829-c1da-71b4-afb9-2bac249a29c0',
-    name: 'Makanan rejak',
-    category: 'Makanan Berat',
-    originalPrice: 45000,
-    rescuePrice: 20000,
-    discountPercent: 56,
-    imageSrc:
-      'https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/products/01a18829-ba1b-766b-8ac3-fe030c23a306.png',
-    pickupTime: '08:00 - 23:59 WIB',
-    stock: 5,
-    description:
-      'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin. Disiapkan langsung oleh chef dan aman dikonsumsi hingga 4 jam setelah pengambilan.',
-  },
-];
 
 function formatPriceInput(raw: string): string {
   const digits = raw.replace(/\D/g, '');
@@ -229,22 +190,27 @@ export function CustomerStoreDetail({
     } catch { }
   }, []);
 
-  // Initial store data based on Toko Rejak
-  const [storeData, setStoreData] = useState<StoreDetailInfo>(() => {
-    if (effectiveStoreName.toLowerCase().includes('rejak')) {
-      return TOKO_REJAK_INFO;
-    }
-    return {
-      ...TOKO_REJAK_INFO,
-      name: effectiveStoreName,
-      status: 'Buka',
-      email: `${effectiveStoreName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
-      socialMedia: `@${effectiveStoreName.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-    };
-  });
+  // Dynamic store data initialized cleanly
+  const [storeData, setStoreData] = useState<StoreDetailInfo>(() => ({
+    name: effectiveStoreName,
+    category: 'Kuliner & Pangan Surplus',
+    status: 'Buka',
+    rating: 5.0,
+    reviewCount: 0,
+    distance: '',
+    area: '',
+    address: '',
+    operationalHours: '',
+    pickupHours: '',
+    email: '',
+    phone: '',
+    socialMedia: '',
+    description: '',
+    avatarUrl: '',
+  }));
 
   // Initial store products
-  const [storeProducts, setStoreProducts] = useState<StoreProductItem[]>(() => TOKO_REJAK_PRODUCTS);
+  const [storeProducts, setStoreProducts] = useState<StoreProductItem[]>([]);
 
   // Sync store profile & products dynamically from backend API & local storage
   useEffect(() => {
@@ -319,14 +285,14 @@ export function CustomerStoreDetail({
             area: matchedBackendStore.district
               ? `${matchedBackendStore.district}, ${matchedBackendStore.city || 'Malang'}`
               : matchedBackendStore.city || 'Kota Malang',
-            address: fullAddress || 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur',
+            address: fullAddress || matchedBackendStore.address || '-',
             operationalHours: `${daysText}\n${opStart} - ${opEnd} WIB`,
             pickupHours: `${opStart} - ${opEnd} WIB`,
-            email: matchedBackendStore.email || 'animeadventrue@gmail.com',
-            phone: matchedBackendStore.whatsapp_number || '0812345678',
+            email: matchedBackendStore.email || '-',
+            phone: matchedBackendStore.whatsapp_number || '-',
             socialMedia: `@${matchedBackendStore.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
             description: matchedBackendStore.description || '',
-            avatarUrl: matchedBackendStore.profile_picture_url || TOKO_REJAK_INFO.avatarUrl,
+            avatarUrl: matchedBackendStore.profile_picture_url || cardPastry,
           });
         }
 
@@ -397,12 +363,8 @@ export function CustomerStoreDetail({
             });
         }
 
-        // If live items found, update products state; otherwise keep default Toko Rejak products
-        if (liveItems.length > 0) {
-          setStoreProducts(liveItems);
-        } else if (currentTarget.includes('rejak')) {
-          setStoreProducts(TOKO_REJAK_PRODUCTS);
-        }
+        // Set live products from database
+        setStoreProducts(liveItems);
       } catch (err) {
         console.warn('Failed to load store and products:', err);
       }
@@ -423,67 +385,8 @@ export function CustomerStoreDetail({
     });
   }, [storeProducts, appliedMinPrice, appliedMaxPrice]);
 
-  // Dynamic reviews mentioning this store and area
-  const storeReviews: StoreReviewItem[] = useMemo(() => {
-    return [
-      {
-        id: 'rev-1',
-        name: 'Reza Akbar',
-        role: 'Pelanggan',
-        rating: 5,
-        avatar: avatarReza,
-        comment: `Kualitas makanannya masih sangat segar dan porsinya mengenyangkan. Sangat puas dengan pesanan dari ${storeData.name}!`,
-        date: '28 Okt 2026',
-      },
-      {
-        id: 'rev-2',
-        name: 'Reza Akbar',
-        role: 'Pelanggan',
-        rating: 5,
-        avatar: avatarReza,
-        comment: 'Pelayanannya cepat dan ramah saat pengambilan langsung di kasir. Makanan masih hangat dan higienis.',
-        date: '27 Okt 2026',
-      },
-      {
-        id: 'rev-3',
-        name: 'Reza Akbar',
-        role: 'Pelanggan',
-        rating: 4,
-        avatar: avatarReza,
-        comment:
-          'Inisiatif luar biasa untuk menyelamatkan surplus makanan harian. Rasanya lezat dan harganya hemat banget!',
-        date: '25 Okt 2026',
-      },
-      {
-        id: 'rev-4',
-        name: 'Fahmi Fayyid',
-        role: 'Pelanggan',
-        rating: 5,
-        avatar: avatarFahmi,
-        comment: `Porsi makanan mantap dan kemasannya sangat rapi. Pasti akan pesan lagi dari ${storeData.name}!`,
-        date: '24 Okt 2026',
-      },
-      {
-        id: 'rev-5',
-        name: 'Fahmi Fayyid',
-        role: 'Pelanggan',
-        rating: 5,
-        avatar: avatarFahmi,
-        comment: `Lokasi toko mudah ditemukan di daerah ${storeData.area}. Sangat terbantu dengan paket makanan hemat ini.`,
-        date: '23 Okt 2026',
-      },
-      {
-        id: 'rev-6',
-        name: 'Fahmi Fayyid',
-        role: 'Pelanggan',
-        rating: 5,
-        avatar: avatarFahmi,
-        comment:
-          'Sangat hemat untuk santapan harian dan ikut berkontribusi nyata mengurangi food waste di Kota Malang.',
-        date: '22 Okt 2026',
-      },
-    ];
-  }, [storeData.name, storeData.area]);
+  // Reviews from real database/customer ulasan
+  const storeReviews: StoreReviewItem[] = useMemo(() => [], []);
 
   const sortedReviews = useMemo(() => {
     return [...storeReviews].sort((a, b) => {
@@ -1247,48 +1150,54 @@ export function CustomerStoreDetail({
             </div>
 
             {/* Grid of Reviews */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {sortedReviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-2.5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={rev.avatar}
-                          alt={rev.name}
-                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                        />
-                        <div>
-                          <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">{rev.name}</p>
-                          <span className="text-[10px] text-slate-400 font-medium">{rev.role}</span>
+            {sortedReviews.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sortedReviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2.5">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={rev.avatar}
+                            alt={rev.name}
+                            className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                          />
+                          <div>
+                            <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">{rev.name}</p>
+                            <span className="text-[10px] text-slate-400 font-medium">{rev.role}</span>
+                          </div>
                         </div>
+                        <span className="text-[11px] text-slate-400">{rev.date}</span>
                       </div>
-                      <span className="text-[11px] text-slate-400">{rev.date}</span>
-                    </div>
 
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-3.5 h-3.5 ${
-                            star <= rev.rating
-                              ? 'fill-amber-400 text-amber-400'
-                              : 'fill-slate-200 text-slate-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-3.5 h-3.5 ${
+                              star <= rev.rating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'fill-slate-200 text-slate-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
 
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      {rev.comment}
-                    </p>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        {rev.comment}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500 text-xs sm:text-sm">
+                Belum ada ulasan untuk toko ini.
+              </div>
+            )}
           </section>
           )}
         </main>

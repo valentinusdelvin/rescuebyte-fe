@@ -11,7 +11,6 @@ import {
   Info,
   X,
   MessageSquare,
-  Sparkles,
   Calendar,
   Tag,
   ClipboardList,
@@ -19,7 +18,9 @@ import {
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
-import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus, updateCustomerOrderStatus, createCustomerOrder } from '../services/orderService';
+import { fetchOrderDetailApi, mapBackendStatusToCustomerStatus, updateCustomerOrderStatus, createCustomerOrder, subscribeToCustomerOrders } from '../services/orderService';
+import { getPublicProducts, PublicProductItem } from '../services/productService';
+import { getCurrentUser } from '../services/authService';
 
 import saladStopCard from '../assets/customer/card-saladstop.jpg';
 
@@ -51,6 +52,20 @@ export function CustomerOrderDetail({
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
+  const [recommendations, setRecommendations] = useState<PublicProductItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicProducts()
+      .then((items) => {
+        if (!isMounted || !items) return;
+        setRecommendations(items.slice(0, 3));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   
   const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
@@ -87,7 +102,20 @@ export function CustomerOrderDetail({
     }
   }, [orderData]);
 
+  const orderId = orderData?.orderId || 'RB251023-00455';
+
   // Active step in tracking timeline (1 to 5) determined purely by live database status
+    useEffect(() => {
+    return subscribeToCustomerOrders((orders) => {
+      const targetId = orderId || orderData?.orderId;
+      if (!targetId) return;
+      const found = orders.find((o) => o.orderNumber === targetId || o.id === targetId);
+      if (found?.status) {
+        setCurrentStatus(found.status);
+      }
+    });
+  }, [orderId, orderData?.orderId]);
+
   const activeStep = useMemo(() => {
     if (currentStatus === 'menunggu-pembayaran') return 1;
     if (currentStatus === 'menunggu-konfirmasi') return 2;
@@ -100,7 +128,7 @@ export function CustomerOrderDetail({
 
 
 
-  const orderId = orderData?.orderId || 'RB251023-00455';
+
 
   useEffect(() => {
     if (currentStatus === 'menunggu-konfirmasi' && orderData) {
@@ -122,16 +150,16 @@ export function CustomerOrderDetail({
   const items = orderData?.items && orderData.items.length > 0 ? orderData.items : null;
   const primaryItem = items?.[0];
 
-  const itemName = primaryItem?.name || 'Mystery Fresh Box';
+  const itemName = primaryItem?.name || 'Paket Makanan Surplus';
   const storeName = orderData?.primaryStore?.storeName || primaryItem?.storeName || 'Toko Mitra';
   const storeAddress =
     orderData?.primaryStore?.storeAddress ||
-    'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur';
-  const storeRating = orderData?.primaryStore?.rating || 4.8;
-  const storeReviewCount = orderData?.primaryStore?.reviewCount || 320;
+    (orderData?.primaryStore?.storeName ? `${orderData.primaryStore.storeName}, Kota Malang` : 'Kota Malang, Jawa Timur');
+  const storeRating = orderData?.primaryStore?.rating || 5.0;
+  const storeReviewCount = orderData?.primaryStore?.reviewCount || 0;
   const storeAvatar = orderData?.primaryStore?.storeAvatar || storeName.slice(0, 2).toUpperCase();
 
-  const recipientName = orderData?.customerInfo?.name || 'Reza Pratama';
+  const recipientName = orderData?.customerInfo?.name || getCurrentUser()?.name || 'Pengguna';
   const totalBoxes = orderData?.totalBoxes || primaryItem?.quantity || 1;
 
   const originalUnitPrice = primaryItem?.originalPrice || 40000;
@@ -176,7 +204,7 @@ export function CustomerOrderDetail({
     {
       step: 3,
       title: '3. Dikonfirmasi',
-      desc: activeStep >= 3 ? 'Diterima Toko' : '',
+      desc: activeStep >= 3 ? 'Dikonfirmasi Toko' : '',
     },
     {
       step: 4,
@@ -246,19 +274,18 @@ export function CustomerOrderDetail({
         };
       case 3:
         return {
-          badgeText: 'Menunggu Konfirmasi',
-          badgeClass: 'bg-[#fef3c7] text-[#92400e] border border-amber-200/60',
-          title: 'Menunggu Konfirmasi dari Toko',
+          badgeText: 'Pesanan Dikonfirmasi',
+          badgeClass: 'bg-[#dcfce7] text-[#14532d] border border-emerald-200/60',
+          title: 'Pesanan Telah Dikonfirmasi Toko',
           description: (
             <>
-              Pihak <strong className="text-slate-800 font-semibold">{storeName}</strong> sedang memeriksa ketersediaan
-              stok surplus dan mulai menyiapkan paket pesananmu. Status pesanan akan otomatis diperbarui begitu paket
-              siap diambil.
+              Pihak <strong className="text-slate-800 font-semibold">{storeName}</strong> telah mengonfirmasi pesananmu
+              dan mulai menyiapkan paket makanan surplusmu. Status akan otomatis diperbarui begitu paket siap diambil.
             </>
           ),
           timeLabel: 'Waktu Konfirmasi',
           timeValue: '23 Okt 2026, 14:15 WIB',
-          timelineNote: 'Mitra toko sedang memeriksa ketersediaan dan menyiapkan paket surplus pesananmu.',
+          timelineNote: 'Mitra toko telah mengonfirmasi pesanan dan sedang menyiapkannya.',
         };
       case 4:
         return {
@@ -463,7 +490,7 @@ export function CustomerOrderDetail({
                 <div>
                   <h3 className="text-base font-bold text-[#1b1c1c]">Bagaimana Pengalamanmu?</h3>
                   <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-xl leading-relaxed">
-                    Bagikan ulasanmu saat menikmati Mystery Fresh Box dari {storeName}. Pendapatmu membantu
+                    Bagikan ulasanmu saat menikmati hidangan dari {storeName}. Pendapatmu membantu
                     pelanggan lain menemukan pangan surplus bermutu dan memberi apresiasi kepada mitra toko.
                   </p>
                 </div>
@@ -510,11 +537,8 @@ export function CustomerOrderDetail({
             <div className="lg:col-span-7 flex flex-col gap-6">
               {/* Card 1: Barang yang Diselamatkan */}
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
-                <div className="flex items-center justify-between gap-3 mb-5">
+                <div className="mb-5">
                   <h3 className="text-base font-bold text-[#1b1c1c]">Barang yang Diselamatkan</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
-                    {totalBoxes} Kotak Diclaim
-                  </span>
                 </div>
 
                 <div className="flex flex-col gap-4">
@@ -542,23 +566,6 @@ export function CustomerOrderDetail({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#ffedd5] text-[#c2410c]">
-                              <Sparkles className="w-3 h-3" aria-hidden="true" />
-                              Mystery Box
-                            </span>
-                            {(item?.categoryTags || ['Halal MUI', 'Penyelamatan Pangan']).map(
-                              (tag, tIdx) => (
-                                <span
-                                  key={tIdx}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-[#15803d]"
-                                >
-                                  {tag}
-                                </span>
-                              )
-                            )}
-                          </div>
-
                           <h4 className="text-base font-bold text-[#1b1c1c] truncate">{itName}</h4>
                           <p className="text-xs text-slate-500 mt-0.5 font-medium">
                             {itQty} Box ({item?.storeName || storeName})
@@ -786,39 +793,53 @@ export function CustomerOrderDetail({
                   <h3 className="text-base font-bold text-[#1b1c1c]">Rekomendasi Lainnya</h3>
                 </div>
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Surprise Box dari mitra terdekat yang butuh diselamatkan sore ini:
+                  Makanan surplus dari mitra terdekat yang butuh diselamatkan sore ini:
                 </p>
 
                 <div className="flex flex-col gap-3">
-                  {/* Rec 1: Toko Rejak */}
-                  <div
-                    onClick={() => (onNavigateStore ? onNavigateStore('Toko Rejak') : onNavigateMarketplace?.())}
-                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition cursor-pointer border border-transparent hover:border-slate-200"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        if (onNavigateStore) onNavigateStore('Toko Rejak');
-                        else onNavigateMarketplace?.();
-                      }
-                    }}
-                  >
-                    <img
-                      src="https://abiaxlkxogtnlemxeaev.supabase.co/storage/v1/object/public/rescuebyte-bucket/products/01a18829-ba1b-766b-8ac3-fe030c23a306.png"
-                      alt="Makanan rejak"
-                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c] truncate">
-                        Makanan rejak
-                      </p>
-                      <p className="text-xs text-slate-500 truncate mt-0.5">Toko Rejak • Lowokwaru, Malang</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">Rp 20.000</p>
-                      <p className="text-[11px] font-semibold text-emerald-600">Sisa 5 Box</p>
-                    </div>
-                  </div>
+                  {recommendations.length > 0 ? (
+                    recommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        onClick={() => (onNavigateStore ? onNavigateStore(rec.store_name || 'Toko Mitra') : onNavigateMarketplace?.())}
+                        className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition cursor-pointer border border-transparent hover:border-slate-200"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            if (onNavigateStore) onNavigateStore(rec.store_name || 'Toko Mitra');
+                            else onNavigateMarketplace?.();
+                          }
+                        }}
+                      >
+                        <img
+                          src={rec.main_image_url || saladStopCard}
+                          alt={rec.name}
+                          className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-bold text-[#1b1c1c] truncate">
+                            {rec.name}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">
+                            {rec.store_name || 'Toko Mitra'} • {typeof rec.distance_km === 'number' ? `${rec.distance_km.toFixed(1)} km` : 'Mitra RescueByte'}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">
+                            Rp {formatRupiah(rec.rescue_price)}
+                          </p>
+                          <p className="text-[11px] font-semibold text-emerald-600">
+                            Sisa {rec.stock} Box
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 py-3 text-center">
+                      Belum ada rekomendasi produk surplus lainnya saat ini.
+                    </p>
+                  )}
                 </div>
               </section>
             </div>

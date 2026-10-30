@@ -55,10 +55,10 @@ export function StoreProfile({
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Form Fields
-  const [name, setName] = useState<string>(() => storeName || 'Toko Reza');
+  const [name, setName] = useState<string>(() => storeName || '');
   const [description, setDescription] = useState<string>('');
-  const [whatsapp, setWhatsapp] = useState<string>('+62812345678');
-  const [email, setStoreEmail] = useState<string>('TokoReza@gmail.com');
+  const [whatsapp, setWhatsapp] = useState<string>('');
+  const [email, setStoreEmail] = useState<string>(() => getCurrentUser()?.email || '');
   const [avatarUrl, setAvatarUrl] = useState<string>(() => {
     try {
       return localStorage.getItem('rescuebyte_store_logo') || '';

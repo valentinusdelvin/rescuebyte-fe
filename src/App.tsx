@@ -123,12 +123,12 @@ export function App() {
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
     const hash = window.location.hash.toLowerCase();
     if (hash.includes('tab=')) {
-      const match = hash.match(/tab=([a-z]+)/);
-      if (match && ['diproses', 'konfirmasi', 'selesai', 'habis', 'kendala', 'batal'].includes(match[1])) {
+      const match = hash.match(/tab=([a-z-]+)/);
+      if (match && ['perlu-konfirmasi', 'diproses', 'siap-diambil', 'selesai', 'konfirmasi', 'habis', 'kendala', 'batal'].includes(match[1])) {
         return match[1] as OrderStatusTab;
       }
     }
-    return 'diproses';
+    return 'perlu-konfirmasi';
   });
 
   const [activeLabel, setActiveLabel] = useState<string>(() => {
@@ -362,8 +362,8 @@ export function App() {
       } else if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) {
         setActiveView('view-riwayat');
         setActiveLabel('Riwayat Pesanan');
-        const match = hash.match(/tab=([a-z]+)/);
-        if (match && ['diproses', 'konfirmasi', 'selesai', 'habis', 'kendala', 'batal'].includes(match[1])) {
+        const match = hash.match(/tab=([a-z-]+)/);
+        if (match && ['perlu-konfirmasi', 'diproses', 'siap-diambil', 'selesai', 'konfirmasi', 'habis', 'kendala', 'batal'].includes(match[1])) {
           setOrderTab(match[1] as OrderStatusTab);
         }
       } else if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) {

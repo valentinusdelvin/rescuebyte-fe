@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, Check, X } from 'lucide-react';
+import { Search, ChevronDown, Check } from 'lucide-react';
 import { OrderStatusTab, OrderTabItem } from '../types';
 import emptyOrdersIllustration from '../assets/pesanan-kosong.svg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
@@ -7,6 +7,7 @@ import {
   MerchantOrderItem,
   getMerchantOrders,
   confirmMerchantOrder,
+  processMerchantOrder,
   completeMerchantOrder,
   cancelMerchantOrder,
   subscribeToMerchantOrders,
@@ -20,10 +21,10 @@ export interface OrderHistoryProps {
 }
 
 const ORDER_TABS: OrderTabItem[] = [
+  { id: 'perlu-konfirmasi', label: 'Perlu Dikonfirmasi' },
   { id: 'diproses', label: 'Perlu Diproses' },
-  { id: 'konfirmasi', label: 'Perlu Dikonfirmasi' },
+  { id: 'siap-diambil', label: 'Siap Diambil' },
   { id: 'selesai', label: 'Pesanan Selesai' },
-  { id: 'batal', label: 'Dibatalkan' },
 ];
 
 function formatRupiah(amount: number): string {
@@ -36,9 +37,15 @@ function formatRupiah(amount: number): string {
  * Includes interactive confirmation modal matching reference design.
  * Fully compliant with design.md and antislop guidelines.
  */
-export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }: OrderHistoryProps) {
+export function OrderHistory({ storeName, initialTab = 'perlu-konfirmasi', onShowToast }: OrderHistoryProps) {
   const validTabIds = ORDER_TABS.map((t) => t.id);
-  const resolvedInitialTab = validTabIds.includes(initialTab) ? initialTab : 'diproses';
+  const resolvedInitialTab = validTabIds.includes(initialTab)
+    ? initialTab
+    : (initialTab as string) === 'konfirmasi'
+      ? 'perlu-konfirmasi'
+      : (initialTab as string) === 'batal'
+        ? 'selesai'
+        : 'perlu-konfirmasi';
   const [activeTab, setActiveTab] = useState<OrderStatusTab>(resolvedInitialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('semua');
@@ -121,7 +128,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
       setIsModalOpen(false);
       setSelectedModalOrder(null);
       if (onShowToast) {
-        onShowToast(`Pesanan ${order.orderNumber} berhasil dikonfirmasi dan siap diambil!`, 'success');
+        onShowToast(`Pesanan ${order.orderNumber} berhasil dikonfirmasi!`, 'success');
       }
     } catch (err) {
       console.warn('Gagal konfirmasi pesanan:', err);
@@ -144,6 +151,22 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
     } catch (err) {
       console.warn('Gagal membatalkan pesanan:', err);
       if (onShowToast) onShowToast('Gagal membatalkan pesanan.', 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleProcessReady = async (order: MerchantOrderItem) => {
+    setProcessingId(order.id);
+    try {
+      await processMerchantOrder(order.id);
+      setOrders(getMerchantOrders(storeName));
+      if (onShowToast) {
+        onShowToast(`Pesanan ${order.orderNumber} sudah diproses & siap diambil!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Gagal memproses pesanan:', err);
+      if (onShowToast) onShowToast('Gagal memproses pesanan.', 'error');
     } finally {
       setProcessingId(null);
     }
@@ -333,7 +356,7 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
 
                   {/* Right: Action Button or Status Badge */}
                   <div className="shrink-0 flex items-center justify-end">
-                    {activeTab === 'diproses' && (
+                    {activeTab === 'perlu-konfirmasi' && (
                       <button
                         type="button"
                         onClick={() => handleOpenConfirmModal(order)}
@@ -343,26 +366,30 @@ export function OrderHistory({ storeName, initialTab = 'diproses', onShowToast }
                         {processingId === order.id ? 'Memproses...' : 'Konfirmasi Pesanan'}
                       </button>
                     )}
-                    {activeTab === 'konfirmasi' && (
+                    {activeTab === 'diproses' && (
+                      <button
+                        type="button"
+                        onClick={() => handleProcessReady(order)}
+                        disabled={processingId === order.id}
+                        className="w-full sm:w-auto bg-[#3c6a00] hover:bg-[#325800] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {processingId === order.id ? 'Memproses...' : 'Sudah Diproses'}
+                      </button>
+                    )}
+                    {activeTab === 'siap-diambil' && (
                       <button
                         type="button"
                         onClick={() => handleComplete(order)}
                         disabled={processingId === order.id}
                         className="w-full sm:w-auto bg-[#1F2A24] hover:bg-[#2C3B33] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                       >
-                        {processingId === order.id ? 'Memproses...' : 'Selesaikan Pesanan'}
+                        {processingId === order.id ? 'Memproses...' : 'Pesanan Selesai'}
                       </button>
                     )}
                     {activeTab === 'selesai' && (
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full">
                         <Check className="w-3.5 h-3.5" />
                         Selesai
-                      </span>
-                    )}
-                    {activeTab === 'batal' && (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-full">
-                        <X className="w-3.5 h-3.5" />
-                        Dibatalkan
                       </span>
                     )}
                   </div>

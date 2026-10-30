@@ -121,6 +121,8 @@ export interface PaymentOrderData {
 
 export interface CustomerMysteryBox {
   id: string;
+  name?: string;
+  stock?: number;
   variantId?: string;
   storeId?: string;
   storeName: string;
@@ -197,9 +199,11 @@ export interface ProductItem {
 export type ProductStatusTab = 'semua' | 'aktif' | 'segera_habis' | 'habis' | 'nonaktif';
 
 export type OrderStatusTab =
+  | 'perlu-konfirmasi'
   | 'diproses'
-  | 'konfirmasi'
+  | 'siap-diambil'
   | 'selesai'
+  | 'konfirmasi'
   | 'habis'
   | 'kendala'
   | 'batal';

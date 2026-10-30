@@ -54,8 +54,8 @@ export function CustomerProductDetail({
 }: CustomerProductDetailProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  // Use product prop or default to Figma mock data for TerasRasa Bakery
-  const storeName = (product?.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak';
+  // Use product prop or default to real store data
+  const storeName = product?.storeName || 'Toko Mitra';
 
   const [storeAvatarUrl, setStoreAvatarUrl] = useState<string | null>(() => {
     return product?.storeAvatar || null;
@@ -78,22 +78,22 @@ export function CustomerProductDetail({
       isCancelled = true;
     };
   }, [product?.storeId, storeName]);
-  const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box';
+  const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : (product?.name || 'Paket Makanan Surplus');
   const description =
     product?.description ||
-    'Nikmati kejutan aneka roti dan pastry berkualitas dengan harga spesial. Isi menyesuaikan stok harian toko, selalu fresh dan tetap lezat!';
-  const rescuePrice = product?.rescuePrice ?? 20000;
-  const originalPrice = product?.originalPrice ?? 40000;
-  const discountPercent = product?.discountPercent ?? 50;
-  const rating = product?.rating ?? 4.8;
-  const reviewCount = product?.reviewCount ?? 320;
-  const distanceText = product?.distanceText ?? '1.2 km';
+    'Makanan surplus harian berkualitas tinggi yang masih sangat segar, higienis, dan layak dinikmati.';
+  const rescuePrice = product?.rescuePrice ?? 0;
+  const originalPrice = product?.originalPrice ?? rescuePrice;
+  const discountPercent = product?.discountPercent ?? (originalPrice > rescuePrice ? Math.round(((originalPrice - rescuePrice) / originalPrice) * 100) : 0);
+  const rating = product?.rating ?? 5.0;
+  const reviewCount = product?.reviewCount ?? 0;
+  const distanceText = product?.distanceText ?? '';
   const remainingBoxes = product?.remainingBoxesText?.match(/\d+/)?.[0]
     ? parseInt(product.remainingBoxesText.match(/\d+/)![0], 10)
-    : 5;
+    : (product?.stock ?? 1);
   const pickupTime = product?.pickupTime
     ? product.pickupTime.replace(/^Ambil:\s*/i, '').replace(/WIB.*$/, 'WIB')
-    : '15.00 - 18.00 WIB';
+    : 'Sesuai jam operasional toko';
 
   // Photos Gallery: Only use actual uploaded product images (no fake placeholder fallback photos)
   const galleryImages = useMemo(() => {
@@ -626,7 +626,7 @@ export function CustomerProductDetail({
               Tentang Produk
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mt-2.5">
-              Mystery Bakery Box berisi aneka roti, pastry, dan kue pilihan dari stok harian {storeName}. Cocok untuk sarapan, camilan, atau dinikmati bersama keluarga. Semua produk masih layak konsumsi, tetap enak, dan membantu mengurangi food waste.
+              {description}
             </p>
           </article>
         </main>

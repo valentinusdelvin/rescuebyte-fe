@@ -49,17 +49,16 @@ export function ActivityCards({ storeName, onSelectActivity }: ActivityCardsProp
     });
   }, []);
 
+  const perluKonfirmasiCount = orders.filter((o) => o.status === 'perlu-konfirmasi' || (o.status as string) === 'konfirmasi').length;
   const diprosesCount = orders.filter((o) => o.status === 'diproses').length;
-  const konfirmasiCount = orders.filter((o) => o.status === 'konfirmasi').length;
+  const siapDiambilCount = orders.filter((o) => o.status === 'siap-diambil').length;
   const selesaiCount = orders.filter((o) => o.status === 'selesai').length;
-  const batalCount = orders.filter((o) => o.status === 'batal').length;
 
   const activities: ActivityItem[] = [
+    { id: 'perlu-konfirmasi', label: 'Perlu Dikonfirmasi', count: perluKonfirmasiCount },
     { id: 'diproses', label: 'Perlu Diproses', count: diprosesCount },
-    { id: 'konfirmasi', label: 'Dikonfirmasi', count: konfirmasiCount },
-    { id: 'kendala', label: 'Kendala Pesanan', count: 0 },
+    { id: 'siap-diambil', label: 'Siap Diambil', count: siapDiambilCount },
     { id: 'selesai', label: 'Pesanan Selesai', count: selesaiCount },
-    { id: 'batal', label: 'Dibatalkan', count: batalCount },
     { id: 'habis', label: 'Stok Habis', count: outOfStockCount },
   ];
 
