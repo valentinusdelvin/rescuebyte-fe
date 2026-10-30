@@ -841,9 +841,6 @@ export function CustomerCart({
       {/* 3. Customer Footer */}
       <CustomerFooter variant="compact"
         onNavigateSeller={onNavigateSeller}
-        onContactSupport={() => {
-          if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');
-        }}
       />
 
       {/* 4. Quick Auth Modal */}

@@ -564,7 +564,7 @@ export function CustomerOrderDetail({
               onClick={onNavigateOrders}
               className="hover:text-[#1b1c1c] transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              Pesanan Saya
+              Riwayat Pesanan
             </button>
             <span aria-hidden="true" className="text-slate-400">&gt;</span>
             <span className="text-slate-800 font-medium">Detail Pesanan</span>

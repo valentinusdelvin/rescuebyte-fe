@@ -419,7 +419,7 @@ const handlePayNow = async () => {
 
       if (successfulOrders.length > 1) {
         if (onShowToast) {
-          onShowToast(`Pesanan berhasil dibuat untuk ${successfulOrders.length} toko! Membuka Pesanan Saya...`, 'success');
+          onShowToast(`Pesanan berhasil dibuat untuk ${successfulOrders.length} toko! Membuka Riwayat Pesanan...`, 'success');
         }
         setTimeout(() => {
           setIsSubmitting(false);
@@ -1115,9 +1115,6 @@ const handlePayNow = async () => {
       {/* 3. Footer */}
       <CustomerFooter variant="compact"
         onNavigateSeller={onNavigateSeller}
-        onContactSupport={() => {
-          if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');
-        }}
       />
     </div>
   );

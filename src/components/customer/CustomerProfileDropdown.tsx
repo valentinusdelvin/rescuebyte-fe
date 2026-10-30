@@ -312,7 +312,7 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
                   className="mx-1.5 px-2.5 py-2 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#1F4D36] hover:text-white transition-all cursor-pointer"
                   id="btn-dropdown-orders"
                 >
-                  Pesanan Saya
+                  Riwayat Pesanan
                 </button>
               </>
             )}
