@@ -1142,7 +1142,7 @@ export function CustomerMarketplace({
       </button>
 
       {/* 4. Customer Footer */}
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="full" onNavigateSeller={onNavigateSeller} />
 
       {/* Order Modal Component */}
       {selectedBox && (

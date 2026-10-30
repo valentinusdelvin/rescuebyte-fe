@@ -1113,7 +1113,7 @@ const handlePayNow = async () => {
       </div>
 
       {/* 3. Footer */}
-      <CustomerFooter
+      <CustomerFooter variant="compact"
         onNavigateSeller={onNavigateSeller}
         onContactSupport={() => {
           if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');

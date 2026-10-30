@@ -218,7 +218,7 @@ export function CustomerProfile({
         </div>
       </main>
 
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }

@@ -717,7 +717,7 @@ export function CustomerProductDetail({
       </div>
 
       {/* 3. Customer Footer */}
-      <CustomerFooter
+      <CustomerFooter variant="compact"
         onNavigateSeller={onNavigateSeller}
         onContactSupport={() => {
           if (onShowToast) onShowToast('Membuka live chat Customer Service RescueBite...');

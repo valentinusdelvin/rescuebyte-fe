@@ -1142,7 +1142,7 @@ export function CustomerOrderDetail({
       )}
 
       {/* Customer Footer */}
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }

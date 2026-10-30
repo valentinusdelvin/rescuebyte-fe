@@ -821,7 +821,7 @@ export function CustomerOrderHistory({
       )}
 
       {/* Customer Footer */}
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }

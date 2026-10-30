@@ -649,7 +649,9 @@ export function CustomerHome({
 
       {/* 7. Customer Footer */}
       <CustomerFooter
+        variant="full"
         onNavigateSeller={onNavigateSeller}
+        onNavigateMarketplace={onNavigateMarketplace}
         onContactSupport={handleContactSupport}
       />
 

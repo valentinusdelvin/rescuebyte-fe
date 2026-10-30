@@ -1224,7 +1224,7 @@ export function CustomerStoreDetail({
         </main>
       </div>
 
-      <CustomerFooter onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
     </div>
   );
 }
