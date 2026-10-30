@@ -26,7 +26,7 @@ export function Dashboard({ storeName, onShowToast, onNavigateToOrders }: Dashbo
       </h1>
       <ActivityCards storeName={storeName} onSelectActivity={onNavigateToOrders} />
       <FinanceCard storeName={storeName} />
-      <PerformanceChart onShowToast={onShowToast} />
+      <PerformanceChart storeName={storeName} onShowToast={onShowToast} />
     </section>
   );
 }
