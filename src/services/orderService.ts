@@ -31,9 +31,9 @@ export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [
   {
     id: 'ord-1',
     orderNumber: 'RB251026-00123',
-    status: 'menunggu-konfirmasi',
-    statusLabel: 'Menunggu Konfirmasi',
-    storeName: 'TerasRasa Bakery',
+    status: 'menunggu-pembayaran',
+    statusLabel: 'Menunggu Pembayaran',
+    storeName: 'Toko Rejak',
     storeRating: 4.8,
     storeReviewCount: 320,
     storeDistance: '1.2 km',
@@ -49,8 +49,8 @@ export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [
   {
     id: 'ord-2',
     orderNumber: 'RB251025-00891',
-    status: 'diproses',
-    statusLabel: 'Diproses',
+    status: 'menunggu-konfirmasi',
+    statusLabel: 'Menunggu Konfirmasi',
     storeName: 'GreenBowl',
     storeRating: 4.7,
     storeReviewCount: 210,
@@ -100,24 +100,6 @@ export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [
     pickupTime: '15.00 - 16.00 WIB',
     finalPrice: 22000,
     category: 'fresh',
-  },
-  {
-    id: 'ord-5',
-    orderNumber: 'RB251022-00312',
-    status: 'dibatalkan',
-    statusLabel: 'Dibatalkan',
-    storeName: 'DailyDeli',
-    storeRating: 4.4,
-    storeReviewCount: 120,
-    storeDistance: '4.2 km',
-    storeTags: ['Makanan Siap Saji', 'Halal'],
-    productName: 'Mystery Deli Box',
-    productBoxCount: 1,
-    productDescription: 'Makanan siap saji pilihan',
-    pickupDate: '22 Oktober 2026',
-    pickupTime: '14.00 - 15.00 WIB',
-    finalPrice: 20000,
-    category: 'deli',
   },
 ];
 
@@ -197,7 +179,7 @@ export function getCustomerOrders(): CustomerOrderItem[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+      return parsed.filter((o: CustomerOrderItem) => o.status !== 'dibatalkan');
     }
     return INITIAL_CUSTOMER_ORDERS;
   } catch (err) {

@@ -10,7 +10,7 @@ const CART_UPDATE_EVENT = 'rescuebyte-cart-update';
 export const INITIAL_CART_STORES: StoreCartGroup[] = [
   {
     storeId: 'store-terasa',
-    storeName: 'TerasRasa Bakery',
+    storeName: 'Toko Rejak',
     storeAvatar: 'TR',
     rating: 4.8,
     reviewCount: 320,

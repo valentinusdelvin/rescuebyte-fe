@@ -109,7 +109,15 @@ export function App() {
   const [selectedProduct, setSelectedProduct] = useState<CustomerMysteryBox | null>(null);
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [paymentOrderData, setPaymentOrderData] = useState<PaymentOrderData | null>(null);
-  const [selectedStoreName, setSelectedStoreName] = useState<string>('TerasRasa Bakery');
+  const [selectedStoreName, setSelectedStoreName] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('rescuebyte_selected_store');
+      if (saved && saved.trim() && saved !== 'TerasRasa Bakery') return saved.trim();
+      const sellerStore = localStorage.getItem('rescuebyte_store_name');
+      if (sellerStore && sellerStore.trim() && sellerStore !== 'TerasRasa Bakery') return sellerStore.trim();
+    } catch { }
+    return 'Toko Rejak';
+  });
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(undefined);
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
@@ -514,9 +522,11 @@ export function App() {
 
   const handleNavigateStore = useCallback(
     (targetStoreName?: string, targetStoreId?: string) => {
-      if (targetStoreName) {
-        setSelectedStoreName(targetStoreName);
-      }
+      const cleanName = targetStoreName && targetStoreName.trim() && targetStoreName.trim() !== 'TerasRasa Bakery' ? targetStoreName.trim() : 'Toko Rejak';
+      setSelectedStoreName(cleanName);
+      try {
+        localStorage.setItem('rescuebyte_selected_store', cleanName);
+      } catch { }
       setSelectedStoreId(targetStoreId);
       handleNavigate('view-customer-store', 'Detail Toko');
     },
@@ -577,7 +587,7 @@ export function App() {
                   id: product.id,
                   name: product.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
                   storeId: 'store-terasa',
-                  storeName: product.storeName || 'TerasRasa Bakery',
+                  storeName: (product.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak',
                   storeAvatar: 'TR',
                   storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
                   rating: product.rating || 4.8,

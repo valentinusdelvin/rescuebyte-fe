@@ -8,11 +8,8 @@ export interface ActivityItem {
 
 const ACTIVITIES: ActivityItem[] = [
   { id: 'diproses', label: 'Perlu Diproses', count: 12 },
-  { id: 'konfirmasi', label: 'Dikonfirmasi', count: 2 },
-  { id: 'kendala', label: 'Kendala Pesanan', count: 30 },
+  { id: 'konfirmasi', label: 'Perlu Dikonfirmasi', count: 2 },
   { id: 'selesai', label: 'Pesanan Selesai', count: 60 },
-  { id: 'batal', label: 'Dibatalkan', count: 1 },
-  { id: 'habis', label: 'Stok Habis', count: 12 },
 ];
 
 export interface ActivityCardsProps {
@@ -44,7 +41,7 @@ export function ActivityCards({ onSelectActivity }: ActivityCardsProps) {
       <h2 className="text-[1.45rem] font-bold text-[#111827] tracking-[-0.015em] mb-[18px]" id="section-title-aktifitas">
         Aktifitas Penting
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {ACTIVITIES.map((item) => (
           <div
             key={item.id}

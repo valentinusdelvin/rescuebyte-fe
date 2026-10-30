@@ -10,7 +10,7 @@ export interface OrderHistoryProps {
 
 const ORDER_TABS: OrderTabItem[] = [
   { id: 'diproses', label: 'Perlu Diproses' },
-  { id: 'konfirmasi', label: 'Dikonfirmasi' },
+  { id: 'konfirmasi', label: 'Perlu Dikonfirmasi' },
   { id: 'selesai', label: 'Pesanan Selesai' },
   { id: 'batal', label: 'Dibatalkan' },
 ];

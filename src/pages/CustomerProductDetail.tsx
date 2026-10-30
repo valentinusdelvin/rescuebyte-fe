@@ -54,7 +54,7 @@ export function CustomerProductDetail({
   const shouldReduceMotion = useReducedMotion();
 
   // Use product prop or default to Figma mock data for TerasRasa Bakery
-  const storeName = product?.storeName || 'TerasRasa Bakery';
+  const storeName = (product?.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak';
   const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box';
   const description =
     product?.description ||
@@ -280,7 +280,7 @@ export function CustomerProductDetail({
         {/* 2. Main Content Grid */}
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
           {/* Breadcrumb / Back Navigation */}
-          <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="mb-6">
             <button
               type="button"
               onClick={onNavigateMarketplace || onNavigateBack || (() => { window.location.hash = '#marketplace'; })}
@@ -291,30 +291,6 @@ export function CustomerProductDetail({
               </span>
               <span>Kembali ke Marketplace</span>
             </button>
-
-            <nav aria-label="Breadcrumb" className="text-xs font-medium hidden sm:flex items-center gap-1.5 text-gray-400 min-w-0">
-              <button
-                type="button"
-                onClick={onNavigateMarketplace || onNavigateBack || (() => { window.location.hash = '#marketplace'; })}
-                className="hover:text-brand-green hover:underline transition-colors cursor-pointer text-gray-500 font-medium"
-                title="Kembali ke Marketplace"
-              >
-                Marketplace
-              </button>
-              <span className="text-gray-300 select-none">&gt;</span>
-              <button
-                type="button"
-                onClick={handleStoreClick}
-                className="hover:text-brand-green hover:underline transition-colors cursor-pointer text-gray-500 font-medium truncate max-w-[150px] lg:max-w-[220px]"
-                title={`Kunjungi toko ${storeName}`}
-              >
-                {storeName}
-              </button>
-              <span className="text-gray-300 select-none">&gt;</span>
-              <span className="text-gray-700 font-semibold truncate max-w-[180px] lg:max-w-[280px]" aria-current="page" title={title}>
-                {title}
-              </span>
-            </nav>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -430,7 +406,7 @@ export function CustomerProductDetail({
                       </span>
                       <span className="text-gray-300">•</span>
                       <span className="flex items-center text-gray-500">
-                        📍 {distanceText}
+                        {distanceText}
                       </span>
                     </div>
                   </div>

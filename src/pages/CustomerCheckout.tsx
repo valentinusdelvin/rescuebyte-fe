@@ -87,9 +87,9 @@ export function CustomerCheckout({
         id: 'item-bakery-box-reguler',
         name: 'Mystery Bakery Box',
         storeId: 'store-terasa',
-        storeName: 'TerasRasa Bakery',
+        storeName: 'Toko Rejak',
         storeAvatar: 'TR',
-        storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
+        storeAddress: 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur',
         rating: 4.8,
         reviewCount: 320,
         distanceText: '1.2 km',
@@ -522,7 +522,7 @@ export function CustomerCheckout({
                             <span className="text-amber-500 font-bold">★ {item.rating || group.rating || 4.9}</span>
                             <span className="text-gray-400">({item.reviewCount || group.reviewCount || 42} ulasan)</span>
                             <span className="text-gray-300">•</span>
-                            <span>📍 {item.distanceText || group.distanceText || '0.9 km'}</span>
+                            <span>{item.distanceText || group.distanceText || '0.9 km'}</span>
                           </div>
                         </div>
                       </div>
@@ -626,9 +626,8 @@ export function CustomerCheckout({
                         </div>
                       </div>
 
-                      <p className="text-xs text-gray-600 mt-1 flex items-start gap-1.5 leading-relaxed">
-                        <span className="shrink-0 text-gray-400">📍</span>
-                        <span>{group.storeAddress}</span>
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                        {group.storeAddress}
                       </p>
                     </div>
 

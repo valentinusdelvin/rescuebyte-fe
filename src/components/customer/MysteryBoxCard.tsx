@@ -1,4 +1,5 @@
 import { CustomerMysteryBox } from '../../types';
+import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 
 export interface MysteryBoxCardProps {
   item: CustomerMysteryBox;
@@ -113,6 +114,9 @@ export function MysteryBoxCard({
           alt={`Mystery Box ${item.storeName}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = cardMonsieurSpoon;
+          }}
         />
 
         {/* Top Badges Overlay (Stock, Distance / Rating, Discount) */}

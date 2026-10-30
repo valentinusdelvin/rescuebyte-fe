@@ -5,7 +5,6 @@ import {
   Check,
   CheckCircle2,
   ShoppingBag,
-  XCircle,
   Star,
   MapPin,
   ChevronRight,
@@ -19,7 +18,7 @@ import {
   X,
   LayoutGrid,
   AlertCircle,
-  RefreshCw,
+  Clock,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
@@ -158,45 +157,42 @@ export function CustomerOrderHistory({
 
   // Filter logic
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchStatus =
-        activeStatus === 'all'
-          ? true
-          : activeStatus === 'menunggu-konfirmasi'
-            ? order.status === 'menunggu-konfirmasi'
-            : activeStatus === 'diproses'
-              ? order.status === 'diproses'
-              : activeStatus === 'siap-diambil'
-                ? order.status === 'siap-diambil'
-                : activeStatus === 'selesai'
-                  ? order.status === 'selesai'
-                  : activeStatus === 'dibatalkan'
-                    ? order.status === 'dibatalkan'
-                    : activeStatus === 'menunggu-pembayaran'
-                      ? order.status === 'menunggu-pembayaran'
-                      : true;
+    return orders
+      .filter((order) => order.status !== 'dibatalkan')
+      .filter((order) => {
+        const matchStatus =
+          activeStatus === 'all'
+            ? true
+            : activeStatus === 'menunggu-pembayaran'
+              ? order.status === 'menunggu-pembayaran'
+              : activeStatus === 'menunggu-konfirmasi'
+                ? order.status === 'menunggu-konfirmasi' || order.status === 'diproses'
+                : activeStatus === 'siap-diambil'
+                  ? order.status === 'siap-diambil'
+                  : activeStatus === 'selesai'
+                    ? order.status === 'selesai'
+                    : true;
 
-      const q = searchQuery.toLowerCase().trim();
-      const matchSearch =
-        !q ||
-        order.orderNumber.toLowerCase().includes(q) ||
-        order.storeName.toLowerCase().includes(q) ||
-        order.productName.toLowerCase().includes(q);
+        const q = searchQuery.toLowerCase().trim();
+        const matchSearch =
+          !q ||
+          order.orderNumber.toLowerCase().includes(q) ||
+          order.storeName.toLowerCase().includes(q) ||
+          order.productName.toLowerCase().includes(q);
 
-      return matchStatus && matchSearch;
-    });
+        return matchStatus && matchSearch;
+      });
   }, [orders, activeStatus, searchQuery]);
 
   // Tab count calculations
   const counts = useMemo(() => {
+    const validOrders = orders.filter((o) => o.status !== 'dibatalkan');
     return {
-      all: orders.length,
-      menungguPembayaran: orders.filter((o) => o.status === 'menunggu-pembayaran').length,
-      menungguKonfirmasi: orders.filter((o) => o.status === 'menunggu-konfirmasi').length,
-      diproses: orders.filter((o) => o.status === 'diproses').length,
-      siapDiambil: orders.filter((o) => o.status === 'siap-diambil').length,
-      selesai: orders.filter((o) => o.status === 'selesai').length,
-      dibatalkan: orders.filter((o) => o.status === 'dibatalkan').length,
+      all: validOrders.length,
+      menungguPembayaran: validOrders.filter((o) => o.status === 'menunggu-pembayaran').length,
+      menungguKonfirmasi: validOrders.filter((o) => o.status === 'menunggu-konfirmasi' || o.status === 'diproses').length,
+      siapDiambil: validOrders.filter((o) => o.status === 'siap-diambil').length,
+      selesai: validOrders.filter((o) => o.status === 'selesai').length,
     };
   }, [orders]);
 
@@ -221,7 +217,7 @@ export function CustomerOrderHistory({
     <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
       <div>
         <CustomerHeader
-          activeTab="marketplace"
+          activeTab="profile"
           currentUser={currentUser}
           onNavigateHome={onNavigateHome}
           onSelectTab={(tab) => {
@@ -235,16 +231,6 @@ export function CustomerOrderHistory({
         />
 
         <main className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-16 flex-1">
-          {/* Header Title Section */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#1b1c1c] tracking-tight">
-              Riwayat Pesanan
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Pantau pesanan Mystery Box kamu hingga siap diambil.
-            </p>
-          </div>
-
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             {/* Left Sidebar */}
             <CustomerProfileSidebar
@@ -260,8 +246,18 @@ export function CustomerOrderHistory({
 
             {/* Right Main Content */}
             <div className="flex-1 min-w-0 flex flex-col gap-5 w-full">
-              {/* Status Filter Cards */}
-<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+              {/* Header Title Section (Aligned with Sidebar like Informasi Akun) */}
+              <div>
+                <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#1b1c1c] tracking-tight">
+                  Riwayat Pesanan
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Pantau pesanan Mystery Box kamu hingga siap diambil.
+                </p>
+              </div>
+
+              {/* Status Filter Cards (2-Column Grid as in Image 3) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 {[
                   {
                     id: 'all' as OrderHistoryFilterTab,
@@ -270,30 +266,19 @@ export function CustomerOrderHistory({
                     icon: LayoutGrid,
                     inactiveColor: 'text-slate-700',
                   },
-                  ...(counts.menungguPembayaran > 0
-                    ? [
-                        {
-                          id: 'menunggu-pembayaran' as OrderHistoryFilterTab,
-                          label: 'Menunggu Pembayaran',
-                          count: counts.menungguPembayaran,
-                          icon: AlertCircle,
-                          inactiveColor: 'text-amber-500',
-                        },
-                      ]
-                    : []),
+                  {
+                    id: 'menunggu-pembayaran' as OrderHistoryFilterTab,
+                    label: 'Menunggu Pembayaran',
+                    count: counts.menungguPembayaran,
+                    icon: Clock,
+                    inactiveColor: 'text-amber-500',
+                  },
                   {
                     id: 'menunggu-konfirmasi' as OrderHistoryFilterTab,
                     label: 'Menunggu Konfirmasi',
                     count: counts.menungguKonfirmasi,
                     icon: AlertCircle,
                     inactiveColor: 'text-amber-500',
-                  },
-                  {
-                    id: 'diproses' as OrderHistoryFilterTab,
-                    label: 'Diproses',
-                    count: counts.diproses,
-                    icon: RefreshCw,
-                    inactiveColor: 'text-blue-500',
                   },
                   {
                     id: 'siap-diambil' as OrderHistoryFilterTab,
@@ -307,14 +292,7 @@ export function CustomerOrderHistory({
                     label: 'Selesai',
                     count: counts.selesai,
                     icon: CheckCircle2,
-                    inactiveColor: 'text-blue-600',
-                  },
-                  {
-                    id: 'dibatalkan' as OrderHistoryFilterTab,
-                    label: 'Dibatalkan',
-                    count: counts.dibatalkan,
-                    icon: XCircle,
-                    inactiveColor: 'text-rose-500',
+                    inactiveColor: 'text-slate-600',
                   },
                 ].map((tab) => {
                   const isActive = activeStatus === tab.id;
@@ -327,24 +305,25 @@ export function CustomerOrderHistory({
                         setActiveStatus(tab.id);
                         setCurrentPage(1);
                       }}
-                      className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl text-left transition cursor-pointer border ${
+                      className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl text-left transition cursor-pointer border ${
                         isActive
                           ? 'bg-[#1b1c1c] text-white border-[#1b1c1c] shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50'
+                          : 'bg-white text-slate-800 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50 shadow-2xs'
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <Icon
                           className={`w-4 h-4 shrink-0 transition-colors ${
                             isActive ? 'text-white' : tab.inactiveColor
                           }`}
+                          aria-hidden="true"
                         />
                         <span className="text-xs sm:text-sm font-bold truncate">
                           {tab.label}
                         </span>
                       </div>
                       <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 transition ${
+                        className={`text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 transition ${
                           isActive
                             ? 'bg-white/20 text-white'
                             : 'bg-slate-100 text-slate-700'
@@ -551,11 +530,6 @@ export function CustomerOrderHistory({
                             {order.status === 'selesai' && (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                                 Selesai <ChevronRight className="w-3 h-3" />
-                              </span>
-                            )}
-                            {order.status === 'dibatalkan' && (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                Dibatalkan <ChevronRight className="w-3 h-3" />
                               </span>
                             )}
                           </div>

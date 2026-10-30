@@ -10,8 +10,6 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
-  Tag,
-  AtSign,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
@@ -212,15 +210,24 @@ export function CustomerStoreDetail({
 
   // Resolve store name from prop, localStorage, or fallback to Toko Rejak
   const effectiveStoreName = useMemo(() => {
-    if (storeName && storeName.trim()) return storeName.trim();
+    if (storeName && storeName.trim() && storeName.trim() !== 'TerasRasa Bakery') return storeName.trim();
     try {
       const savedStore = localStorage.getItem('rescuebyte_selected_store');
-      if (savedStore && savedStore.trim()) return savedStore.trim();
+      if (savedStore && savedStore.trim() && savedStore.trim() !== 'TerasRasa Bakery') return savedStore.trim();
       const sellerStore = localStorage.getItem('rescuebyte_store_name');
-      if (sellerStore && sellerStore.trim()) return sellerStore.trim();
+      if (sellerStore && sellerStore.trim() && sellerStore.trim() !== 'TerasRasa Bakery') return sellerStore.trim();
     } catch { }
     return 'Toko Rejak';
   }, [storeName]);
+
+  // Clean up any stale legacy TerasRasa Bakery in localStorage
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('rescuebyte_selected_store') === 'TerasRasa Bakery') {
+        localStorage.setItem('rescuebyte_selected_store', 'Toko Rejak');
+      }
+    } catch { }
+  }, []);
 
   // Initial store data based on Toko Rejak
   const [storeData, setStoreData] = useState<StoreDetailInfo>(() => {
@@ -230,6 +237,7 @@ export function CustomerStoreDetail({
     return {
       ...TOKO_REJAK_INFO,
       name: effectiveStoreName,
+      status: 'Buka',
       email: `${effectiveStoreName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
       socialMedia: `@${effectiveStoreName.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
     };
@@ -275,11 +283,36 @@ export function CustomerStoreDetail({
             ? matchedBackendStore.operational_end.slice(0, 5)
             : '23:59';
 
+          const isStoreActive = matchedBackendStore.status
+            ? matchedBackendStore.status.toUpperCase() === 'ACTIVE'
+            : true;
+          const displayStatus = isStoreActive ? 'Buka' : 'Tutup';
+
+          const daysText = (() => {
+            const days = matchedBackendStore.operational_days;
+            if (!days || days.length === 0 || days.length === 7) return 'Senin - Minggu';
+            const DAY_NAMES: Record<number, string> = {
+              1: 'Senin',
+              2: 'Selasa',
+              3: 'Rabu',
+              4: 'Kamis',
+              5: 'Jumat',
+              6: 'Sabtu',
+              7: 'Minggu',
+            };
+            const sorted = [...days].sort((a, b) => a - b);
+            const isConsecutive = sorted.every((d, idx) => idx === 0 || d === sorted[idx - 1] + 1);
+            if (isConsecutive && sorted.length > 1) {
+              return `${DAY_NAMES[sorted[0]]} - ${DAY_NAMES[sorted[sorted.length - 1]]}`;
+            }
+            return sorted.map((d) => DAY_NAMES[d] || '').filter(Boolean).join(', ');
+          })();
+
           setStoreData({
             id: matchedBackendStore.id,
             name: matchedBackendStore.name,
             category: 'Aneka Makanan Berat & Kuliner',
-            status: matchedBackendStore.status === 'INACTIVE' ? 'Tutup' : 'Buka',
+            status: displayStatus,
             rating: 4.9,
             reviewCount: 48,
             distance: '1.2 km',
@@ -287,7 +320,7 @@ export function CustomerStoreDetail({
               ? `${matchedBackendStore.district}, ${matchedBackendStore.city || 'Malang'}`
               : matchedBackendStore.city || 'Kota Malang',
             address: fullAddress || 'Jalan Selorejo, Lowokwaru, Kota Malang, Jawa Timur',
-            operationalHours: `Senin - Minggu\n${opStart} - ${opEnd} WIB`,
+            operationalHours: `${daysText}\n${opStart} - ${opEnd} WIB`,
             pickupHours: `${opStart} - ${opEnd} WIB`,
             email: matchedBackendStore.email || 'animeadventrue@gmail.com',
             phone: matchedBackendStore.whatsapp_number || '0812345678',
@@ -563,8 +596,14 @@ export function CustomerStoreDetail({
                       <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1b1c1c] tracking-tight truncate">
                         {storeData.name}
                       </h1>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-primary">
-                        {storeData.status}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          storeData.status.toLowerCase() === 'buka' || storeData.status.toUpperCase() === 'ACTIVE'
+                            ? 'bg-[#dcfce7] text-primary'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
+                        {storeData.status.toUpperCase() === 'ACTIVE' ? 'Buka' : storeData.status}
                       </span>
                     </div>
 
@@ -574,10 +613,6 @@ export function CustomerStoreDetail({
                         {storeData.rating}
                         <span className="text-slate-500 font-normal">({storeData.reviewCount} ulasan)</span>
                       </span>
-                      <span>•</span>
-                      <span>{storeData.distance}</span>
-                      <span>•</span>
-                      <span>{storeData.area}</span>
                     </div>
                   </div>
                 </div>
@@ -753,102 +788,101 @@ export function CustomerStoreDetail({
                 </section>
 
                 {/* Card 3: Informasi Toko Details */}
-                <section className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs">
-                  <h2 className="text-base sm:text-lg font-bold text-[#1b1c1c] mb-4">Informasi Toko</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                        <Tag className="w-4 h-4 text-emerald-700" />
+                <section className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-[#1b1c1c] mb-4 sm:mb-5">
+                      Informasi Toko
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 items-center">
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3.5 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Email</p>
+                          <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5 truncate" title={storeData.email}>
+                            {storeData.email}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Kategori</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{storeData.category}</p>
-                      </div>
-                    </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                        <Mail className="w-4 h-4 text-emerald-700" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Email</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{storeData.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                        <Phone className="w-4 h-4 text-emerald-700" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Kontak</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{storeData.phone}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                        <AtSign className="w-4 h-4 text-emerald-700" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Media Sosial</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{storeData.socialMedia}</p>
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3.5 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Kontak</p>
+                          <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5 truncate" title={storeData.phone}>
+                            {storeData.phone}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </section>
 
                 {/* Card 4: Ringkasan Toko */}
-                <section className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs">
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <h2 className="text-base sm:text-lg font-bold text-[#1b1c1c]">Ringkasan Toko</h2>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('ulasan')}
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Lihat Semua Ulasan</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-                        <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                      </div>
-                      <div>
-                        <span className="text-xl sm:text-2xl font-black text-[#1b1c1c] block">
-                          {storeData.rating}
-                        </span>
-                        <span className="text-[11px] font-semibold text-slate-600">Rating Toko</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">({storeData.reviewCount} ulasan)</span>
-                      </div>
+                <section className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+                      <h2 className="text-base sm:text-lg font-bold text-[#1b1c1c]">Ringkasan Toko</h2>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('ulasan')}
+                        className="text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-800 transition inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Lihat Semua Ulasan</span>
+                        <span aria-hidden="true" className="font-bold">→</span>
+                      </button>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-                        <MessageSquare className="w-4 h-4" />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3 lg:gap-4 items-center pt-0.5">
+                      {/* Rating Toko */}
+                      <div className="flex items-center gap-3 sm:gap-3.5">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#fef8ea] flex items-center justify-center shrink-0">
+                          <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block">
+                            {storeData.rating}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium leading-tight block mt-0.5">
+                            Rating Toko
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-normal leading-tight block mt-0.5">
+                            ({storeData.reviewCount} ulasan)
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xl sm:text-2xl font-black text-[#1b1c1c] block">
-                          {storeData.reviewCount}
-                        </span>
-                        <span className="text-[11px] font-semibold text-slate-600">Total Ulasan</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">Pelanggan terverifikasi</span>
-                      </div>
-                    </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                        <MapPin className="w-4 h-4" />
+                      {/* Total Ulasan */}
+                      <div className="flex items-center gap-3 sm:gap-3.5">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#ecfdf3] flex items-center justify-center shrink-0">
+                          <MessageSquare className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block">
+                            {storeData.reviewCount}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium leading-tight block mt-0.5">
+                            Total Ulasan
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xl sm:text-2xl font-black text-[#1b1c1c] block">
-                          {storeData.distance}
-                        </span>
-                        <span className="text-[11px] font-semibold text-slate-600">Jarak Lokasi</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">Dari posisi Anda</span>
+
+                      {/* Jarak Lokasi */}
+                      <div className="flex items-center gap-3 sm:gap-3.5">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#ecfdf3] flex items-center justify-center shrink-0">
+                          <MapPin className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block">
+                            {storeData.distance}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium leading-tight block mt-0.5">
+                            Jarak dari lokasi kamu
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

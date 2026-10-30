@@ -241,7 +241,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
         {/* Right Stat Cards Stack */}
         <div className="flex flex-col justify-between gap-4 h-full">
           <div
-            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
+            className="flex-1 flex flex-col justify-between p-[24px_26px] min-h-[130px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Jumlah Pembeli</span>
@@ -249,19 +249,11 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
           </div>
 
           <div
-            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
+            className="flex-1 flex flex-col justify-between p-[24px_26px] min-h-[130px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Selesai</span>
             <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">48</span>
-          </div>
-
-          <div
-            className="flex-1 flex flex-col justify-between p-[22px_24px] min-h-[96px] bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[#15803d] focus-visible:outline-offset-2"
-            tabIndex={0}
-          >
-            <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Dibatalkan</span>
-            <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">12</span>
           </div>
         </div>
       </div>

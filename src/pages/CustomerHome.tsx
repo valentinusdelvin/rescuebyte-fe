@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { MysteryBoxCard } from '../components/customer/MysteryBoxCard';
@@ -6,6 +6,7 @@ import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../types';
 import { getCurrentUser } from '../services/authService';
+import { getPublicProducts, PublicProductItem } from '../services/productService';
 
 import heroFullBanner from '../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
 import aboutUsTopImg from '../assets/customer/about-us-top.svg';
@@ -16,11 +17,6 @@ import bgShapeBottomLeft from '../assets/customer/bg-shape-bottom-left.svg';
 import bgShapeBottom from '../assets/customer/bg-shape-bottom.svg';
 import bgShapeAccent from '../assets/customer/bg-shape-accent.svg';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import cardSateSenayan from '../assets/customer/card-sate-senayan.jpg';
-import cardSaladStop from '../assets/customer/card-saladstop.jpg';
-import cardAnomaliCoffee from '../assets/customer/card-anomali-coffee.jpg';
-import cardDapurSolo from '../assets/customer/card-dapur-solo.jpg';
-import cardTousLesJours from '../assets/customer/card-tous-les-jours.jpg';
 import avatarReza from '../assets/customer/avatar-reza.jpg';
 import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
 
@@ -35,120 +31,116 @@ export interface CustomerHomeProps {
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-/**
- * Mystery Box Mock Data (Popular Section)
- * Matched verbatim with reference design image and Design.md specifications.
- */
-const POPULAR_BOXES: CustomerMysteryBox[] = [
-  {
-    id: 'pop-1',
-    storeName: 'Monsieur Spoon Senopati',
-    category: 'PASTRY SURPRISE',
-    categoryBadge: '🥐 PASTRY SURPRISE',
-    remainingBoxesText: 'Sisa 2 Box!',
-    distanceText: '0.8 km',
-    discountPercent: 68,
-    originalPrice: 110000,
-    rescuePrice: 35000,
-    pickupTime: 'Ambil: 19:45 - 21:00 WIB',
-    description: 'Artisan French Viennoiserie Surprise Box... isi 3-4 macam butter croissant, pain au chocolat, atau fruit danish segar hari ini.',
-    tags: ['Halal MUI', 'Gluten & Dairy'],
-    imageSrc: cardMonsieurSpoon,
-  },
-  {
-    id: 'pop-2',
-    storeName: 'Sate Khas Senayan – GI',
-    category: 'NUSANTARA SURPRISE',
-    categoryBadge: '🍱 NUSANTARA SURPRISE',
-    remainingBoxesText: 'Sisa 4 Box',
-    distanceText: '2.1 km',
-    discountPercent: 60,
-    originalPrice: 95000,
-    rescuePrice: 38000,
-    pickupTime: 'Ambil: 20:30 - 21:30 WIB',
-    description: 'Paket Makan Malam Kenyang: Aneka sate ayam legendaris / tahu telur / nasi uduk lauk lengkap terkemas higienis standar resto.',
-    tags: ['Halal MUI', 'Porsi Kenyang (1-2 Orang)'],
-    imageSrc: cardSateSenayan,
-  },
-  {
-    id: 'pop-3',
-    storeName: 'SaladStop! Kemang Village',
-    category: 'FRESH SALAD & WARM BOWL',
-    categoryBadge: '🥗 FRESH SALAD & WARM BOWL',
-    remainingBoxesText: '! Hanya 1 Box Tersisa!',
-    distanceText: '3.4 km',
-    discountPercent: 65,
-    originalPrice: 120000,
-    rescuePrice: 42000,
-    pickupTime: 'Ambil: 20:15 - 21:15 WIB',
-    description: 'Mystery Salad Bag: Gourmet signature salad bowl atau warm grain bowl kaya serat dan protein nabati, dipersiapkan segar sore ini.',
-    tags: ['Plant-Based Option', 'Kacang & Wijen'],
-    imageSrc: cardSaladStop,
-  },
-];
+function mapPublicProductToCustomerBox(p: PublicProductItem, isRadius = false): CustomerMysteryBox {
+  const normalPrice = p.normal_price || 0;
+  const rescuePrice = p.rescue_price || 0;
+  const discount =
+    typeof p.discount_percentage === 'number' && p.discount_percentage > 0
+      ? p.discount_percentage
+      : normalPrice > 0
+        ? Math.round(((normalPrice - rescuePrice) / normalPrice) * 100)
+        : 0;
 
-/**
- * Mystery Box Mock Data (Radius 5 km Section)
- */
-const RADIUS_BOXES: CustomerMysteryBox[] = [
-  {
-    id: 'rad-1',
-    storeName: 'Anomali Coffee Teuku Cik Ditiro',
-    category: '☕ Pastry & Savory Snack Box',
-    categoryBadge: '☕ Pastry & Savory Snack Box',
-    portionText: 'Porsi Sedang 450g',
-    remainingBoxesText: 'Sisa 5 box',
-    distanceText: '1.2 km • Cikini',
-    discountPercent: 67,
-    originalPrice: 75000,
-    rescuePrice: 25000,
-    pickupTime: '21:00 - 22:00 WIB',
-    description: 'Kombinasi croissant gurih, quiche jamur, atau cinnamon roll premium produksi harian kafe spesialis kopi Indonesia.',
-    tags: ['Halal MUI', 'Gluten & Dairy'],
+  let pickup = p.pickup_time;
+  if (!pickup && p.operational_start && p.operational_end) {
+    pickup = `Ambil: ${p.operational_start} – ${p.operational_end} WIB`;
+  } else if (!pickup) {
+    pickup = 'Ambil: 19:00 – 21:00 WIB';
+  }
+
+  const dist = typeof p.distance_km === 'number' ? `${p.distance_km.toFixed(1)} km` : '1.2 km';
+  const realProductName = p.name || 'Surprise Box';
+  let realStoreName = p.store_name || '';
+  if (!realStoreName) {
+    try {
+      realStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Mitra';
+    } catch {
+      realStoreName = 'Toko Mitra';
+    }
+  }
+
+  let imageSrc = cardMonsieurSpoon;
+  if (p.main_image_url && typeof p.main_image_url === 'string') {
+    const url = p.main_image_url.trim();
+    if (url.startsWith('http') && !url.includes('pinterest.com/search')) {
+      imageSrc = url;
+    }
+  }
+
+  return {
+    id: p.id,
+    storeId: p.store_id,
+    storeName: realStoreName,
+    category: realProductName,
+    categoryBadge: realProductName,
+    remainingBoxesText: `Sisa ${p.stock ?? 1} Box`,
+    distanceText: dist,
+    discountPercent: discount,
+    originalPrice: normalPrice,
+    rescuePrice: rescuePrice,
+    pickupTime: pickup,
+    description:
+      p.description ||
+      'Berisi 1 porsi makanan surplus berkualitas dan higienis yang disiapkan langsung oleh merchant mitra.',
+    tags: [realStoreName, realProductName, 'Halal MUI', 'Surplus Harian'],
+    imageSrc,
     rating: 4.9,
-    reviewCount: '1.2k',
-    imageSrc: cardAnomaliCoffee,
-    isRadiusItem: true,
-  },
-  {
-    id: 'rad-2',
-    storeName: 'Dapur Solo Matraman',
-    category: '🍱 Lauk Pauk & Nasi Kotak Tradisional',
-    categoryBadge: '🍱 Lauk Pauk & Nasi Kotak Tradisional',
-    portionText: 'Porsi Lengkap 500g',
-    remainingBoxesText: 'Sisa 3 box',
-    distanceText: '2.4 km • Matraman',
-    discountPercent: 60,
-    originalPrice: 70000,
-    rescuePrice: 28000,
-    pickupTime: '20:45 - 21:45 WIB',
-    description: 'Surplus sajian khas Jawa: ayam goreng rempah / empal / serundeng, sayuran segar, telur balado & sambal terasi lezat.',
-    tags: ['Halal MUI', 'Kacang & Rempah'],
-    rating: 4.8,
-    reviewCount: '890',
-    imageSrc: cardDapurSolo,
-    isRadiusItem: true,
-  },
-  {
-    id: 'rad-3',
-    storeName: 'Tous Les Jours Pacific Place',
-    category: '🥐 Morning Bake Surplus Package',
-    categoryBadge: '🥐 Morning Bake Surplus Package',
-    portionText: '4-5 Pcs Roti Manis & Gurih',
-    remainingBoxesText: 'Sisa 6 box',
-    distanceText: '2.8 km • SCBD',
-    discountPercent: 64,
-    originalPrice: 90000,
-    rescuePrice: 32000,
-    pickupTime: '21:15 - 22:00 WIB',
-    description: 'Koleksi aneka roti artisan Korea, red bean bread, sosis bun panggang, dan sponge cake harum yang dipanggang pagi tadi.',
-    tags: ['Halal MUI', 'Gluten & Telur'],
-    rating: 4.9,
-    reviewCount: '2.4k',
-    imageSrc: cardTousLesJours,
-    isRadiusItem: true,
-  },
-];
+    reviewCount: '42',
+    isRadiusItem: isRadius,
+  };
+}
+
+function BoxCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-[#e2e6df] overflow-hidden animate-pulse flex flex-col h-[400px]">
+      <div className="w-full h-52 bg-[#ecefe9]" />
+      <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-4 bg-[#ecefe9] rounded w-3/4" />
+          <div className="h-3 bg-[#ecefe9] rounded w-1/2" />
+        </div>
+        <div className="h-10 bg-[#ecefe9] rounded-xl" />
+        <div className="flex items-center justify-between pt-2 border-t border-[#f0f2ee]">
+          <div className="h-6 bg-[#ecefe9] rounded w-24" />
+          <div className="h-10 bg-[#ecefe9] rounded-xl w-28" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BoxEmptyState({ message }: { message: string }) {
+  return (
+    <div className="text-center py-12 px-6 bg-white rounded-2xl border border-[#e2e6df] col-span-full">
+      <p className="text-sm text-[#5a625d] font-medium">{message}</p>
+    </div>
+  );
+}
+
+function getCachedBoxes(): { nearby: CustomerMysteryBox[]; bestSeller: CustomerMysteryBox[] } {
+  try {
+    const raw = localStorage.getItem('rescuebyte_cached_marketplace_products');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const mappedNearby = parsed.slice(0, 6).map((item) => ({
+          ...item,
+          isRadiusItem: false,
+        }));
+        const mappedBestSeller = [...parsed]
+          .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0))
+          .slice(0, 6)
+          .map((item) => ({
+            ...item,
+            isRadiusItem: true,
+          }));
+        return { nearby: mappedNearby, bestSeller: mappedBestSeller };
+      }
+    }
+  } catch {}
+  return { nearby: [], bestSeller: [] };
+}
+
 
 /**
  * Testimonials Mock Data
@@ -245,6 +237,60 @@ export function CustomerHome({
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Dynamic products from backend API
+  const cached = getCachedBoxes();
+  const [nearbyBoxes, setNearbyBoxes] = useState<CustomerMysteryBox[]>(cached.nearby);
+  const [bestSellerBoxes, setBestSellerBoxes] = useState<CustomerMysteryBox[]>(cached.bestSeller);
+  const [isLoadingBoxes, setIsLoadingBoxes] = useState<boolean>(cached.nearby.length === 0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBoxes() {
+      try {
+        const coords = (() => {
+          try {
+            const saved = localStorage.getItem('rescuebyte_user_coords');
+            if (saved) return JSON.parse(saved);
+          } catch {}
+          return { lat: -7.9526, lng: 112.6146 };
+        })();
+
+        const products = await getPublicProducts({
+          latitude: coords.lat,
+          longitude: coords.lng,
+        });
+
+        if (!isMounted) return;
+
+        if (products && products.length > 0) {
+          const sortedByDistance = [...products]
+            .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
+            .map((p) => mapPublicProductToCustomerBox(p, false));
+
+          const sortedByDiscount = [...products]
+            .sort((a, b) => (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0))
+            .map((p) => mapPublicProductToCustomerBox(p, true));
+
+          setNearbyBoxes(sortedByDistance);
+          setBestSellerBoxes(sortedByDiscount);
+        }
+      } catch (err) {
+        console.warn('Failed to load boxes for CustomerHome:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingBoxes(false);
+        }
+      }
+    }
+
+    loadBoxes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
     const user = getCurrentUser();
@@ -379,53 +425,68 @@ export function CustomerHome({
         </div>
       </section>
 
-      {/* 3. Section: Mystery Box Populer */}
+      {/* 3. Section: Mystery Box di Sekitar */}
       <section className="px-6 py-10 lg:py-12" id="marketplace-section">
         <div className="w-full max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="flex items-center gap-2.5 mb-6">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] shrink-0" aria-hidden="true" />
+          <div className="mb-6">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
-              Mystery Box Populer
+              Mystery Box di Sekitar
             </h2>
           </div>
 
-          {/* Popular Cards Grid (3 Columns) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {POPULAR_BOXES.map((box) => (
-              <MysteryBoxCard
-                key={box.id}
-                item={box}
-                variant="popular"
-                onOrderClick={handleOpenOrder}
-                onStoreClick={onNavigateStore}
-              />
-            ))}
+            {isLoadingBoxes && nearbyBoxes.length === 0 ? (
+              <>
+                <BoxCardSkeleton />
+                <BoxCardSkeleton />
+                <BoxCardSkeleton />
+              </>
+            ) : nearbyBoxes.length === 0 ? (
+              <BoxEmptyState message="Belum ada Mystery Box di sekitarmu saat ini." />
+            ) : (
+              nearbyBoxes.map((box) => (
+                <MysteryBoxCard
+                  key={box.id}
+                  item={box}
+                  variant="popular"
+                  onOrderClick={handleOpenOrder}
+                  onStoreClick={onNavigateStore}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>
 
-      {/* 4. Section: Mystery Box Populer di Sekitarmu (Radius 5 km) */}
+      {/* 4. Section: Mystery Box Terlaris */}
       <section className="px-6 pt-4 pb-12">
         <div className="w-full max-w-7xl mx-auto">
-          {/* Section Header */}
           <div className="mb-6">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
-              Mystery Box Populer di Sekitarmu (Radius 5 km)
+              Mystery Box Terlaris
             </h2>
           </div>
 
-          {/* Radius Cards Grid (3 Columns) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {RADIUS_BOXES.map((box) => (
-              <MysteryBoxCard
-                key={box.id}
-                item={box}
-                variant="radius"
-                onOrderClick={handleOpenOrder}
-                onStoreClick={onNavigateStore}
-              />
-            ))}
+            {isLoadingBoxes && bestSellerBoxes.length === 0 ? (
+              <>
+                <BoxCardSkeleton />
+                <BoxCardSkeleton />
+                <BoxCardSkeleton />
+              </>
+            ) : bestSellerBoxes.length === 0 ? (
+              <BoxEmptyState message="Belum ada Mystery Box terlaris saat ini." />
+            ) : (
+              bestSellerBoxes.map((box) => (
+                <MysteryBoxCard
+                  key={box.id}
+                  item={box}
+                  variant="radius"
+                  onOrderClick={handleOpenOrder}
+                  onStoreClick={onNavigateStore}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>
