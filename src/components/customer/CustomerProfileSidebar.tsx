@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { User, FileText, Lock, Bell, LogOut } from 'lucide-react';
+import { User, FileText, LogOut } from 'lucide-react';
 
 export interface CustomerProfileSidebarProps {
   name: string;
   email: string;
   avatarUrl?: string;
-  activeTab?: 'info' | 'orders' | 'security' | 'notifications';
+  activeTab?: 'info' | 'orders';
   onNavigateProfile?: () => void;
   onNavigateOrders?: () => void;
   onLogout: () => void;
@@ -20,7 +20,6 @@ export function CustomerProfileSidebar({
   onNavigateProfile,
   onNavigateOrders,
   onLogout,
-  onShowToast,
 }: CustomerProfileSidebarProps) {
   const [imageError, setImageError] = useState(false);
 
@@ -90,32 +89,6 @@ export function CustomerProfileSidebar({
         >
           <FileText className={`w-4 h-4 shrink-0 ${activeTab === 'orders' ? 'text-[#2d6a2e]' : 'text-gray-400'}`} />
           <span>Riwayat Pesanan</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onShowToast?.('Fitur Keamanan Akun akan segera hadir.', 'info')}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
-            activeTab === 'security'
-              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
-              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
-          }`}
-        >
-          <Lock className="w-4 h-4 text-gray-400 shrink-0" />
-          <span>Keamanan Akun</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onShowToast?.('Fitur Notifikasi akan segera hadir.', 'info')}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-colors cursor-pointer ${
-            activeTab === 'notifications'
-              ? 'bg-[#eef8ee] text-[#2d6a2e] font-bold'
-              : 'font-semibold text-gray-600 hover:text-black hover:bg-gray-50'
-          }`}
-        >
-          <Bell className="w-4 h-4 text-gray-400 shrink-0" />
-          <span>Notifikasi</span>
         </button>
 
         <div className="h-px bg-gray-100 my-1 mx-2" />
