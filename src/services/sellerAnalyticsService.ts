@@ -1,84 +1,154 @@
-import axios from 'axios';
-import { api } from './api';
-import { extractApiErrorMessage, getAccessToken } from './authService';
+import {
+  fetchMerchantOrdersApi,
+  getMerchantOrders,
+  MerchantOrderItem,
+} from './orderService';
 import { PerformanceFilterKey } from '../types';
 
-export interface SellerOrderApiItem {
-  id: string;
-  order_number: string;
-  status: string;
-  status_label?: string;
-  total_amount: number;
-  total_items?: number;
-  customer_name?: string;
-  customer_phone?: string;
-  created_at: string;
-}
-
-export interface MonthlyTrendData {
-  month: string;
-  monthIndex: number;
-  year: number;
+export interface PerformanceTrendPoint {
+  label: string; // e.g. 'Mgg 1', 'Sen', 'Jan'
   totalOrders: number;
   buyers: number;
   completedOrders: number;
 }
 
-export interface PerformanceAnalyticsResult {
-  totalPurchaseNominal: number;
+export interface SellerPerformanceData {
+  totalPemasukan: number;
   totalOrdersCount: number;
   totalBuyersCount: number;
   completedOrdersCount: number;
-  monthlyTrends: MonthlyTrendData[];
+  trendPoints: PerformanceTrendPoint[];
   rawOrdersCount: number;
 }
 
-const INDO_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const INDO_DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const INDO_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-function parseDate(dateStr: string): Date | null {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? null : d;
+function parseOrderDate(order: MerchantOrderItem): Date {
+  if (order.createdAt) {
+    const d = new Date(order.createdAt);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (order.pickupDate) {
+    const d = new Date(order.pickupDate);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
 }
 
-function filterOrdersByPeriod(orders: SellerOrderApiItem[], period: PerformanceFilterKey): SellerOrderApiItem[] {
+/**
+ * Filter orders based on the selected period
+ */
+function filterOrdersByPeriod(
+  orders: MerchantOrderItem[],
+  period: PerformanceFilterKey
+): MerchantOrderItem[] {
   const now = new Date();
 
   if (period === 'bulan-ini') {
     const curYear = now.getFullYear();
     const curMonth = now.getMonth();
     return orders.filter((o) => {
-      const d = parseDate(o.created_at);
-      return d ? d.getFullYear() === curYear && d.getMonth() === curMonth : false;
+      const d = parseOrderDate(o);
+      return d.getFullYear() === curYear && d.getMonth() === curMonth;
     });
   }
 
   if (period === 'minggu-ini') {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     return orders.filter((o) => {
-      const d = parseDate(o.created_at);
-      return d ? d >= sevenDaysAgo && d <= now : false;
+      const d = parseOrderDate(o);
+      return d >= sevenDaysAgo && d <= now;
     });
   }
 
   if (period === 'tahun-ini') {
     const curYear = now.getFullYear();
     return orders.filter((o) => {
-      const d = parseDate(o.created_at);
-      return d ? d.getFullYear() === curYear : false;
+      const d = parseOrderDate(o);
+      return d.getFullYear() === curYear;
     });
   }
 
   return orders;
 }
 
-function computeMonthlyTrends(orders: SellerOrderApiItem[]): MonthlyTrendData[] {
+/**
+ * Compute 6 trend data points tailored to the selected period
+ */
+function computeTrendPoints(
+  orders: MerchantOrderItem[],
+  period: PerformanceFilterKey
+): PerformanceTrendPoint[] {
   const now = new Date();
+
+  if (period === 'minggu-ini') {
+    // 6 daily points ending today
+    const points: PerformanceTrendPoint[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dayName = INDO_DAY_NAMES[targetDate.getDay()];
+      const dayNum = targetDate.getDate();
+      const label = `${dayName} ${dayNum}`;
+
+      const dayOrders = orders.filter((o) => {
+        const d = parseOrderDate(o);
+        return (
+          d.getFullYear() === targetDate.getFullYear() &&
+          d.getMonth() === targetDate.getMonth() &&
+          d.getDate() === targetDate.getDate()
+        );
+      });
+
+      const completedOrders = dayOrders.filter((o) => o.status === 'selesai').length;
+      const buyersSet = new Set(dayOrders.map((o) => o.customerName?.trim() || o.id));
+
+      points.push({
+        label,
+        totalOrders: dayOrders.length,
+        buyers: buyersSet.size,
+        completedOrders,
+      });
+    }
+    return points;
+  }
+
+  if (period === 'bulan-ini') {
+    // 6 intervals across the current month (Days: 1-5, 6-10, 11-15, 16-20, 21-25, 26-31)
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+    const intervals = [
+      { label: 'Mgg 1', start: 1, end: 5 },
+      { label: 'Mgg 2', start: 6, end: 10 },
+      { label: 'Mgg 3', start: 11, end: 15 },
+      { label: 'Mgg 4', start: 16, end: 20 },
+      { label: 'Mgg 5', start: 21, end: 25 },
+      { label: 'Mgg 6', start: 26, end: 31 },
+    ];
+
+    return intervals.map((inv) => {
+      const invOrders = orders.filter((o) => {
+        const d = parseOrderDate(o);
+        if (d.getFullYear() !== curYear || d.getMonth() !== curMonth) return false;
+        const day = d.getDate();
+        return day >= inv.start && day <= inv.end;
+      });
+
+      const completedOrders = invOrders.filter((o) => o.status === 'selesai').length;
+      const buyersSet = new Set(invOrders.map((o) => o.customerName?.trim() || o.id));
+
+      return {
+        label: inv.label,
+        totalOrders: invOrders.length,
+        buyers: buyersSet.size,
+        completedOrders,
+      };
+    });
+  }
+
+  // 'tahun-ini': 6 monthly points ending in current month (or Jan-Jun)
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-
-  // If current month is >= July, show trailing 6 months ending at current month
-  // Otherwise, default to first 6 months Jan - Jun
   const useTrailing = currentMonth >= 6;
   const windowMonths: { month: string; monthIndex: number; year: number }[] = [];
 
@@ -86,7 +156,7 @@ function computeMonthlyTrends(orders: SellerOrderApiItem[]): MonthlyTrendData[] 
     for (let i = 5; i >= 0; i--) {
       const d = new Date(currentYear, currentMonth - i, 1);
       windowMonths.push({
-        month: INDO_MONTHS[d.getMonth()],
+        month: INDO_MONTH_NAMES[d.getMonth()],
         monthIndex: d.getMonth(),
         year: d.getFullYear(),
       });
@@ -94,7 +164,7 @@ function computeMonthlyTrends(orders: SellerOrderApiItem[]): MonthlyTrendData[] 
   } else {
     for (let m = 0; m < 6; m++) {
       windowMonths.push({
-        month: INDO_MONTHS[m],
+        month: INDO_MONTH_NAMES[m],
         monthIndex: m,
         year: currentYear,
       });
@@ -103,25 +173,15 @@ function computeMonthlyTrends(orders: SellerOrderApiItem[]): MonthlyTrendData[] 
 
   return windowMonths.map((w) => {
     const monthOrders = orders.filter((o) => {
-      const d = parseDate(o.created_at);
-      return d && d.getFullYear() === w.year && d.getMonth() === w.monthIndex;
+      const d = parseOrderDate(o);
+      return d.getFullYear() === w.year && d.getMonth() === w.monthIndex;
     });
 
-    const completedOrders = monthOrders.filter((o) => {
-      const s = (o.status || '').toUpperCase();
-      return s === 'COMPLETED' || s === 'SELESAI';
-    }).length;
-
-    const buyersSet = new Set<string>();
-    monthOrders.forEach((o) => {
-      const key = o.customer_name?.trim() || o.customer_phone?.trim() || o.id;
-      if (key) buyersSet.add(key);
-    });
+    const completedOrders = monthOrders.filter((o) => o.status === 'selesai').length;
+    const buyersSet = new Set(monthOrders.map((o) => o.customerName?.trim() || o.id));
 
     return {
-      month: w.month,
-      monthIndex: w.monthIndex,
-      year: w.year,
+      label: w.month,
       totalOrders: monthOrders.length,
       buyers: buyersSet.size,
       completedOrders,
@@ -130,80 +190,56 @@ function computeMonthlyTrends(orders: SellerOrderApiItem[]): MonthlyTrendData[] 
 }
 
 /**
- * Fetch seller performance data from GET /api/v1/orders/seller
- * Aggregates Total Pembelian, Jumlah Pesanan, Jumlah Pembeli, Pesanan Selesai,
- * and monthly trends for the interactive chart.
+ * Fetch and calculate seller store performance metrics from backend orders API.
+ * Uses the proven integration mechanism of ActivityCards and FinanceCard.
  */
-export async function getSellerPerformance(
-  period: PerformanceFilterKey = 'bulan-ini'
-): Promise<PerformanceAnalyticsResult> {
-  const token = getAccessToken();
-  if (!token) {
-    return {
-      totalPurchaseNominal: 0,
-      totalOrdersCount: 0,
-      totalBuyersCount: 0,
-      completedOrdersCount: 0,
-      monthlyTrends: computeMonthlyTrends([]),
-      rawOrdersCount: 0,
-    };
-  }
+export async function getSellerPerformanceData(
+  period: PerformanceFilterKey = 'bulan-ini',
+  storeName?: string
+): Promise<SellerPerformanceData> {
+  const activeStore =
+    storeName ||
+    (typeof window !== 'undefined' ? localStorage.getItem('rescuebyte_store_name') || '' : '');
 
+  // 1. Fetch freshest orders from backend GET /api/v1/orders/seller
   try {
-    const response = await api.get('/api/v1/orders/seller', {
-      params: {
-        page: 1,
-        limit: 100,
-        tab: 'all',
-      },
-    });
-
-    const payload = response.data?.payload;
-    const orders: SellerOrderApiItem[] = Array.isArray(payload?.orders) ? payload.orders : [];
-
-    const filteredOrders = filterOrdersByPeriod(orders, period);
-
-    const validOrders = filteredOrders.filter((o) => (o.status || '').toUpperCase() !== 'CANCELLED');
-    const totalPurchaseNominal = validOrders.reduce((acc, o) => acc + (Number(o.total_amount) || 0), 0);
-    const totalOrdersCount = filteredOrders.length;
-
-    const completedOrdersCount = filteredOrders.filter((o) => {
-      const s = (o.status || '').toUpperCase();
-      return s === 'COMPLETED' || s === 'SELESAI';
-    }).length;
-
-    const buyersSet = new Set<string>();
-    filteredOrders.forEach((o) => {
-      const key = o.customer_name?.trim() || o.customer_phone?.trim() || o.id;
-      if (key) buyersSet.add(key);
-    });
-
-    const monthlyTrends = computeMonthlyTrends(orders);
-
-    return {
-      totalPurchaseNominal,
-      totalOrdersCount,
-      totalBuyersCount: buyersSet.size,
-      completedOrdersCount,
-      monthlyTrends,
-      rawOrdersCount: orders.length,
-    };
-  } catch (err: unknown) {
-    if (
-      axios.isAxiosError(err) &&
-      (err.response?.status === 404 || (err.response?.data as { payload?: { error?: { error_code?: string } } })?.payload?.error?.error_code === 'store_not_found')
-    ) {
-      return {
-        totalPurchaseNominal: 0,
-        totalOrdersCount: 0,
-        totalBuyersCount: 0,
-        completedOrdersCount: 0,
-        monthlyTrends: computeMonthlyTrends([]),
-        rawOrdersCount: 0,
-      };
-    }
-
-    const msg = extractApiErrorMessage(err, 'Gagal mengambil data performa toko dari server.');
-    throw new Error(msg);
+    await fetchMerchantOrdersApi(activeStore, 'all');
+  } catch (err) {
+    console.warn('Backend fetchMerchantOrdersApi failed, using cached store orders:', err);
   }
+
+  // 2. Read normalized merchant orders for this store
+  const allOrders = getMerchantOrders(activeStore);
+
+  // 3. Filter orders according to selected period
+  const filteredOrders = filterOrdersByPeriod(allOrders, period);
+
+  // 4. Calculate Total Pemasukan:
+  // Defined as sum of grandTotal of completed orders in that period
+  const totalPemasukan = filteredOrders
+    .filter((o) => o.status === 'selesai')
+    .reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+
+  const totalOrdersCount = filteredOrders.length;
+
+  const completedOrdersCount = filteredOrders.filter((o) => o.status === 'selesai').length;
+
+  // 5. Calculate unique buyers in that period
+  const buyersSet = new Set<string>();
+  filteredOrders.forEach((o) => {
+    const key = o.customerName?.trim() || o.id;
+    if (key) buyersSet.add(key.toLowerCase());
+  });
+
+  // 6. Compute 6 trend data points for the SVG chart
+  const trendPoints = computeTrendPoints(allOrders, period);
+
+  return {
+    totalPemasukan,
+    totalOrdersCount,
+    totalBuyersCount: buyersSet.size,
+    completedOrdersCount,
+    trendPoints,
+    rawOrdersCount: allOrders.length,
+  };
 }

@@ -58,7 +58,7 @@ export function FinanceCard({ storeName }: FinanceCardProps) {
         </div>
         <div className="hidden md:block w-px h-12 bg-[#d1d5db] mx-10 shrink-0" aria-hidden="true" />
         <div className="flex-1 flex flex-col gap-1.5">
-          <span className="text-[0.95rem] font-semibold text-[#374151]">Saldo Toko</span>
+          <span className="text-[0.95rem] font-semibold text-[#374151]">Pemasukan Toko</span>
           <span className="text-[1.85rem] font-extrabold text-[#111827] tracking-[-0.02em] font-sans">
             Rp {formatRupiah(completedTotal)}
           </span>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, ChevronDown, Check } from 'lucide-react';
 import { PerformanceFilterKey } from '../../types';
 import {
-  getSellerPerformance,
-  PerformanceAnalyticsResult,
-  MonthlyTrendData,
+  getSellerPerformanceData,
+  SellerPerformanceData,
+  PerformanceTrendPoint,
 } from '../../services/sellerAnalyticsService';
+import { subscribeToMerchantOrders } from '../../services/orderService';
 
 export interface PerformanceChartProps {
   storeName?: string;
@@ -19,11 +20,11 @@ interface ChartTooltipState {
   y: number;
 }
 
-const TOAST_MESSAGES: Record<PerformanceFilterKey, string> = {
-  'bulan-ini': 'Menampilkan performa bulan ini',
-  'minggu-ini': 'Menampilkan performa minggu ini',
-  'tahun-ini': 'Menampilkan performa tahun ini',
-};
+const FILTER_OPTIONS: { value: PerformanceFilterKey; label: string; toastMsg: string }[] = [
+  { value: 'bulan-ini', label: 'Bulan ini', toastMsg: 'Menampilkan performa bulan ini' },
+  { value: 'minggu-ini', label: 'Minggu ini', toastMsg: 'Menampilkan performa minggu ini' },
+  { value: 'tahun-ini', label: 'Tahun ini', toastMsg: 'Menampilkan performa tahun ini' },
+];
 
 function formatRupiah(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -51,17 +52,21 @@ function generateSmoothPath(points: { x: number; y: number }[]): string {
 
 /**
  * PerformanceChart Component
- * Displays live store analytics integrated directly with backend orders endpoint:
- * - Total Pembelian (Nominal & Jumlah Pesanan)
- * - Jumlah Pembeli (Pembeli unik)
+ * Integrated directly with backend orders API via the unified orderService mechanism:
+ * - Total Pemasukan & Jumlah Pesanan
+ * - Jumlah Pembeli (Unique Customers)
  * - Pesanan Selesai
- * - Interactive SVG trend lines and tooltips based on real orders
+ * - Interactive SVG trend lines and dynamic custom dropdown filter
  */
-export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
+export function PerformanceChart({ storeName, onShowToast }: PerformanceChartProps) {
   const [filterRange, setFilterRange] = useState<PerformanceFilterKey>('bulan-ini');
-  const [analyticsData, setAnalyticsData] = useState<PerformanceAnalyticsResult | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<SellerPerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Custom Dropdown state
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [tooltip, setTooltip] = useState<ChartTooltipState>({
     visible: false,
@@ -72,48 +77,80 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const loadData = useCallback(async (period: PerformanceFilterKey) => {
-    setIsLoading(true);
+  const loadData = useCallback(async (period: PerformanceFilterKey, silent = false) => {
+    if (!silent) setIsLoading(true);
     setErrorMessage(null);
     try {
-      const data = await getSellerPerformance(period);
+      const data = await getSellerPerformanceData(period, storeName);
       setAnalyticsData(data);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal memuat data performa toko.';
       setErrorMessage(msg);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
-  }, []);
+  }, [storeName]);
 
+  // Initial load and sync with storeName and period
   useEffect(() => {
     loadData(filterRange);
 
+    const unsubscribe = subscribeToMerchantOrders(() => {
+      loadData(filterRange, true);
+    }, storeName);
+
     const handleOrdersUpdated = () => {
-      loadData(filterRange);
+      loadData(filterRange, true);
     };
 
     window.addEventListener('rescuebyte_orders_updated', handleOrdersUpdated);
     window.addEventListener('storage', handleOrdersUpdated);
 
     return () => {
+      unsubscribe();
       window.removeEventListener('rescuebyte_orders_updated', handleOrdersUpdated);
       window.removeEventListener('storage', handleOrdersUpdated);
     };
-  }, [filterRange, loadData]);
+  }, [filterRange, storeName, loadData]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value as PerformanceFilterKey;
-    setFilterRange(val);
-    if (onShowToast && TOAST_MESSAGES[val]) {
-      onShowToast(TOAST_MESSAGES[val]);
+  // Close dropdown on outside click or escape key
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDropdownOpen]);
+
+  const handleSelectPeriod = (newPeriod: PerformanceFilterKey) => {
+    setFilterRange(newPeriod);
+    setIsDropdownOpen(false);
+    const opt = FILTER_OPTIONS.find((o) => o.value === newPeriod);
+    if (onShowToast && opt) {
+      onShowToast(opt.toastMsg);
     }
   };
 
   const handlePointMouseEnter = (
     e: React.MouseEvent<SVGCircleElement>,
     series: string,
-    month: string,
+    label: string,
     val: number | string,
   ) => {
     if (!chartContainerRef.current) return;
@@ -125,7 +162,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
     setTooltip({
       visible: true,
-      text: `${month}: ${series} (${val})`,
+      text: `${label}: ${series} (${val})`,
       x: leftPos,
       y: topPos,
     });
@@ -136,21 +173,22 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
   };
 
   // Safe defaults if loading or empty
-  const totalNominal = analyticsData?.totalPurchaseNominal ?? 0;
+  const totalPemasukan = analyticsData?.totalPemasukan ?? 0;
   const totalOrders = analyticsData?.totalOrdersCount ?? 0;
   const totalBuyers = analyticsData?.totalBuyersCount ?? 0;
   const completedOrders = analyticsData?.completedOrdersCount ?? 0;
-  const monthlyTrends: MonthlyTrendData[] = analyticsData?.monthlyTrends || [
-    { month: 'Jan', monthIndex: 0, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
-    { month: 'Feb', monthIndex: 1, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
-    { month: 'Mar', monthIndex: 2, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
-    { month: 'Apr', monthIndex: 3, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
-    { month: 'Mei', monthIndex: 4, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
-    { month: 'Jun', monthIndex: 5, year: 2026, totalOrders: 0, buyers: 0, completedOrders: 0 },
+
+  const trendPoints: PerformanceTrendPoint[] = analyticsData?.trendPoints || [
+    { label: 'Jan', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Feb', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Mar', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Apr', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Mei', totalOrders: 0, buyers: 0, completedOrders: 0 },
+    { label: 'Jun', totalOrders: 0, buyers: 0, completedOrders: 0 },
   ];
 
-  // Calculate dynamic Y scale matching the grid layout (30 to 230 px)
-  const allValues = monthlyTrends.flatMap((m) => [m.totalOrders, m.buyers, m.completedOrders]);
+  // Dynamic Y scale math: Grid lines are at 30, 70, 110, 150, 190, 230
+  const allValues = trendPoints.flatMap((m) => [m.totalOrders, m.buyers, m.completedOrders]);
   const maxDataVal = Math.max(10, ...allValues);
   const step = Math.max(2, Math.ceil(maxDataVal / 5));
   const yMax = step * 5;
@@ -161,30 +199,32 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
     return 230 - (clamped / yMax) * 200;
   };
 
-  const greenPoints = monthlyTrends.map((m, idx) => ({
+  const greenPoints = trendPoints.map((pt, idx) => ({
     x: 85 + idx * 100,
-    y: getYCoord(m.totalOrders),
-    val: m.totalOrders,
-    month: m.month,
+    y: getYCoord(pt.totalOrders),
+    val: pt.totalOrders,
+    label: pt.label,
   }));
 
-  const yellowPoints = monthlyTrends.map((m, idx) => ({
+  const yellowPoints = trendPoints.map((pt, idx) => ({
     x: 85 + idx * 100,
-    y: getYCoord(m.buyers),
-    val: m.buyers,
-    month: m.month,
+    y: getYCoord(pt.buyers),
+    val: pt.buyers,
+    label: pt.label,
   }));
 
-  const redPoints = monthlyTrends.map((m, idx) => ({
+  const redPoints = trendPoints.map((pt, idx) => ({
     x: 85 + idx * 100,
-    y: getYCoord(m.completedOrders),
-    val: m.completedOrders,
-    month: m.month,
+    y: getYCoord(pt.completedOrders),
+    val: pt.completedOrders,
+    label: pt.label,
   }));
 
   const greenPath = generateSmoothPath(greenPoints);
   const yellowPath = generateSmoothPath(yellowPoints);
   const redPath = generateSmoothPath(redPoints);
+
+  const selectedOption = FILTER_OPTIONS.find((o) => o.value === filterRange) || FILTER_OPTIONS[0];
 
   return (
     <section className="mb-9" aria-labelledby="section-title-performa">
@@ -233,12 +273,12 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[2.15fr_1fr] gap-6 items-stretch">
         {/* Left Chart Card */}
-        <div className="bg-white rounded-2xl p-[24px_28px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-[24px_28px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08),0_2px_8px_-1px_rgba(0,0,0,0.04)] flex flex-col gap-4 relative">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <span className="text-[0.95rem] font-bold text-[#111827]">Total Pembelian</span>
+              <span className="text-[0.95rem] font-bold text-[#111827]">Total Pemasukan</span>
 
-              {isLoading ? (
+              {isLoading && !analyticsData ? (
                 <div className="flex flex-col gap-1.5 mt-1">
                   <div className="h-8 w-44 bg-slate-200 rounded-lg animate-pulse" />
                   <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
@@ -246,7 +286,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               ) : (
                 <>
                   <span className="text-[1.9rem] font-extrabold text-[#111827] tracking-[-0.02em] mt-1 font-sans">
-                    Rp {formatRupiah(totalNominal)}
+                    Rp {formatRupiah(totalPemasukan)}
                   </span>
                   <span className="text-[0.88rem] font-semibold text-[#6b7280] mt-0.5">
                     {totalOrders} Pesanan
@@ -255,31 +295,54 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               )}
             </div>
 
-            <div className="relative inline-flex items-center">
-              <select
-                className="appearance-none bg-transparent border-0 shadow-none py-1 pl-0 pr-[22px] font-sans text-[0.95rem] font-semibold text-[#111827] outline-none cursor-pointer hover:opacity-80 transition-opacity duration-150"
-                id="chart-filter"
+            {/* Custom Modern Styled Dropdown Filter */}
+            <div className="relative inline-block text-left" ref={dropdownRef}>
+              <button
+                type="button"
+                id="chart-filter-btn"
+                aria-haspopup="listbox"
+                aria-expanded={isDropdownOpen}
                 aria-label="Pilih Rentang Waktu"
-                value={filterRange}
-                onChange={handleFilterChange}
-                disabled={isLoading}
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                className="inline-flex items-center justify-between gap-2 px-3 py-1.5 bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl font-sans text-[0.88rem] sm:text-[0.92rem] font-semibold text-[#111827] shadow-2xs hover:bg-slate-50 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1F4D36]/20"
               >
-                <option value="bulan-ini">Bulan ini</option>
-                <option value="minggu-ini">Minggu ini</option>
-                <option value="tahun-ini">Tahun ini</option>
-              </select>
-              <svg
-                className="absolute right-0 pointer-events-none text-[#111827] flex items-center justify-center"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+                <span>{selectedOption.label}</span>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
+                    isDropdownOpen ? 'rotate-180 text-[#1F4D36]' : ''
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isDropdownOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-36 bg-white rounded-xl border border-slate-200/90 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right overflow-hidden"
+                  role="listbox"
+                  aria-label="Pilih Rentang Waktu"
+                >
+                  {FILTER_OPTIONS.map((opt) => {
+                    const isSelected = opt.value === filterRange;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => handleSelectPeriod(opt.value)}
+                        className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#1F4D36] text-white font-bold'
+                            : 'text-slate-700 hover:bg-emerald-50 hover:text-[#1F4D36] font-medium'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-white" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -297,7 +360,9 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
             </div>
 
             <svg
-              className={`w-full h-[260px] block transition-opacity duration-300 ${isLoading ? 'opacity-40 animate-pulse' : 'opacity-100'}`}
+              className={`w-full h-[260px] block transition-opacity duration-300 ${
+                isLoading && !analyticsData ? 'opacity-40 animate-pulse' : 'opacity-100'
+              }`}
               id="performance-chart"
               viewBox="0 0 620 280"
               preserveAspectRatio="none"
@@ -360,12 +425,12 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 {greenPoints.map((pt, i) => (
                   <circle
-                    key={`green-${pt.month}-${i}`}
+                    key={`green-${pt.label}-${i}`}
                     cx={pt.x}
                     cy={pt.y}
                     r="4.5"
                     fill="#65a30d"
-                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Total Pesanan', pt.month, pt.val)}
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Total Pesanan', pt.label, pt.val)}
                     onMouseLeave={handlePointMouseLeave}
                   />
                 ))}
@@ -375,12 +440,12 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 {yellowPoints.map((pt, i) => (
                   <circle
-                    key={`yellow-${pt.month}-${i}`}
+                    key={`yellow-${pt.label}-${i}`}
                     cx={pt.x}
                     cy={pt.y}
                     r="4.5"
                     fill="#eab308"
-                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Jumlah Pembeli', pt.month, pt.val)}
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Jumlah Pembeli', pt.label, pt.val)}
                     onMouseLeave={handlePointMouseLeave}
                   />
                 ))}
@@ -390,12 +455,12 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 {redPoints.map((pt, i) => (
                   <circle
-                    key={`red-${pt.month}-${i}`}
+                    key={`red-${pt.label}-${i}`}
                     cx={pt.x}
                     cy={pt.y}
                     r="4.5"
                     fill="#ef4444"
-                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', pt.month, pt.val)}
+                    onMouseEnter={(e) => handlePointMouseEnter(e, 'Pesanan Selesai', pt.label, pt.val)}
                     onMouseLeave={handlePointMouseLeave}
                   />
                 ))}
@@ -403,9 +468,9 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
 
               {/* X-Axis Labels */}
               <g className="chart-x-axis" fontSize="12" fill="#64748b" textAnchor="middle">
-                {monthlyTrends.map((m, idx) => (
-                  <text key={`month-lbl-${m.month}-${idx}`} x={85 + idx * 100} y="258">
-                    {m.month}
+                {trendPoints.map((m, idx) => (
+                  <text key={`period-lbl-${m.label}-${idx}`} x={85 + idx * 100} y="258">
+                    {m.label}
                   </text>
                 ))}
               </g>
@@ -421,7 +486,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Jumlah Pembeli</span>
-            {isLoading ? (
+            {isLoading && !analyticsData ? (
               <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-3.5" />
             ) : (
               <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">
@@ -436,7 +501,7 @@ export function PerformanceChart({ onShowToast }: PerformanceChartProps) {
             tabIndex={0}
           >
             <span className="text-[0.95rem] font-bold text-[#374151] leading-[1.3]">Pesanan Selesai</span>
-            {isLoading ? (
+            {isLoading && !analyticsData ? (
               <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-3.5" />
             ) : (
               <span className="text-[2.2rem] font-extrabold text-[#111827] leading-none mt-3.5 font-sans">
