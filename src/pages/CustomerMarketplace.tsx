@@ -472,12 +472,7 @@ export function CustomerMarketplace({
     } else if (tab === 'marketplace') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'kontak') {
-      const footerEl = document.getElementById('customer-footer');
-      if (footerEl) {
-        footerEl.scrollIntoView({ behavior: 'smooth' });
-      } else if (onShowToast) {
-        onShowToast('Hubungi kami di halo@rescuebyte.id');
-      }
+      window.location.hash = '#kontak';
     }
   };
 

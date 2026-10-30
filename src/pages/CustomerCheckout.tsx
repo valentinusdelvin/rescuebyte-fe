@@ -535,10 +535,14 @@ const handlePayNow = async () => {
   };
 
   const handleHeaderTab = (tab: string) => {
-    if (tab === 'beranda' && onNavigateHome) {
-      onNavigateHome();
-    } else if (tab === 'marketplace' && onNavigateMarketplace) {
-      onNavigateMarketplace();
+    if (tab === 'beranda') {
+      if (onNavigateHome) onNavigateHome();
+      else window.location.hash = '#beranda-customer';
+    } else if (tab === 'marketplace') {
+      if (onNavigateMarketplace) onNavigateMarketplace();
+      else window.location.hash = '#marketplace';
+    } else if (tab === 'kontak') {
+      window.location.hash = '#kontak';
     }
   };
 

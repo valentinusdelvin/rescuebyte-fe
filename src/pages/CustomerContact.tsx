@@ -126,6 +126,8 @@ ${suggestion.trim()}`;
           } else if (tab === 'marketplace') {
             if (onNavigateMarketplace) onNavigateMarketplace();
             else window.location.hash = '#marketplace';
+          } else if (tab === 'kontak') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }}
         onShowToast={onShowToast}

@@ -414,9 +414,7 @@ export function CustomerCart({
       if (onNavigateMarketplace) onNavigateMarketplace();
       else window.location.hash = '#marketplace';
     } else if (tab === 'kontak') {
-      const footerEl = document.getElementById('customer-footer');
-      if (footerEl) footerEl.scrollIntoView({ behavior: 'smooth' });
-      else if (onShowToast) onShowToast('Hubungi kami di halo@rescuebyte.id');
+      window.location.hash = '#kontak';
     }
   };
 

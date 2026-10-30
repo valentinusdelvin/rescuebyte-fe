@@ -390,6 +390,8 @@ export function App() {
         window.history.replaceState(null, '', '#toko');
       } else if (viewId === 'view-customer-profile') {
         window.history.replaceState(null, '', '#akun');
+      } else if (viewId === 'view-customer-contact') {
+        window.history.replaceState(null, '', '#kontak');
       } else if (viewId === 'view-auth-role-selection') {
         window.history.replaceState(null, '', '#auth');
       } else if (viewId === 'view-customer-auth') {

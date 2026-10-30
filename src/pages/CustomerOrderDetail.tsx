@@ -543,6 +543,16 @@ export function CustomerOrderDetail({
         <CustomerHeader
           activeTab="marketplace"
           onNavigateHome={onNavigateHome}
+          onSelectTab={(tab) => {
+            if (tab === 'beranda') {
+              if (onNavigateHome) onNavigateHome();
+              else window.location.hash = '#beranda-customer';
+            } else if (tab === 'marketplace') {
+              window.location.hash = '#marketplace';
+            } else if (tab === 'kontak') {
+              window.location.hash = '#kontak';
+            }
+          }}
           onNavigateSeller={onNavigateSeller}
           onNavigateOrders={onNavigateOrders}
           onShowToast={onShowToast}

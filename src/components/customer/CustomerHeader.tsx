@@ -285,10 +285,10 @@ export function CustomerHeader({
     }
 
     if (tab === 'beranda') {
-      if (window.location.hash.startsWith('#marketplace')) {
-        window.location.hash = '#beranda-customer';
-      } else {
+      if (window.location.hash === '' || window.location.hash === '#beranda-customer' || window.location.hash === '#beranda') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.location.hash = '#beranda-customer';
       }
     } else if (tab === 'marketplace') {
       window.location.hash = '#marketplace';
