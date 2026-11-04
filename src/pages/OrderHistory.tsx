@@ -15,6 +15,7 @@ import {
   subscribeToMerchantOrders,
 } from '../services/orderService';
 import { SellerOrderDetailModal } from '../components/seller/SellerOrderDetailModal';
+import { formatRupiah } from '../utils/currency';
 
 export interface OrderHistoryProps {
   storeName?: string;
@@ -29,10 +30,6 @@ const ORDER_TABS: OrderTabItem[] = [
   { id: 'selesai', label: 'Pesanan Selesai' },
 ];
 const ORDERS_PER_PAGE = 5;
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
 
 function getOrderTimestamp(value: string): number {
   const timestamp = Date.parse(value);

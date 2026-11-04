@@ -178,16 +178,7 @@ export function deleteProduct(id: string): ProductItem[] {
   return updated;
 }
 
-/**
- * Format number into Indonesian Rupiah format.
- */
-export function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+export { formatRupiah } from '../utils/currency';
 
 /**
  * Maps a backend ProductResponse or PublicProductItem to frontend ProductItem model.

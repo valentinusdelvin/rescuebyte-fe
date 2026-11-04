@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Minus, Package, Eye, EyeOff, Search, ChevronDown, Trash2 } from 'lucide-react';
 import { ProductItem, ProductStatusTab } from '../types';
+import { formatRupiah } from '../utils/currency';
 import {
   getStoredProducts,
   updateProduct,
   deleteProduct,
-  formatRupiah,
   getMerchantProducts,
   mapBackendProductToItem,
   toggleProductStatusApi,

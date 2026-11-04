@@ -9,11 +9,13 @@ import {
   Receipt,
   Lock,
   User,
+  ShoppingBag,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { CartItem, StoreCartGroup, CustomerMysteryBox } from '../types';
+import { formatRupiah } from '../utils/currency';
 import {
   getStoredCart,
   saveCart,
@@ -46,13 +48,6 @@ interface DeleteTarget {
   storeName: string;
   itemId?: string;
   itemName?: string;
-}
-
-/**
- * Format currency with dots thousands separator (e.g. 20000 -> "20.000")
- */
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function formatStorePickupTime(pickupTime?: string): string {
@@ -430,7 +425,7 @@ export function CustomerCart({
         />
 
         {/* 2. Main Content Grid */}
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 max-sm:pb-28">
           {/* Page Heading */}
           <div className="mb-6">
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#1b1c1c] tracking-tight">
@@ -817,8 +812,8 @@ export function CustomerCart({
           ) : (
             /* Empty State */
             <div className="w-full py-16 px-4 bg-white rounded-3xl border border-black/10 text-center flex flex-col items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 text-brand-green flex items-center justify-center text-3xl mb-3">
-                🛒
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-brand-green flex items-center justify-center mb-3">
+                <ShoppingBag className="w-8 h-8 text-brand-green" strokeWidth={1.75} />
               </div>
               <h3 className="font-bold text-lg text-[#1b1c1c]">Keranjangmu Kosong</h3>
               <p className="text-xs sm:text-sm text-gray-500 max-w-md mt-1 mb-5">
@@ -827,13 +822,32 @@ export function CustomerCart({
               <button
                 type="button"
                 onClick={onNavigateMarketplace || (() => { window.location.hash = '#marketplace'; })}
-                className="px-6 py-2.5 bg-[#1e2420] text-white text-xs font-bold rounded-full hover:bg-black transition-all cursor-pointer shadow-xs"
+                className="px-6 py-2.5 bg-[#1e2420] text-white text-xs font-bold rounded-full hover:bg-black transition-all cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Jelajahi Marketplace
               </button>
             </div>
           )}
         </main>
+
+        {/* Mobile Sticky Checkout Action Bar */}
+        {cartStores.length > 0 && (
+          <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-outline-variant p-4 z-40 shadow-level-3 flex items-center justify-between gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div>
+              <span className="text-[11px] text-gray-500 block">Total ({totalBoxes} box)</span>
+              <span className="text-lg font-bold font-display text-primary">Rp {formatRupiah(grandTotal)}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={totalBoxes === 0}
+              className="px-5 py-2.5 rounded-xl bg-[#1f2620] hover:bg-black disabled:bg-gray-400 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Checkout</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 3. Customer Footer */}

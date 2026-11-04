@@ -7,6 +7,7 @@ import {
   PerformanceTrendPoint,
 } from '../../services/sellerAnalyticsService';
 import { subscribeToMerchantOrders } from '../../services/orderService';
+import { formatRupiah } from '../../utils/currency';
 
 export interface PerformanceChartProps {
   storeName?: string;
@@ -25,10 +26,6 @@ const FILTER_OPTIONS: { value: PerformanceFilterKey; label: string; toastMsg: st
   { value: 'minggu-ini', label: 'Minggu ini', toastMsg: 'Menampilkan performa minggu ini' },
   { value: 'tahun-ini', label: 'Tahun ini', toastMsg: 'Menampilkan performa tahun ini' },
 ];
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
 
 /**
  * Generate smooth cubic bezier SVG path between consecutive points
@@ -239,7 +236,7 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
             Total Pesanan
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#eab308]" aria-hidden="true" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#b45309]" aria-hidden="true" />
             Jumlah Pembeli
           </span>
           <span className="flex items-center gap-1.5">
@@ -394,11 +391,11 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
                 strokeLinecap="round"
               />
 
-              {/* Data Series 2: Yellow Line (Jumlah Pembeli) */}
+              {/* Data Series 2: Amber/Warm Line (Jumlah Pembeli) */}
               <path
                 d={yellowPath}
                 fill="none"
-                stroke="#eab308"
+                stroke="#b45309"
                 strokeWidth="2.8"
                 strokeLinecap="round"
               />
@@ -427,7 +424,7 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
                 ))}
               </g>
 
-              {/* Interactive Data Points (Yellow - Jumlah Pembeli) */}
+              {/* Interactive Data Points (Amber - Jumlah Pembeli) */}
               <g className="[&_circle]:cursor-pointer [&_circle]:transition-all [&_circle]:duration-200 [&_circle:hover]:[r:7] [&_circle:hover]:stroke-white [&_circle:hover]:stroke-[2.5]">
                 {yellowPoints.map((pt, i) => (
                   <circle
@@ -435,7 +432,7 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
                     cx={pt.x}
                     cy={pt.y}
                     r="4.5"
-                    fill="#eab308"
+                    fill="#b45309"
                     onMouseEnter={(e) => handlePointMouseEnter(e, 'Jumlah Pembeli', pt.label, pt.val)}
                     onMouseLeave={handlePointMouseLeave}
                   />
@@ -466,6 +463,29 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
                 ))}
               </g>
             </svg>
+
+            {/* Screen Reader Accessible Data Table */}
+            <table className="sr-only">
+              <caption>Ringkasan Data Performa Toko ({selectedOption.label})</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Periode</th>
+                  <th scope="col">Total Pesanan</th>
+                  <th scope="col">Jumlah Pembeli</th>
+                  <th scope="col">Pesanan Selesai</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trendPoints.map((pt, i) => (
+                  <tr key={`sr-row-${pt.label}-${i}`}>
+                    <td>{pt.label}</td>
+                    <td>{pt.totalOrders}</td>
+                    <td>{pt.buyers}</td>
+                    <td>{pt.completedOrders}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

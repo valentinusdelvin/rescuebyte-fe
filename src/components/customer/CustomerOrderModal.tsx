@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { CustomerMysteryBox } from '../../types';
+import { formatRupiah } from '../../utils/currency';
 
 export interface CustomerOrderModalProps {
   item: CustomerMysteryBox | null;
   isOpen: boolean;
   onClose: () => void;
   onConfirmOrder: (item: CustomerMysteryBox, quantity: number, notes: string) => void;
-}
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 /**

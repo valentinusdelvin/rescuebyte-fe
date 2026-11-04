@@ -90,6 +90,24 @@ export function getCartCount(): number {
 }
 
 /**
+ * Fetch total cart item count from backend API if authenticated, fallback to local cart.
+ */
+export async function getCartCountApi(): Promise<number> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token) return getCartCount();
+  try {
+    const res = await api.get('/api/v1/cart/count');
+    const payload = res.data?.payload;
+    if (typeof payload?.count === 'number') {
+      return payload.count;
+    }
+    return getCartCount();
+  } catch {
+    return getCartCount();
+  }
+}
+
+/**
  * Helper to get 2-letter uppercase initials for a store name.
  */
 export function getStoreInitials(name: string): string {

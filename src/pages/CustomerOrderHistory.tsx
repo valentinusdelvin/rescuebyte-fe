@@ -27,6 +27,7 @@ import {
   fetchCustomerOrdersApi,
 } from '../services/orderService';
 import { getAllStores } from '../services/storeService';
+import { formatRupiah } from '../utils/currency';
 
 export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 
@@ -38,10 +39,6 @@ export interface CustomerOrderHistoryProps {
   onNavigateOrderDetail?: (orderData: PaymentOrderData) => void;
   onNavigateSeller?: () => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
-}
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 const ORDERS_PER_PAGE = 5;
@@ -471,18 +468,11 @@ export function CustomerOrderHistory({
                       >
                         {/* 1. Left Store Info */}
                         <div className="lg:w-1/4 shrink-0 flex flex-col gap-1.5 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0 lg:pr-5">
-                          <div
+                          <button
+                            type="button"
                             onClick={() => (onNavigateStore ? onNavigateStore(order.storeName) : onNavigateMarketplace?.())}
-                            className="flex items-center gap-2 cursor-pointer group w-fit"
-                            role="button"
-                            tabIndex={0}
+                            className="flex items-center gap-2 cursor-pointer group w-fit text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
                             title={`Lihat profil toko ${order.storeName}`}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                if (onNavigateStore) onNavigateStore(order.storeName);
-                                else onNavigateMarketplace?.();
-                              }
-                            }}
                           >
                             {(() => {
                               const avatarUrl =
@@ -511,7 +501,7 @@ export function CustomerOrderHistory({
                                 {order.storeName}
                               </h4>
                             </div>
-                          </div>
+                          </button>
 
                           {(() => {
                             const addr =

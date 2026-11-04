@@ -7,6 +7,7 @@ import { FormattedDescription } from '../components/common/FormattedDescription'
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../services/cartService';
 import { getAllStores } from '../services/storeService';
+import { formatRupiah } from '../utils/currency';
 
 export interface CustomerProductDetailProps {
   product?: CustomerMysteryBox | null;
@@ -31,13 +32,6 @@ interface FlyingCartItem {
   targetX: number;
   targetY: number;
   quantity: number;
-}
-
-/**
- * Format currency with dots thousands separator (e.g. 20000 -> "20.000")
- */
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 export function CustomerProductDetail({
@@ -312,7 +306,7 @@ export function CustomerProductDetail({
         />
 
         {/* 2. Main Content Grid */}
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 max-sm:pb-28">
           {/* Breadcrumb / Back Navigation */}
           <div className="mb-6">
             <button
@@ -648,7 +642,7 @@ export function CustomerProductDetail({
         }
         transition={{ duration: 0.5, ease: 'easeOut' }}
         onAnimationComplete={() => setIsCartBouncing(false)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
+        className="fixed max-sm:bottom-20 max-sm:right-4 bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
         title="Keranjang Pesanan"
         aria-label="Buka Keranjang Pesanan"
         id="floating-cart-button"
@@ -665,6 +659,39 @@ export function CustomerProductDetail({
           {cartCount}
         </motion.span>
       </motion.button>
+
+      {/* Mobile Sticky Conversion Action Bar */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-outline-variant p-3.5 z-40 shadow-level-3 flex items-center justify-between gap-3 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[11px] font-medium text-gray-500">Total ({quantity} box)</span>
+          <span className="text-base font-bold font-display text-primary truncate">
+            Rp {formatRupiah(rescuePrice * quantity)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            className="w-11 h-11 rounded-xl border border-[#1f2620] bg-white text-[#1f2620] flex items-center justify-center shrink-0 shadow-2xs active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Tambah ke Keranjang"
+          >
+            <ShoppingCart className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleReservasi}
+            disabled={isOutOfStock}
+            className={
+              isOutOfStock
+                ? "py-2.5 px-4 rounded-xl bg-gray-200 text-gray-400 text-xs font-bold cursor-not-allowed select-none"
+                : "py-2.5 px-4 rounded-xl bg-[#1f2620] hover:bg-black text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            }
+          >
+            <span>{isOutOfStock ? 'Habis' : 'Reservasi'}</span>
+          </button>
+        </div>
+      </div>
 
       {/* Fly-to-Cart Animation Overlay */}
       <div className="fixed inset-0 pointer-events-none z-9998 overflow-hidden" aria-hidden="true">

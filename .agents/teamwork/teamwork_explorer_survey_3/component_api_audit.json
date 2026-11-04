@@ -1,0 +1,694 @@
+[
+  {
+    "file": "src/App.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "handleGoogleCallback",
+          "extractApiErrorMessage",
+          "getCurrentUser",
+          "subscribeToAuth"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreProfile"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 930
+  },
+  {
+    "file": "src/components/common/ProfileAvatar.tsx",
+    "importedServices": [
+      {
+        "service": "storageService",
+        "functions": [
+          "uploadImage",
+          "StorageFolder"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 280
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser",
+          "subscribeToAuth",
+          "logoutUser",
+          "clearAuth"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 474
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getRoleForEmail"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreProfile"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 340
+  },
+  {
+    "file": "src/components/dashboard/ActivityCards.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "getMerchantOrders",
+          "subscribeToMerchantOrders",
+          "MerchantOrderItem"
+        ]
+      },
+      {
+        "service": "productService",
+        "functions": [
+          "getStoredProducts"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": false,
+    "hasEmptyState": false,
+    "totalLines": 107
+  },
+  {
+    "file": "src/components/dashboard/FinanceCard.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "getMerchantOrders",
+          "subscribeToMerchantOrders",
+          "MerchantOrderItem"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": false,
+    "hasEmptyState": false,
+    "totalLines": 71
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "importedServices": [
+      {
+        "service": "sellerAnalyticsService",
+        "functions": [
+          "getSellerPerformanceData",
+          "SellerPerformanceData",
+          "PerformanceTrendPoint"
+        ]
+      },
+      {
+        "service": "orderService",
+        "functions": [
+          "subscribeToMerchantOrders"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 508
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "logoutUser"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreProfile"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 269
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "MerchantOrderItem",
+          "fetchOrderDetailApi"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreById",
+          "StoreProfileData"
+        ]
+      },
+      {
+        "service": "userService",
+        "functions": [
+          "getUserById"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 573
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "importedServices": [
+      {
+        "service": "locationService",
+        "functions": [
+          "searchCities",
+          "getKecamatansForCity",
+          "searchOpenStreetMap",
+          "CityItem",
+          "KecamatanItem",
+          "OSMSearchResult"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 467
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "importedServices": [
+      {
+        "service": "locationService",
+        "functions": [
+          "reverseGeocodeOSM"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 420
+  },
+  {
+    "file": "src/pages/BuatDagangan.tsx",
+    "importedServices": [
+      {
+        "service": "productService",
+        "functions": [
+          "createProduct"
+        ]
+      },
+      {
+        "service": "storageService",
+        "functions": [
+          "uploadImage"
+        ]
+      }
+    ],
+    "hasUseEffect": false,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 465
+  },
+  {
+    "file": "src/pages/CustomerAuth.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "loginUser",
+          "registerUser",
+          "getGoogleAuthUrl",
+          "getAuth",
+          "saveAuth",
+          "clearAuth",
+          "getRoleForEmail",
+          "setRoleForEmail"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 468
+  },
+  {
+    "file": "src/pages/CustomerCart.tsx",
+    "importedServices": [
+      {
+        "service": "cartService",
+        "functions": [
+          "getStoredCart",
+          "saveCart",
+          "removeCartItem",
+          "removeCartItemApi",
+          "removeCartStore",
+          "removeCartStoreApi",
+          "updateCartItemQtyApi",
+          "fetchBackendCart",
+          "subscribeToCart",
+          "getStoreInitials"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getAllStores"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 902
+  },
+  {
+    "file": "src/pages/CustomerCheckout.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "createCustomerOrder",
+          "checkoutOrderApi",
+          "fetchPaymentStatusApi",
+          "fetchOrderDetailApi",
+          "mapBackendStatusToCustomerStatus"
+        ]
+      },
+      {
+        "service": "cartService",
+        "functions": [
+          "getProductVariantId"
+        ]
+      },
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      },
+      {
+        "service": "locationService",
+        "functions": [
+          "calculateDistanceKm",
+          "formatDistanceKm",
+          "getUserCoordinates"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getAllStores",
+          "StoreProfileData"
+        ]
+      },
+      {
+        "service": "midtransService",
+        "functions": [
+          "launchMidtransPayment"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 1128
+  },
+  {
+    "file": "src/pages/CustomerContact.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      }
+    ],
+    "hasUseEffect": false,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 282
+  },
+  {
+    "file": "src/pages/CustomerHome.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      },
+      {
+        "service": "productService",
+        "functions": [
+          "getPublicProducts",
+          "PublicProductItem"
+        ]
+      },
+      {
+        "service": "locationService",
+        "functions": [
+          "formatDistanceKm"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 710
+  },
+  {
+    "file": "src/pages/CustomerMarketplace.tsx",
+    "importedServices": [
+      {
+        "service": "cartService",
+        "functions": [
+          "getCartCount",
+          "subscribeToCart"
+        ]
+      },
+      {
+        "service": "productService",
+        "functions": [
+          "getPublicProducts",
+          "PublicProductItem"
+        ]
+      },
+      {
+        "service": "locationService",
+        "functions": [
+          "formatDistanceKm"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 1156
+  },
+  {
+    "file": "src/pages/CustomerOrderDetail.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "fetchOrderDetailApi",
+          "fetchPaymentDetailsApi",
+          "fetchPaymentStatusApi",
+          "mapBackendStatusToCustomerStatus",
+          "updateCustomerOrderStatus",
+          "createCustomerOrder",
+          "subscribeToCustomerOrders",
+          "getCustomerOrders"
+        ]
+      },
+      {
+        "service": "productService",
+        "functions": [
+          "getPublicProducts",
+          "PublicProductItem"
+        ]
+      },
+      {
+        "service": "locationService",
+        "functions": [
+          "getUserCoordinates"
+        ]
+      },
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      },
+      {
+        "service": "midtransService",
+        "functions": [
+          "launchMidtransPayment"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreById",
+          "StoreProfileData"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 1161
+  },
+  {
+    "file": "src/pages/CustomerOrderHistory.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser",
+          "logoutUser",
+          "clearAuth"
+        ]
+      },
+      {
+        "service": "orderService",
+        "functions": [
+          "CustomerOrderItem",
+          "getCustomerOrders",
+          "subscribeToOrders",
+          "fetchCustomerOrdersApi"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getAllStores"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 837
+  },
+  {
+    "file": "src/pages/CustomerProductDetail.tsx",
+    "importedServices": [
+      {
+        "service": "cartService",
+        "functions": [
+          "getCartCount",
+          "addToCart",
+          "addToCartApi",
+          "subscribeToCart"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getAllStores"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 776
+  },
+  {
+    "file": "src/pages/CustomerProfile.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser",
+          "clearAuth",
+          "logoutUser"
+        ]
+      },
+      {
+        "service": "userService",
+        "functions": [
+          "getUserProfile",
+          "updateUserProfile"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 232
+  },
+  {
+    "file": "src/pages/CustomerStoreDetail.tsx",
+    "importedServices": [
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      },
+      {
+        "service": "storeService",
+        "functions": [
+          "getAllStores"
+        ]
+      },
+      {
+        "service": "productService",
+        "functions": [
+          "getPublicProducts",
+          "getStoredProducts"
+        ]
+      },
+      {
+        "service": "locationService",
+        "functions": [
+          "calculateDistanceKm",
+          "formatDistanceKm",
+          "getUserCoordinates"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 1240
+  },
+  {
+    "file": "src/pages/Daganganku.tsx",
+    "importedServices": [
+      {
+        "service": "productService",
+        "functions": [
+          "getStoredProducts",
+          "updateProduct",
+          "deleteProduct",
+          "formatRupiah",
+          "getMerchantProducts",
+          "mapBackendProductToItem",
+          "toggleProductStatusApi",
+          "deleteProductApi",
+          "updateProductStockApi",
+          "syncProductToMarketplaceCache"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 528
+  },
+  {
+    "file": "src/pages/OrderHistory.tsx",
+    "importedServices": [
+      {
+        "service": "orderService",
+        "functions": [
+          "MerchantOrderItem",
+          "getMerchantOrders",
+          "fetchMerchantOrdersApi",
+          "fetchOrderDetailApi",
+          "saveMerchantOrders",
+          "confirmMerchantOrder",
+          "processMerchantOrder",
+          "completeMerchantOrder",
+          "subscribeToMerchantOrders"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": false,
+    "hasErrorState": true,
+    "hasEmptyState": true,
+    "totalLines": 550
+  },
+  {
+    "file": "src/pages/StoreProfile.tsx",
+    "importedServices": [
+      {
+        "service": "storeService",
+        "functions": [
+          "getStoreProfile",
+          "updateStoreProfile",
+          "updateStoreOperational",
+          "toggleStoreStatus",
+          "createStore"
+        ]
+      },
+      {
+        "service": "authService",
+        "functions": [
+          "getCurrentUser"
+        ]
+      }
+    ],
+    "hasUseEffect": true,
+    "hasLoadingState": true,
+    "hasErrorState": true,
+    "hasEmptyState": false,
+    "totalLines": 457
+  }
+]

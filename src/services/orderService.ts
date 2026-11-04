@@ -1047,3 +1047,14 @@ export function subscribeToMerchantOrders(
 export async function cancelMerchantOrder(orderId: string, reason?: string): Promise<boolean> {
   return updateMerchantOrderStatus(orderId, 'batal', 'CANCELLED', reason);
 }
+
+export async function cancelCustomerOrderApi(orderId: string, reason?: string): Promise<boolean> {
+  try {
+    await api.post(`/api/v1/orders/${orderId}/cancel`, { reason: reason || 'Dibatalkan oleh pelanggan' });
+    return true;
+  } catch (err) {
+    console.warn(`Failed to cancel order ${orderId} on backend:`, err);
+    return false;
+  }
+}
+

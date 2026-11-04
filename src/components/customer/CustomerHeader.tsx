@@ -308,7 +308,7 @@ export function CustomerHeader({
   };
 
   return (
-    <header className="fixed top-5 left-[calc(50%+24px)] -translate-x-1/2 z-50 px-4 flex items-center justify-center w-max max-w-full pointer-events-none" id="customer-header">
+    <header className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 flex items-center justify-center w-max max-w-full pointer-events-none" id="customer-header">
       <div
         ref={headerContainerRef}
         className="pointer-events-auto relative flex items-center justify-center gap-3 sm:gap-4 md:gap-5"

@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getMerchantOrders, subscribeToMerchantOrders, MerchantOrderItem } from '../../services/orderService';
+import { formatRupiah } from '../../utils/currency';
 
 export interface FinanceCardProps {
   storeName?: string;
-}
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 /**

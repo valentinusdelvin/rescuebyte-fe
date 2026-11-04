@@ -1,0 +1,613 @@
+[
+  {
+    "method": "GET",
+    "route": "/api/v1/auth/google",
+    "tag": "Auth",
+    "summary": "Get Google OAuth2 URL",
+    "requestBody": "-",
+    "payloadResponse": "GoogleAuthURLResponse",
+    "statusCodes": [
+      "200",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/auth/google/callback",
+    "tag": "Auth",
+    "summary": "Handle Google OAuth2 callback",
+    "requestBody": "-",
+    "payloadResponse": "AuthResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/auth/login",
+    "tag": "Auth",
+    "summary": "Login user",
+    "requestBody": "LoginRequest",
+    "payloadResponse": "AuthResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/auth/logout",
+    "tag": "Auth",
+    "summary": "Logout user",
+    "requestBody": "RefreshTokenRequest",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/auth/me",
+    "tag": "Auth",
+    "summary": "Get current authenticated user",
+    "requestBody": "-",
+    "payloadResponse": "UserResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/auth/refresh",
+    "tag": "Auth",
+    "summary": "Refresh access token",
+    "requestBody": "RefreshTokenRequest",
+    "payloadResponse": "AuthResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/auth/register",
+    "tag": "Auth",
+    "summary": "Register new user account",
+    "requestBody": "RegisterRequest",
+    "payloadResponse": "AuthResponse",
+    "statusCodes": [
+      "201",
+      "400",
+      "409",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/cart",
+    "tag": "Cart",
+    "summary": "Get customer cart",
+    "requestBody": "-",
+    "payloadResponse": "CartResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v1/cart",
+    "tag": "Cart",
+    "summary": "Clear cart",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/cart/count",
+    "tag": "Cart",
+    "summary": "Get cart items count",
+    "requestBody": "-",
+    "payloadResponse": "CartCountResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/cart/items",
+    "tag": "Cart",
+    "summary": "Add item to cart",
+    "requestBody": "AddToCartRequest",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v1/cart/items/{id}",
+    "tag": "Cart",
+    "summary": "Remove item from cart",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v1/cart/items/{id}",
+    "tag": "Cart",
+    "summary": "Update cart item quantity",
+    "requestBody": "UpdateCartItemRequest",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v1/cart/stores/{store_id}",
+    "tag": "Cart",
+    "summary": "Remove all items from a store",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/enums",
+    "tag": "Enums",
+    "summary": "Get system enums",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/orders",
+    "tag": "Order",
+    "summary": "List customer orders",
+    "requestBody": "-",
+    "payloadResponse": "GetOrdersResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/orders/checkout",
+    "tag": "Order",
+    "summary": "Checkout order",
+    "requestBody": "CheckoutRequest",
+    "payloadResponse": "CheckoutResponse",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/orders/seller",
+    "tag": "Order",
+    "summary": "List seller orders",
+    "requestBody": "-",
+    "payloadResponse": "GetOrdersResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "404"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/orders/{id}",
+    "tag": "Order",
+    "summary": "Get order detail",
+    "requestBody": "-",
+    "payloadResponse": "OrderDetailResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/orders/{id}/cancel",
+    "tag": "Order",
+    "summary": "Cancel order",
+    "requestBody": "CancelOrderRequest",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v1/orders/{id}/status",
+    "tag": "Order",
+    "summary": "Update order status by merchant",
+    "requestBody": "UpdateOrderStatusRequest",
+    "payloadResponse": "OrderDetailResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/payments/midtrans/webhook",
+    "tag": "Payment",
+    "summary": "Midtrans payment webhook",
+    "requestBody": "MidtransNotificationPayload",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/payments/order/{order_id}",
+    "tag": "Payment",
+    "summary": "Check payment status",
+    "requestBody": "-",
+    "payloadResponse": "PaymentResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/products",
+    "tag": "Product",
+    "summary": "Get all products",
+    "requestBody": "-",
+    "payloadResponse": "GetProductsResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/products",
+    "tag": "Product",
+    "summary": "Create a new product",
+    "requestBody": "CreateProductRequest",
+    "payloadResponse": "ProductResponse",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/products/me/list",
+    "tag": "Product",
+    "summary": "List merchant products",
+    "requestBody": "-",
+    "payloadResponse": "ProductResponse[]",
+    "statusCodes": [
+      "200",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/products/{id}",
+    "tag": "Product",
+    "summary": "Get product detail",
+    "requestBody": "-",
+    "payloadResponse": "ProductResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v1/products/{id}",
+    "tag": "Product",
+    "summary": "Update product",
+    "requestBody": "UpdateProductRequest",
+    "payloadResponse": "ProductResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v1/products/{id}",
+    "tag": "Product",
+    "summary": "Delete product",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v1/products/{id}/status",
+    "tag": "Product",
+    "summary": "Toggle product status",
+    "requestBody": "ToggleProductStatusRequest",
+    "payloadResponse": "ProductResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/storage/upload",
+    "tag": "Storage",
+    "summary": "Upload an image",
+    "requestBody": "-",
+    "payloadResponse": "UploadResponse",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/storage/upload-multiple",
+    "tag": "Storage",
+    "summary": "Upload multiple images",
+    "requestBody": "-",
+    "payloadResponse": "UploadResponse[]",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/stores",
+    "tag": "Store",
+    "summary": "Get all stores",
+    "requestBody": "-",
+    "payloadResponse": "GetStoresResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "500"
+    ]
+  },
+  {
+    "method": "POST",
+    "route": "/api/v1/stores",
+    "tag": "Store",
+    "summary": "Create a new store",
+    "requestBody": "CreateStoreRequest",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "201",
+      "400",
+      "401",
+      "409",
+      "500"
+    ]
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v1/stores/me/operational",
+    "tag": "Store",
+    "summary": "Update store operational info",
+    "requestBody": "UpdateStoreOperationalRequest",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/stores/me/profile",
+    "tag": "Store",
+    "summary": "Get authenticated user's store",
+    "requestBody": "-",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v1/stores/me/profile",
+    "tag": "Store",
+    "summary": "Update store profile",
+    "requestBody": "UpdateStoreProfileRequest",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v1/stores/me/status",
+    "tag": "Store",
+    "summary": "Toggle store active status",
+    "requestBody": "-",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/stores/{id}",
+    "tag": "Store",
+    "summary": "Get store by ID",
+    "requestBody": "-",
+    "payloadResponse": "StoreResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/api/v1/users/profile",
+    "tag": "User",
+    "summary": "Get user profile",
+    "requestBody": "-",
+    "payloadResponse": "UserResponse",
+    "statusCodes": [
+      "200",
+      "401",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v1/users/profile",
+    "tag": "User",
+    "summary": "Update user profile",
+    "requestBody": "UpdateProfileRequest",
+    "payloadResponse": "UserResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "500"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v1/users/role",
+    "tag": "User",
+    "summary": "Update user role",
+    "requestBody": "UpdateUserRoleRequest",
+    "payloadResponse": "UserResponse",
+    "statusCodes": [
+      "200",
+      "400",
+      "401",
+      "403",
+      "404",
+      "500"
+    ]
+  },
+  {
+    "method": "GET",
+    "route": "/health",
+    "tag": "Health Check",
+    "summary": "Health check endpoint",
+    "requestBody": "-",
+    "payloadResponse": "object",
+    "statusCodes": [
+      "200"
+    ]
+  }
+]

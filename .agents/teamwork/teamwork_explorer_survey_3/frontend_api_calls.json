@@ -1,0 +1,470 @@
+[
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.post('/api/v1/auth/register'",
+    "endpoint": "/api/v1/auth/register",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.post('/api/v1/auth/login'",
+    "endpoint": "/api/v1/auth/login",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.post('/api/v1/auth/logout'",
+    "endpoint": "/api/v1/auth/logout",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.get('/api/v1/auth/me'",
+    "endpoint": "/api/v1/auth/me",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.post('/api/v1/auth/refresh'",
+    "endpoint": "/api/v1/auth/refresh",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.get('/api/v1/auth/google'",
+    "endpoint": "/api/v1/auth/google",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "api.get('/api/v1/auth/google/callback'",
+    "endpoint": "/api/v1/auth/google/callback",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/register'",
+    "endpoint": "/api/v1/auth/register",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/login'",
+    "endpoint": "/api/v1/auth/login",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/logout'",
+    "endpoint": "/api/v1/auth/logout",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/me'",
+    "endpoint": "/api/v1/auth/me",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/refresh'",
+    "endpoint": "/api/v1/auth/refresh",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/google'",
+    "endpoint": "/api/v1/auth/google",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "match": "'/api/v1/auth/google/callback'",
+    "endpoint": "/api/v1/auth/google/callback",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.get(`/api/v1/products/${productId}`",
+    "endpoint": "/api/v1/products/${productId}",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.get('/api/v1/cart'",
+    "endpoint": "/api/v1/cart",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.post('/api/v1/cart/items'",
+    "endpoint": "/api/v1/cart/items",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.patch(`/api/v1/cart/items/${itemId}`",
+    "endpoint": "/api/v1/cart/items/${itemId}",
+    "method": "PATCH"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.delete(`/api/v1/cart/items/${itemId}`",
+    "endpoint": "/api/v1/cart/items/${itemId}",
+    "method": "DELETE"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.delete(`/api/v1/cart/stores/${storeId}`",
+    "endpoint": "/api/v1/cart/stores/${storeId}",
+    "method": "DELETE"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "api.delete('/api/v1/cart'",
+    "endpoint": "/api/v1/cart",
+    "method": "DELETE"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "`/api/v1/products/${productId}`",
+    "endpoint": "/api/v1/products/${productId}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "'/api/v1/cart'",
+    "endpoint": "/api/v1/cart",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "'/api/v1/cart/items'",
+    "endpoint": "/api/v1/cart/items",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "`/api/v1/cart/items/${itemId}`",
+    "endpoint": "/api/v1/cart/items/${itemId}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "`/api/v1/cart/items/${itemId}`",
+    "endpoint": "/api/v1/cart/items/${itemId}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "`/api/v1/cart/stores/${storeId}`",
+    "endpoint": "/api/v1/cart/stores/${storeId}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "match": "'/api/v1/cart'",
+    "endpoint": "/api/v1/cart",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.get(`/api/v1/payments/order/${encodeURIComponent(orderId)}`",
+    "endpoint": "/api/v1/payments/order/${encodeURIComponent(orderId)}",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.patch(`/api/v1/orders/${encodeURIComponent(target.id)}/status`",
+    "endpoint": "/api/v1/orders/${encodeURIComponent(target.id)}/status",
+    "method": "PATCH"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.post('/api/v1/orders/checkout'",
+    "endpoint": "/api/v1/orders/checkout",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.get('/api/v1/orders/'",
+    "endpoint": "/api/v1/orders/",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.get('/api/v1/orders'",
+    "endpoint": "/api/v1/orders",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "api.get('/api/v1/orders/seller'",
+    "endpoint": "/api/v1/orders/seller",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "`/api/v1/payments/order/${encodeURIComponent(orderId)}`",
+    "endpoint": "/api/v1/payments/order/${encodeURIComponent(orderId)}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "`/api/v1/orders/${encodeURIComponent(target.id)}/status`",
+    "endpoint": "/api/v1/orders/${encodeURIComponent(target.id)}/status",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "'/api/v1/orders/checkout'",
+    "endpoint": "/api/v1/orders/checkout",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "'/api/v1/orders/'",
+    "endpoint": "/api/v1/orders/",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "'/api/v1/orders'",
+    "endpoint": "/api/v1/orders",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "match": "'/api/v1/orders/seller'",
+    "endpoint": "/api/v1/orders/seller",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.post('/api/v1/products'",
+    "endpoint": "/api/v1/products",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.get('/api/v1/products/me/list'",
+    "endpoint": "/api/v1/products/me/list",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.patch(`/api/v1/products/${productId}/status`",
+    "endpoint": "/api/v1/products/${productId}/status",
+    "method": "PATCH"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.delete(`/api/v1/products/${productId}`",
+    "endpoint": "/api/v1/products/${productId}",
+    "method": "DELETE"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.put(`/api/v1/products/${item.id}`",
+    "endpoint": "/api/v1/products/${item.id}",
+    "method": "PUT"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "api.get('/api/v1/products'",
+    "endpoint": "/api/v1/products",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "'/api/v1/products'",
+    "endpoint": "/api/v1/products",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "'/api/v1/products/me/list'",
+    "endpoint": "/api/v1/products/me/list",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "`/api/v1/products/${productId}/status`",
+    "endpoint": "/api/v1/products/${productId}/status",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "`/api/v1/products/${productId}`",
+    "endpoint": "/api/v1/products/${productId}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "`/api/v1/products/${item.id}`",
+    "endpoint": "/api/v1/products/${item.id}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "match": "'/api/v1/products'",
+    "endpoint": "/api/v1/products",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storageService.ts",
+    "match": "api.post<UploadApiResponse>(\n      '/api/v1/storage/upload'",
+    "endpoint": "/api/v1/storage/upload",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/storageService.ts",
+    "match": "'/api/v1/storage/upload'",
+    "endpoint": "/api/v1/storage/upload",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.get('/api/v1/stores/me/profile'",
+    "endpoint": "/api/v1/stores/me/profile",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.put('/api/v1/stores/me/profile'",
+    "endpoint": "/api/v1/stores/me/profile",
+    "method": "PUT"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.put('/api/v1/stores/me/operational'",
+    "endpoint": "/api/v1/stores/me/operational",
+    "method": "PUT"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.patch('/api/v1/stores/me/status'",
+    "endpoint": "/api/v1/stores/me/status",
+    "method": "PATCH"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.post('/api/v1/stores'",
+    "endpoint": "/api/v1/stores",
+    "method": "POST"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.get('/api/v1/stores'",
+    "endpoint": "/api/v1/stores",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "api.get(`/api/v1/stores/${encodeURIComponent(id)}`",
+    "endpoint": "/api/v1/stores/${encodeURIComponent(id)}",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores/me/profile'",
+    "endpoint": "/api/v1/stores/me/profile",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores/me/profile'",
+    "endpoint": "/api/v1/stores/me/profile",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores/me/operational'",
+    "endpoint": "/api/v1/stores/me/operational",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores/me/status'",
+    "endpoint": "/api/v1/stores/me/status",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores'",
+    "endpoint": "/api/v1/stores",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "'/api/v1/stores'",
+    "endpoint": "/api/v1/stores",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "match": "`/api/v1/stores/${encodeURIComponent(id)}`",
+    "endpoint": "/api/v1/stores/${encodeURIComponent(id)}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "api.get('/api/v1/users/profile'",
+    "endpoint": "/api/v1/users/profile",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "api.get('/api/v1/auth/me'",
+    "endpoint": "/api/v1/auth/me",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "api.get(`/api/v1/users/${encodeURIComponent(userId)}`",
+    "endpoint": "/api/v1/users/${encodeURIComponent(userId)}",
+    "method": "GET"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "api.put('/api/v1/users/profile'",
+    "endpoint": "/api/v1/users/profile",
+    "method": "PUT"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "api.patch('/api/v1/users/role'",
+    "endpoint": "/api/v1/users/role",
+    "method": "PATCH"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "'/api/v1/users/profile'",
+    "endpoint": "/api/v1/users/profile",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "'/api/v1/auth/me'",
+    "endpoint": "/api/v1/auth/me",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "`/api/v1/users/${encodeURIComponent(userId)}`",
+    "endpoint": "/api/v1/users/${encodeURIComponent(userId)}",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "'/api/v1/users/profile'",
+    "endpoint": "/api/v1/users/profile",
+    "method": "UNKNOWN"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "match": "'/api/v1/users/role'",
+    "endpoint": "/api/v1/users/role",
+    "method": "UNKNOWN"
+  }
+]

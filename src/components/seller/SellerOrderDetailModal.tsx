@@ -5,6 +5,7 @@ import { getStoreById, StoreProfileData } from '../../services/storeService';
 import { getUserById } from '../../services/userService';
 import { UserPayload } from '../../types';
 import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
+import { formatRupiah } from '../../utils/currency';
 
 export interface SellerOrderDetailModalProps {
   order: MerchantOrderItem | null;
@@ -14,10 +15,6 @@ export interface SellerOrderDetailModalProps {
   onProcessReady?: (order: MerchantOrderItem) => Promise<void> | void;
   onComplete?: (order: MerchantOrderItem) => Promise<void> | void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
-}
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function formatFriendlyDate(value?: string): string {

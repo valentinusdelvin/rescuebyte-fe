@@ -55,20 +55,17 @@ export async function getUserProfile(): Promise<UserPayload> {
 }
 
 /**
- * Fetch public or specific user profile by user ID via GET /api/v1/users/:id
+ * Note: GET /api/v1/users/:id does not exist in Swagger 2.0 backend.
+ * Customer information is already included directly in OrderDetailResponse.
+ * This method is retained solely for backward compatibility.
  */
 export async function getUserById(userId: string): Promise<UserPayload | null> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token || !userId) return null;
-
-  try {
-    const response = await api.get(`/api/v1/users/${encodeURIComponent(userId)}`);
-    const payload = response.data?.payload;
-    return (payload?.user || (payload?.id || payload?.name ? payload : null)) as UserPayload | null;
-  } catch (err) {
-    console.warn(`getUserById(${userId}) failed:`, err);
-    return null;
+  const auth = getAuth();
+  if (auth && auth.user && auth.user.id === userId) {
+    return auth.user;
   }
+  // Route does not exist on backend; return null cleanly without triggering a 404 network request
+  return null;
 }
 
 /**

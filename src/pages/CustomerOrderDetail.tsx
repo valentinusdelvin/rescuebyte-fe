@@ -3,21 +3,20 @@ import {
   Check,
   Clock,
   UserCheck,
-  MapPin,
-  ExternalLink,
-  Star,
-  RefreshCw,
-  ArrowLeft,
-  Info,
-  X,
-  MessageSquare,
   Calendar,
-  Tag,
-  ClipboardList,
-  CreditCard,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
+import { formatRupiah } from '../utils/currency';
+import {
+  OrderStepper,
+  OrderItemsList,
+  OrderPickupInfo,
+  OrderPaymentAction,
+  OrderReviewSection,
+  OrderReviewModal,
+  OrderItemDetail,
+} from '../components/customer/order';
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
 import {
   fetchOrderDetailApi,
@@ -48,9 +47,7 @@ export interface CustomerOrderDetailProps {
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
+// formatRupiah imported from currency.ts
 
 function formatPickupDate(value?: string): string {
   if (!value) return '';
@@ -537,6 +534,61 @@ export function CustomerOrderDetail({
     }, 600);
   };
 
+  const orderItemsList: OrderItemDetail[] = useMemo(() => {
+    if (items && items.length > 0) {
+      return items.map((it, idx) => ({
+        id: it?.id || String(idx),
+        name: it?.name || itemName,
+        imageSrc: it?.imageSrc || saladStopCard,
+        originalPrice: it?.originalPrice || originalUnitPrice,
+        rescuePrice: it?.rescuePrice || rescueUnitPrice,
+        discountPercent: it?.discountPercent || discountPercent,
+        quantity: it?.quantity || 1,
+        storeName: it?.storeName || storeName,
+      }));
+    }
+    return [
+      {
+        id: primaryItem?.id || '1',
+        name: primaryItem?.name || itemName,
+        imageSrc: primaryItem?.imageSrc || saladStopCard,
+        originalPrice: primaryItem?.originalPrice || originalUnitPrice,
+        rescuePrice: primaryItem?.rescuePrice || rescueUnitPrice,
+        discountPercent: primaryItem?.discountPercent || discountPercent,
+        quantity: primaryItem?.quantity || totalBoxes || 1,
+        storeName: primaryItem?.storeName || storeName,
+      },
+    ];
+  }, [items, itemName, originalUnitPrice, rescueUnitPrice, discountPercent, storeName, primaryItem, totalBoxes]);
+
+  const handlePayNow = () => {
+    if (isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading) return;
+    setIsSnapPopupOpen(true);
+    try {
+      launchMidtransPayment(paymentSnapToken, {
+        onSuccess: () => {
+          setIsSnapPopupOpen(false);
+          return handlePaymentSuccess();
+        },
+        onPending: () => {
+          setIsSnapPopupOpen(false);
+          onShowToast?.('Pembayaran masih menunggu. Status pesanan tetap menunggu pembayaran.', 'info');
+        },
+        onError: () => {
+          setIsSnapPopupOpen(false);
+          onShowToast?.('Pembayaran belum berhasil. Silakan coba lagi.', 'error');
+        },
+        onClose: () => {
+          setIsSnapPopupOpen(false);
+          onShowToast?.('Pesanan tetap menunggu pembayaran.', 'info');
+        },
+      });
+    } catch (err) {
+      setIsSnapPopupOpen(false);
+      onShowToast?.(err instanceof Error ? err.message : 'Halaman Midtrans belum tersedia.', 'error');
+    }
+  };
+
   return (
     <div className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between selection:bg-[#bbf381] selection:text-[#0e2000]">
       <div>
@@ -644,355 +696,51 @@ export function CustomerOrderDetail({
           </section>
 
           {/* Order Tracking Timeline */}
-          <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs mb-8">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-[#1b1c1c]">Jejak Status Pesanan</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {statusConfig.timelineNote}
-              </p>
-            </div>
-
-            {/* Step Progress Track */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 relative">
-              {/* Connector line for large screens */}
-              <div
-                aria-hidden="true"
-                className="hidden sm:block absolute top-3.5 sm:top-4 left-[10%] right-[10%] h-1 bg-[#1e2a22] z-0"
-              />
-              <div
-                aria-hidden="true"
-                className="hidden sm:block absolute top-3.5 sm:top-4 left-[10%] h-1 bg-[#16a34a] z-0 transition-all duration-300"
-                style={{
-                  width: `${((activeStep - 1) / 4) * 80}%`,
-                }}
-              />
-
-              {TIMELINE_STEPS.map((item) => {
-                const isCompleted = item.step <= activeStep;
-                return (
-                  <div
-                    key={item.step}
-                    className="relative z-10 flex flex-col items-center text-center select-none p-1 pointer-events-none"
-                  >
-                    <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-2 transition-all select-none ${isCompleted
-                          ? 'bg-[#16a34a] text-white shadow-xs'
-                          : 'bg-[#1e2a22] text-transparent'
-                        }`}
-                    >
-                      {isCompleted && (
-                        <Check className="w-4 h-4 stroke-3" aria-hidden="true" />
-                      )}
-                    </div>
-                    <p className="text-xs font-bold text-[#1b1c1c]">{item.title}</p>
-                    {item.desc ? (
-                      <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          <OrderStepper
+            activeStep={activeStep}
+            steps={TIMELINE_STEPS}
+            timelineNote={statusConfig.timelineNote}
+          />
 
           {/* Feedback & Review Prompt Card */}
-          <section className="bg-[#fffbf0] border border-[#fde68a] rounded-3xl p-5 sm:p-6 shadow-xs mb-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-[#fed7aa] text-[#c2410c] flex items-center justify-center shrink-0">
-                  <MessageSquare className="w-5 h-5" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#1b1c1c]">Bagaimana Pengalamanmu?</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-xl leading-relaxed">
-                    Bagikan ulasanmu saat menikmati hidangan dari {storeName}. Pendapatmu membantu
-                    pelanggan lain menemukan pangan surplus bermutu dan memberi apresiasi kepada mitra toko.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center flex-wrap gap-3 self-start md:self-auto shrink-0">
-                <div className="flex items-center gap-1" aria-label="Beri rating bintang">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => {
-                        setSelectedRating(star);
-                        setIsReviewModalOpen(true);
-                      }}
-                      className="text-amber-400 hover:text-amber-500 transition p-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-                      title={`Beri ${star} bintang`}
-                    >
-                      <Star
-                        className={`w-5 h-5 ${star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                          }`}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsReviewModalOpen(true)}
-                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full inline-flex items-center gap-2 transition cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  <span>{isReviewSubmitted ? 'Ubah Ulasan' : 'Beri Ulasan Sekarang'}</span>
-                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </section>
+          <OrderReviewSection
+            storeName={storeName}
+            setIsReviewModalOpen={setIsReviewModalOpen}
+            selectedRating={selectedRating}
+            setSelectedRating={setSelectedRating}
+            isReviewSubmitted={isReviewSubmitted}
+          />
 
           {/* Two-Column Grid: Saved Goods & Partner vs Payment & Recommendations */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column (Span 7) */}
             <div className="lg:col-span-7 flex flex-col gap-6">
-              {/* Card 1: Barang yang Diselamatkan */}
-              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
-                <div className="mb-5">
-                  <h3 className="text-base font-bold text-[#1b1c1c]">Barang yang Diselamatkan</h3>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  {(items || [primaryItem]).map((item, idx) => {
-                    const itName = item?.name || itemName;
-                    const itOriginal = item?.originalPrice || originalUnitPrice;
-                    const itRescue = item?.rescuePrice || rescueUnitPrice;
-                    const itDisc = item?.discountPercent || discountPercent;
-                    const itQty = item?.quantity || 1;
-                    return (
-                      <div
-                        key={item?.id || idx}
-                        className="flex flex-col sm:flex-row items-start gap-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0"
-                      >
-                        {/* Thumbnail with discount badge */}
-                        <div className="relative w-full sm:w-24 sm:h-24 aspect-video sm:aspect-square rounded-2xl overflow-hidden bg-slate-100 shrink-0">
-                          <img
-                            src={item?.imageSrc || saladStopCard}
-                            alt={itName}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-2 left-2 bg-[#22c55e] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
-                            -{itDisc}%
-                          </div>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-base font-bold text-[#1b1c1c] truncate">{itName}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                            {itQty} Box ({item?.storeName || storeName})
-                          </p>
-
-                          <div className="flex items-baseline justify-between gap-2 mt-2 pt-2 border-t border-slate-50">
-                            <div>
-                              <span className="text-xs text-slate-400 line-through block">
-                                Rp {formatRupiah(itOriginal * itQty)}
-                              </span>
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-base font-black text-[#1b1c1c]">
-                                  Rp {formatRupiah(itRescue)}
-                                </span>
-                                <span className="text-xs text-slate-500">/ 1 Box</span>
-                              </div>
-                            </div>
-
-                            <div className="bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg">
-                              Subtotal: Rp {formatRupiah(itRescue * itQty)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* Card 2: Mitra F&B Penyedia */}
-              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <h3 className="text-base font-bold text-[#1b1c1c]">Mitra F&B Penyedia</h3>
-                </div>
-
-                <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[#1b1c1c] text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    {storeAvatar && (storeAvatar.startsWith('http') || storeAvatar.startsWith('/')) ? (
-                      <img src={storeAvatar} alt={storeName} className="w-full h-full object-cover" />
-                    ) : (
-                      storeAvatar
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h4
-                        onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
-                        className="text-sm font-bold text-[#1b1c1c] hover:text-emerald-700 hover:underline cursor-pointer truncate"
-                      >
-                        {storeName}
-                      </h4>
-                    </div>
-
-                    <div className="flex items-start gap-1.5 mt-1 text-xs text-slate-500">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" aria-hidden="true" />
-                      <p className="line-clamp-2">{storeAddress || 'Alamat toko belum tersedia'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-100">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
-                    Jadwal Ambil: {pickupSchedule || 'Belum tersedia'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#1b1c1c] hover:text-emerald-700 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    <span>Kunjungi Halaman Toko</span>
-                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                  </button>
-                </div>
-              </section>
-
-              {/* Action Buttons */}
-              {activeStep === 1 ? (
-                <button
-                  type="button"
-                  onClick={onNavigateOrders}
-                  className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer w-full focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  <ClipboardList className="w-4 h-4" aria-hidden="true" />
-                  <span>Kembali ke Riwayat Pesanan</span>
-                </button>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                  <button
-                    type="button"
-                    onClick={() => (onNavigateStore ? onNavigateStore(storeName) : onNavigateMarketplace?.())}
-                    className="bg-[#1b1c1c] hover:bg-black text-white text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 shadow-xs transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                    <span>Beli Lagi di {storeName}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onNavigateOrders}
-                    className="bg-[#eae7e7] hover:bg-slate-300 text-slate-800 text-sm font-bold px-6 py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 transition cursor-pointer flex-1 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                    <span>Kembali ke Riwayat Pesanan</span>
-                  </button>
-                </div>
-              )}
+              <OrderItemsList items={orderItemsList} fallbackStoreName={storeName} />
+              <OrderPickupInfo
+                storeName={storeName}
+                storeAvatar={storeAvatar}
+                storeAddress={storeAddress}
+                pickupSchedule={pickupSchedule}
+                activeStep={activeStep}
+                onNavigateStore={onNavigateStore}
+                onNavigateOrders={onNavigateOrders}
+                onNavigateMarketplace={onNavigateMarketplace}
+              />
             </div>
 
             {/* Right Column (Span 5) */}
             <div className="lg:col-span-5 flex flex-col gap-6">
-              {/* Card 1: Rincian Pembayaran */}
-              <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <h3 className="text-base font-bold text-[#1b1c1c]">Rincian Pembayaran</h3>
-                  {activeStep === 1 ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#d94a38] text-[#d94a38] bg-[#fdeceb]">
-                      Perlu Dibayar
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-primary">
-                      <Check className="w-3 h-3 stroke-3" aria-hidden="true" />
-                      Lunas
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2.5 text-xs sm:text-sm">
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span>Harga Barang Asli</span>
-                    <span className="font-medium text-slate-800">Rp {formatRupiah(totalOriginalPrice)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span className="inline-flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-                      Diskon Penyelamatan
-                    </span>
-                    <span className="font-semibold text-emerald-600">-Rp {formatRupiah(discountAmount)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span>Biaya Layanan RescueBite</span>
-                      <span className="relative group inline-flex items-center">
-                        <button
-                          type="button"
-                          className="text-slate-400 hover:text-slate-600 focus:text-slate-700 focus:outline-none transition-colors cursor-help p-0.5 rounded"
-                          aria-label="Informasi biaya layanan"
-                          title="Biaya layanan untuk pengembangan aplikasi"
-                        >
-                          <Info className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                        <span
-                          role="tooltip"
-                          className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#1b1c1c] text-white text-[11px] leading-relaxed rounded-xl shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-20 text-center"
-                        >
-                          Biaya layanan untuk pengembangan dan pemeliharaan aplikasi RescueBite.
-                          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-[#1b1c1c]" aria-hidden="true" />
-                        </span>
-                      </span>
-                    </span>
-                    <span className="font-medium text-slate-800">Rp {formatRupiah(serviceFee)}</span>
-                  </div>
-
-                  <div className="border-t border-slate-100 my-2 pt-3 flex items-baseline justify-between">
-                    <div>
-                      <p className="text-xs text-slate-500 font-medium">Total Pembayaran Akhir</p>
-                      <p className="text-2xl font-black text-[#1b1c1c]">Rp {formatRupiah(grandTotal)}</p>
-                    </div>
-                  </div>
-
-                  {activeStep === 1 ? (
-                    <div className="mt-3 flex flex-col gap-2">
-                      <button
-                        type="button"
-                        disabled={isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading}
-                        onClick={() => {
-                          if (isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading) return;
-                          setIsSnapPopupOpen(true);
-                          try {
-                            launchMidtransPayment(paymentSnapToken, {
-                              onSuccess: () => {
-                                setIsSnapPopupOpen(false);
-                                return handlePaymentSuccess();
-                              },
-                              onPending: () => {
-                                setIsSnapPopupOpen(false);
-                                onShowToast?.('Pembayaran masih menunggu. Status pesanan tetap menunggu pembayaran.', 'info');
-                              },
-                              onError: () => {
-                                setIsSnapPopupOpen(false);
-                                onShowToast?.('Pembayaran belum berhasil. Silakan coba lagi.', 'error');
-                              },
-                              onClose: () => {
-                                setIsSnapPopupOpen(false);
-                                onShowToast?.('Pesanan tetap menunggu pembayaran.', 'info');
-                              },
-                            });
-                          } catch (err) {
-                            setIsSnapPopupOpen(false);
-                            onShowToast?.(err instanceof Error ? err.message : 'Halaman Midtrans belum tersedia.', 'error');
-                          }
-                        }}
-                        className="w-full py-3.5 bg-[#002b49] hover:bg-[#001f35] disabled:opacity-60 disabled:cursor-wait text-white font-bold text-sm rounded-xl transition cursor-pointer shadow-xs active:scale-[0.99] flex items-center justify-center gap-2"
-                      >
-                        <CreditCard className="w-4 h-4 text-[#00b4d8]" />
-                        <span>{isVerifyingPayment ? 'Memverifikasi pembayaran…' : isPaymentSessionLoading ? 'Memuat sesi pembayaran…' : isSnapPopupOpen ? 'Popup pembayaran terbuka…' : 'Bayar Sekarang via Midtrans'}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60">
-                      <Check className="w-4 h-4 text-emerald-600 stroke-3" />
-                      <span>Pembayaran Midtrans Terverifikasi (Lunas)</span>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <OrderPaymentAction
+                activeStep={activeStep}
+                totalOriginalPrice={totalOriginalPrice}
+                discountAmount={discountAmount}
+                serviceFee={serviceFee}
+                grandTotal={grandTotal}
+                isVerifyingPayment={isVerifyingPayment}
+                isSnapPopupOpen={isSnapPopupOpen}
+                isPaymentSessionLoading={isPaymentSessionLoading}
+                onPayNow={handlePayNow}
+              />
 
               {/* Card 2: Rekomendasi Lainnya */}
               <section className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
@@ -1055,101 +803,18 @@ export function CustomerOrderDetail({
       </div>
 
       {/* Review Modal Dialog */}
-      {isReviewModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="review-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setIsReviewModalOpen(false);
-          }}
-        >
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-xl border border-slate-100 relative">
-            <button
-              type="button"
-              onClick={() => setIsReviewModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2"
-              aria-label="Tutup modal"
-            >
-              <X className="w-5 h-5" aria-hidden="true" />
-            </button>
-
-            <h3 id="review-modal-title" className="text-xl font-bold text-[#1b1c1c] mb-1">
-              Beri Ulasan untuk {storeName}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed">
-              Bagaimana kualitas makanan surplus yang kamu dapatkan? Ulasanmu sangat berarti untuk menjaga mutu
-              penyelamatan makanan.
-            </p>
-
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                  Tingkat Kepuasan
-                </label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setSelectedRating(star)}
-                      className="text-amber-400 hover:scale-110 transition p-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-                    >
-                      <Star
-                        className={`w-7 h-7 ${star <= selectedRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                          }`}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  ))}
-                  <span className="text-xs font-semibold text-slate-600 ml-2">
-                    {selectedRating === 5 && 'Sangat Puas!'}
-                    {selectedRating === 4 && 'Puas'}
-                    {selectedRating === 3 && 'Cukup'}
-                    {selectedRating === 2 && 'Kurang'}
-                    {selectedRating === 1 && 'Kecewa'}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="review-comment"
-                  className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2"
-                >
-                  Catatan Pengalaman (Opsional)
-                </label>
-                <textarea
-                  id="review-comment"
-                  rows={3}
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Contoh: Sayurannya masih sangat segar dan porsinya melimpah!"
-                  className="w-full text-xs sm:text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsReviewModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingReview}
-                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition disabled:opacity-50"
-                >
-                  {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <OrderReviewModal
+        storeName={storeName}
+        isReviewModalOpen={isReviewModalOpen}
+        setIsReviewModalOpen={setIsReviewModalOpen}
+        selectedRating={selectedRating}
+        setSelectedRating={setSelectedRating}
+        reviewComment={reviewComment}
+        setReviewComment={setReviewComment}
+        isSubmittingReview={isSubmittingReview}
+        isReviewSubmitted={isReviewSubmitted}
+        onSubmitReview={handleSubmitReview}
+      />
 
       {/* Customer Footer */}
       <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />

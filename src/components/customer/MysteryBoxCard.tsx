@@ -1,18 +1,12 @@
 import { CustomerMysteryBox } from '../../types';
 import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
+import { formatRupiah } from '../../utils/currency';
 
 export interface MysteryBoxCardProps {
   item: CustomerMysteryBox;
   variant?: 'popular' | 'radius';
   onOrderClick: (item: CustomerMysteryBox) => void;
   onStoreClick?: (storeName: string) => void;
-}
-
-/**
- * Format currency with dots thousands separator (e.g. 35000 -> "35.000")
- */
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 /**
@@ -304,7 +298,7 @@ export function MysteryBoxCard({
           ) : (
             <button
               type="button"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#18201b] hover:bg-[#2c3b33] active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               id={`btn-order-${item.id}`}
               onClick={() => onOrderClick(item)}
               aria-label={`Pesan Mystery Box dari ${item.storeName}`}

@@ -9,16 +9,16 @@ import {
   ArrowDown,
   ArrowUpDown,
   Package,
-  Clock,
-  Flame,
   X,
   ShoppingCart,
 } from 'lucide-react';
 import { CustomerHeader } from '../components/customer/CustomerHeader';
 import { CustomerFooter } from '../components/customer/CustomerFooter';
 import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
+import { MysteryBoxCard } from '../components/customer/MysteryBoxCard';
 import { CustomerMysteryBox } from '../types';
 import { getCartCount, subscribeToCart } from '../services/cartService';
+import { formatRupiah, formatPriceInput, parsePriceInput } from '../utils/currency';
 import {
   getPublicProducts,
   PublicProductItem,
@@ -45,30 +45,6 @@ export interface MarketplaceBoxItem extends CustomerMysteryBox {
   categoryType: 'pastry' | 'heavy' | 'beverage' | 'snack';
   productName?: string;
   stock?: number;
-}
-
-/**
- * Format currency with dots thousands separator (e.g. 35000 -> "35.000")
- */
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-/**
- * Format input string into thousands dot separated string (e.g. "10000" -> "10.000")
- */
-function formatPriceInput(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (!digits) return '';
-  return parseInt(digits, 10).toLocaleString('id-ID');
-}
-
-/**
- * Parse thousands dot separated string back to number
- */
-function parsePriceInput(val: string): number | null {
-  const digits = val.replace(/\D/g, '');
-  return digits ? parseInt(digits, 10) : null;
 }
 
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
@@ -208,18 +184,6 @@ function parsePickupMinutes(pickupTimeStr?: string): number {
   const match = pickupTimeStr.match(/(\d{1,2})[:.](\d{2})/);
   if (!match) return 9999;
   return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-}
-
-/**
- * Strip emoji and icon characters from product name, returning clean text
- */
-function cleanProductName(raw?: string): string {
-  if (!raw) return 'SURPRISE BOX';
-  return raw
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, '')
-    .replace(/^[^\w\s]+/, '')
-    .trim()
-    .toUpperCase();
 }
 
 export function CustomerMarketplace({
@@ -568,7 +532,7 @@ export function CustomerMarketplace({
                   onClick={() => setOpenDropdown(openDropdown === 'kota' ? null : 'kota')}
                   className={`w-full bg-white border rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#1b1c1c] flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${
                     openDropdown === 'kota'
-                      ? 'border-[#3b82f6] ring-1 ring-[#3b82f6]'
+                      ? 'border-primary ring-1 ring-primary'
                       : 'border-black/25 hover:border-black/45'
                   }`}
                   aria-expanded={openDropdown === 'kota'}
@@ -644,7 +608,7 @@ export function CustomerMarketplace({
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'harga' ? null : 'harga')}
                 className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'harga'
-                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
                     : appliedMinPrice !== null || appliedMaxPrice !== null
                       ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
                       : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
@@ -756,7 +720,7 @@ export function CustomerMarketplace({
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'jarak' ? null : 'jarak')}
                 className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'jarak'
-                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
                     : distanceFilter !== 'semua'
                       ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
                       : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
@@ -804,7 +768,7 @@ export function CustomerMarketplace({
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'urutkan' ? null : 'urutkan')}
                 className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'urutkan'
-                    ? 'border-[#3b82f6] ring-1 ring-[#3b82f6] text-[#1b1c1c]'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
                     : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
                   }`}
                 aria-expanded={openDropdown === 'urutkan'}
@@ -912,171 +876,14 @@ export function CustomerMarketplace({
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="marketplace-grid">
               {filteredProducts.map((item) => (
-                <article
+                <MysteryBoxCard
                   key={item.id}
-                  className="bg-white rounded-3xl border border-black/10 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col group"
-                  id={`marketplace-card-${item.id}`}
-                >
-                  {/* Card Visual Header (Photo or Clean Structured Placeholder) */}
-                  <div
-                    onClick={() => handleOpenOrder(item)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleOpenOrder(item);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Lihat detail produk ${item.productName || item.storeName}`}
-                    title={`Lihat detail ${item.productName || item.categoryBadge || item.storeName}`}
-                    className="relative w-full h-52 overflow-hidden bg-[#24201c] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2a24] focus-visible:ring-offset-2"
-                  >
-                    {item.imageSrc ? (
-                      <img
-                        src={item.imageSrc}
-                        alt={`Mystery Box ${item.productName || item.storeName}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = cardMonsieurSpoon;
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-linear-to-br from-[#2a241e] via-[#352c24] to-[#1c1815] flex flex-col items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-200/90 mb-1 border border-white/10 shadow-xs">
-                          <Package className="w-7 h-7 text-amber-200/90" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">
-                          Mystery Box
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Top Badges Overlay */}
-                    <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-10">
-                      <div className="flex items-center gap-1.5">
-                        {(() => {
-                          const stockMatch = item.remainingBoxesText.match(/\d+/);
-                          const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
-                          const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
-                          const isAboveTwo = stockCount > 2;
-                          const cleanStockText = item.remainingBoxesText
-                            .replace(/^[!\s]+/, '')
-                            .replace(/[!\s]+$/, '');
-
-                          if (isOutOfStock) {
-                            return (
-                              <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
-                                <Clock className="w-3 h-3 shrink-0 text-gray-500" aria-hidden="true" />
-                                <span>Sisa 0 Box</span>
-                              </span>
-                            );
-                          }
-
-                          return isAboveTwo ? (
-                            <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
-                              <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
-                              <span>{cleanStockText}</span>
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
-                              <Flame className="w-3 h-3 shrink-0" aria-hidden="true" />
-                              <span>{cleanStockText}</span>
-                            </span>
-                          );
-                        })()}
-
-                        {/* Distance Badge */}
-                        <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold shadow-xs">
-                          {item.distanceText}
-                        </span>
-                      </div>
-
-                      {/* Discount Badge */}
-                      <span className="px-2.5 py-1 rounded-full bg-[#3c6a00] text-white text-[11px] font-extrabold shadow-xs">
-                        -{item.discountPercent}%
-                      </span>
-                    </div>
-
-                    {/* Gradient Overlay for bottom text readability */}
-                    <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
-
-                    {/* Title overlay at the bottom */}
-                    <div className="absolute bottom-3 inset-x-3.5 z-10 pointer-events-none">
-                      <span className="text-[11px] font-bold text-[#bbf381] tracking-wide block uppercase drop-shadow-sm truncate">
-                        {cleanProductName(item.productName || item.categoryBadge || item.category)}
-                      </span>
-                      <h2
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onNavigateStore) onNavigateStore(item.storeName, item.storeId);
-                        }}
-                        className="text-base sm:text-lg font-bold text-white font-display leading-tight drop-shadow-sm truncate pointer-events-auto cursor-pointer hover:text-[#bbf381] hover:underline transition-colors"
-                        title={`Lihat halaman toko ${item.storeName}`}
-                      >
-                        {item.storeName}
-                      </h2>
-                    </div>
-                  </div>
-
-                  {/* Card Body Content */}
-                  <div className="p-4 sm:p-5 flex flex-col flex-1">
-                    <p className="text-xs text-gray-600 line-clamp-2 min-h-8 mb-4 leading-relaxed">
-                      {item.description}
-                    </p>
-
-                    {/* Pickup Time Container */}
-                    <div className="w-full bg-[#f4f2ee] rounded-xl px-3.5 py-2.5 flex items-center gap-2 mb-5">
-                      <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                      <span className="text-xs font-medium text-gray-700 truncate">
-                        Ambil: <strong className="font-bold text-[#1b1c1c]">{item.pickupTime}</strong>
-                      </span>
-                    </div>
-
-                    {/* Price and CTA Button */}
-                    <div className="flex items-center justify-between gap-3 mt-auto pt-2 border-t border-gray-100">
-                      <div>
-                        <span className="text-[11px] text-gray-400 line-through block leading-none">
-                          Rp {formatRupiah(item.originalPrice)}
-                        </span>
-                        <div className="text-lg sm:text-xl font-black text-[#1b1c1c] font-display mt-0.5">
-                          Rp {formatRupiah(item.rescuePrice)}
-                        </div>
-                      </div>
-
-                      {(() => {
-                        const stockMatch = item.remainingBoxesText.match(/\d+/);
-                        const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
-                        const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
-
-                        if (isOutOfStock) {
-                          return (
-                            <button
-                              type="button"
-                              disabled
-                              className="bg-gray-200 text-gray-400 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight cursor-not-allowed shrink-0 select-none"
-                              title="Stok habis atau produk sedang dinonaktifkan"
-                            >
-                              Habis
-                            </button>
-                          );
-                        }
-
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenOrder(item)}
-                            className="bg-[#1b1c1c] hover:bg-[#2e2f2f] text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0"
-                          >
-                            Pesan Sekarang
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </article>
+                  item={item}
+                  onOrderClick={handleOpenOrder}
+                  onStoreClick={(storeName) => {
+                    if (onNavigateStore) onNavigateStore(storeName, item.storeId);
+                  }}
+                />
               ))}
             </div>
           ) : (
