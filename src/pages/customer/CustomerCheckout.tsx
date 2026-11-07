@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ShoppingBag } from 'lucide-react';
+import { extractErrorMessage } from '../../api/client';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { CheckoutItem, CheckoutPayload, PaymentOrderData, CustomerOrderStatus } from '../../types';
@@ -489,7 +490,7 @@ const handlePayNow = async () => {
           });
         } catch (err) {
           setIsSnapPopupOpen(false);
-          const message = err instanceof Error ? err.message : 'Pembayaran Midtrans belum bisa dibuka.';
+          const message = extractErrorMessage(err, 'Pembayaran belum bisa dibuka. Pesanan tersimpan dan bisa dibayar lagi dari detail pesanan.');
           goToPendingOrder(message);
         }
       } else {
@@ -502,7 +503,7 @@ const handlePayNow = async () => {
     } catch (err) {
       setIsSubmitting(false);
       console.error('Checkout error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Gagal membuat pesanan.';
+      const errorMessage = extractErrorMessage(err, 'Gagal membuat pesanan. Periksa kembali detail pesanan lalu coba lagi.');
       if (successfulOrders.length > 0) {
         if (onShowToast) {
           onShowToast(`${successfulOrders.length} pesanan berhasil; pesanan lainnya gagal. Buka Riwayat Pesanan untuk melihat yang berhasil.`, 'warning');

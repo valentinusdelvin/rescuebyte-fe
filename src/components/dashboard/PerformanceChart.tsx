@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { AlertCircle, RefreshCw, ChevronDown, Check } from 'lucide-react';
 import { PerformanceFilterKey } from '../../types';
 import {
@@ -81,7 +82,7 @@ export function PerformanceChart({ storeName, onShowToast }: PerformanceChartPro
       const data = await getSellerPerformanceData(period, storeName);
       setAnalyticsData(data);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal memuat data performa toko.';
+      const msg = extractErrorMessage(err, 'Gagal memuat data performa toko. Coba lagi.');
       setErrorMessage(msg);
     } finally {
       if (!silent) setIsLoading(false);

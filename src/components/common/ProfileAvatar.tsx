@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { uploadImage, StorageFolder } from '../../services/storageService';
 
@@ -87,7 +88,7 @@ export function ProfileAvatar({
     } catch (err) {
       setLocalPreview(null);
       if (!(err instanceof Error && err.message.includes('profil'))) {
-        const msg = err instanceof Error ? err.message : `Gagal mengunggah ${label.toLowerCase()}.`;
+        const msg = extractErrorMessage(err, `Gagal mengunggah ${label.toLowerCase()}. Periksa koneksi lalu coba lagi.`);
         onShowToast?.(msg, 'error');
       }
     } finally {

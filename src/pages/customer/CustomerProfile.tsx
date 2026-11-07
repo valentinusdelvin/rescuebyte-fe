@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { CustomerProfileSidebar } from '../../components/customer/CustomerProfileSidebar';
@@ -88,7 +89,7 @@ export function CustomerProfile({
       onShowToast?.('Foto profil berhasil diperbarui.', 'success');
     } catch (err) {
       setAvatarUrl(user.avatar_url || '');
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan foto profil.';
+      const msg = extractErrorMessage(err, 'Gagal menyimpan foto profil. Coba lagi.');
       onShowToast?.(msg, 'error');
       throw err;
     }
@@ -115,7 +116,7 @@ export function CustomerProfile({
       setUser(updated);
       onShowToast?.('Informasi akun berhasil disimpan.', 'success');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan perubahan.';
+      const msg = extractErrorMessage(err, 'Gagal menyimpan perubahan. Periksa isian lalu coba lagi.');
       onShowToast?.(msg, 'error');
     } finally {
       setIsSaving(false);

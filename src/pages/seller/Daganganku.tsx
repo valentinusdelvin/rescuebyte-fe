@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { Plus, Minus, Package, Eye, EyeOff, Search, ChevronDown, Trash2 } from 'lucide-react';
 import { ProductItem, ProductStatusTab } from '../../types';
 import { formatRupiah } from '../../utils/currency';
@@ -126,7 +127,7 @@ export function Daganganku({
       serverProduct = await toggleProductStatusApi(item.id, nextIsActive);
     } catch (err) {
       console.warn('Backend toggle status failed:', err);
-      const message = err instanceof Error ? err.message : 'Gagal mengubah status produk. Coba lagi.';
+      const message = extractErrorMessage(err, 'Gagal mengubah status produk. Coba lagi.');
       onShowToast?.(message);
       return;
     }
@@ -187,7 +188,7 @@ export function Daganganku({
       setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
       onShowToast?.(`Stok "${item.name}" berhasil diubah menjadi ${validStock} box`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal mengubah stok produk.';
+      const message = extractErrorMessage(err, 'Gagal mengubah stok produk. Coba lagi.');
       onShowToast?.(message);
     }
   };
@@ -213,7 +214,7 @@ export function Daganganku({
       setProducts((prev) => prev.map((p) => (p.id === item.id ? updatedItem : p)));
       onShowToast?.(`Stok "${item.name}" berhasil diubah menjadi ${newStock} box`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal mengubah stok produk.';
+      const message = extractErrorMessage(err, 'Gagal mengubah stok produk. Coba lagi.');
       onShowToast?.(message);
     }
   };
@@ -232,7 +233,7 @@ export function Daganganku({
       deletionResult = await deleteProductApi(target.id);
     } catch (err) {
       console.warn('Backend delete product failed:', err);
-      const message = err instanceof Error ? err.message : 'Gagal menghapus produk. Coba lagi.';
+      const message = extractErrorMessage(err, 'Gagal menghapus produk. Coba lagi.');
       onShowToast?.(message);
       setItemToDelete(null);
       return;

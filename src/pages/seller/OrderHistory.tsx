@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { Search, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrderStatusTab, OrderTabItem } from '../../types';
 import emptyOrdersIllustration from '../../assets/pesanan-kosong.svg';
@@ -37,7 +38,7 @@ function getOrderTimestamp(value: string): number {
 }
 
 function getActionErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  return extractErrorMessage(error, fallback);
 }
 
 /**

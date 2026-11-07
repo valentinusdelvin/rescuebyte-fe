@@ -44,31 +44,69 @@ const processQueue = (error: unknown, token: string | null = null) => {
  * Extracts a normalized, human-friendly error message from any backend API or network error.
  */
 export function extractErrorMessage(err: unknown, fallbackMessage = 'Terjadi kesalahan pada sistem.'): string {
+  const defaultFallback = 'Terjadi kesalahan pada sistem.';
+  const isTechnicalMessage = (message: string) =>
+    /request failed with status code \d{3}|status code\s*[:=]?\s*\d{3}|\bhttp\s*\d{3}\b|\baxioserror\b|\berr_[a-z0-9_]+\b|\bnetwork error\b|\bfailed to fetch\b|\bfetch failed\b|\bload failed\b|\btimeout\b|internal server error|sqlstate|stack trace/i.test(message);
+  const statusFallback = (status?: number) => {
+    switch (status) {
+      case 401: return 'Sesi kamu berakhir atau data masuk tidak cocok. Silakan masuk kembali.';
+      case 403: return 'Kamu tidak memiliki izin untuk melakukan tindakan ini.';
+      case 404: return 'Data yang diminta tidak ditemukan. Muat ulang halaman lalu coba lagi.';
+      case 409: return 'Data berubah atau bertentangan dengan permintaan. Muat ulang halaman lalu coba lagi.';
+      case 422: return 'Data belum dapat diproses. Periksa kembali isian lalu coba lagi.';
+      case 429: return 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.';
+      case 408: return 'Permintaan terlalu lama. Silakan coba lagi.';
+      default:
+        if (status && status >= 500) return 'Layanan sedang bermasalah. Coba lagi beberapa saat.';
+        return undefined;
+    }
+  };
+  const usableMessage = (value: unknown): string | undefined => {
+    if (typeof value !== 'string') return undefined;
+    const message = value.trim();
+    if (!message || isTechnicalMessage(message)) return undefined;
+    return message;
+  };
+
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as ApiErrorResponse | Record<string, unknown> | undefined;
     if (data && typeof data === 'object') {
-      // Standard swagger format: payload.error.message / payload.error.error
-      if ('payload' in data && data.payload && typeof data.payload === 'object') {
-        const errorObj = (data.payload as { error?: { message?: string; error?: string } }).error;
-        if (errorObj?.message) return errorObj.message;
-        if (errorObj?.error) return errorObj.error;
+      const responseData = data as Record<string, unknown>;
+      // Keep actionable business messages from the API, but never expose transport/server internals.
+      if (responseData.payload && typeof responseData.payload === 'object') {
+        const errorObj = (responseData.payload as { error?: { message?: unknown; error?: unknown; details?: unknown } }).error;
+        const details = usableMessage(errorObj?.details);
+        if (details) return details;
+        const message = usableMessage(errorObj?.message);
+        if (message) return message;
+        const errorMessage = usableMessage(errorObj?.error);
+        if (errorMessage) return errorMessage;
       }
-      if ('message' in data && typeof data.message === 'string' && data.message.trim()) {
-        return data.message;
+      const message = usableMessage(responseData.message);
+      if (message) return message;
+      const nestedError = responseData.error;
+      if (nestedError && typeof nestedError === 'object') {
+        const nestedMessage = usableMessage((nestedError as { message?: unknown; details?: unknown }).details)
+          || usableMessage((nestedError as { message?: unknown }).message);
+        if (nestedMessage) return nestedMessage;
       }
     }
-    if (err.message) {
-      if (err.message.includes('Network Error')) {
-        return 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
-      }
-      if (err.message.includes('timeout')) {
-        return 'Permintaan ke server memakan waktu terlalu lama. Silakan coba lagi.';
-      }
-      return err.message;
+    if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message)) {
+      return 'Permintaan ke server memakan waktu terlalu lama. Silakan coba lagi.';
     }
+    if (!err.response) {
+      return 'Gagal terhubung ke server. Periksa koneksi internet lalu coba lagi.';
+    }
+    const fallback = statusFallback(err.response.status);
+    if (fallback) return fallbackMessage === defaultFallback ? fallback : fallbackMessage;
+    const errorMessage = usableMessage(err.message);
+    if (errorMessage) return errorMessage;
   } else if (err instanceof Error) {
-    return err.message;
+    const message = usableMessage(err.message);
+    if (message) return message;
   }
+  if (fallbackMessage !== defaultFallback) return fallbackMessage;
+  if (axios.isAxiosError(err)) return statusFallback(err.response?.status) || fallbackMessage;
   return fallbackMessage;
 }
 

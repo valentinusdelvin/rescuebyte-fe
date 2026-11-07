@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import {
   Check,
   Clock,
@@ -585,7 +586,7 @@ export function CustomerOrderDetail({
       });
     } catch (err) {
       setIsSnapPopupOpen(false);
-      onShowToast?.(err instanceof Error ? err.message : 'Halaman Midtrans belum tersedia.', 'error');
+      onShowToast?.(extractErrorMessage(err, 'Pembayaran belum bisa dibuka. Silakan coba lagi dari detail pesanan.'), 'error');
     }
   };
 

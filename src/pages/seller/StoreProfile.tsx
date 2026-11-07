@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { StoreInfoForm } from '../../components/seller/StoreInfoForm';
 import { OperationalCard } from '../../components/seller/OperationalCard';
 import { StoreLocationMap } from '../../components/seller/StoreLocationMap';
@@ -238,7 +239,7 @@ export function StoreProfile({
         onShowToast?.('Silakan simpan profil toko terlebih dahulu.');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan operasional toko.';
+      const msg = extractErrorMessage(err, 'Gagal menyimpan operasional toko. Periksa isian lalu coba lagi.');
       onShowToast?.(msg);
     } finally {
       setIsSavingOperational(false);
@@ -386,7 +387,7 @@ export function StoreProfile({
         onShowToast?.('Profil toko baru berhasil dibuat!');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan profil toko.';
+      const msg = extractErrorMessage(err, 'Gagal menyimpan profil toko. Periksa isian lalu coba lagi.');
       onShowToast?.(msg);
     } finally {
       setIsSaving(false);

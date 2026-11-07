@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { extractErrorMessage } from '../../api/client';
 import {
   loginUser,
   registerUser,
@@ -238,10 +239,7 @@ export function CustomerAuth({
       }
     } catch (err: unknown) {
       setIsSubmitting(false);
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Gagal masuk. Periksa kembali email dan kata sandi kamu.';
+      const message = extractErrorMessage(err, 'Gagal masuk. Periksa kembali email dan kata sandi kamu.');
       if (onShowToast) onShowToast(message, 'error');
     }
   };
@@ -312,8 +310,7 @@ export function CustomerAuth({
       }
     } catch (err: unknown) {
       setIsSubmitting(false);
-      const message =
-        err instanceof Error ? err.message : 'Gagal mendaftar akun. Silakan coba lagi.';
+      const message = extractErrorMessage(err, 'Gagal mendaftar akun. Silakan coba lagi.');
       if (onShowToast) onShowToast(message, 'error');
     }
   };
@@ -329,8 +326,7 @@ export function CustomerAuth({
       window.location.href = auth_url;
     } catch (err: unknown) {
       setIsSubmitting(false);
-      const msg =
-        err instanceof Error ? err.message : 'Gagal menghubungkan ke Google OAuth.';
+      const msg = extractErrorMessage(err, 'Gagal menghubungkan ke Google. Periksa koneksi lalu coba lagi.');
       if (onShowToast) onShowToast(msg, 'error');
     }
   };

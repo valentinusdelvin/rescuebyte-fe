@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { extractErrorMessage } from '../../api/client';
 import { Loader2, Star } from 'lucide-react';
 import { ProductDescriptionModal } from '../../components/products/ProductDescriptionModal';
 import { FormattedDescription } from '../../components/common/FormattedDescription';
@@ -153,8 +154,7 @@ export function BuatDagangan({
           const uploadRes = await uploadImage(photoFile, 'products');
           uploadedImageUrl = uploadRes.url;
         } catch (uploadErr) {
-          const uploadMsg =
-            uploadErr instanceof Error ? uploadErr.message : 'Gagal mengunggah foto produk.';
+          const uploadMsg = extractErrorMessage(uploadErr, 'Gagal mengunggah foto produk. Periksa koneksi lalu coba lagi.');
           if (onShowToast) onShowToast(uploadMsg);
           setIsSubmitting(false);
           return;
@@ -206,7 +206,7 @@ export function BuatDagangan({
         onNavigateToProducts();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal membuat produk baru.';
+      const msg = extractErrorMessage(err, 'Gagal membuat produk baru. Periksa isian lalu coba lagi.');
       if (msg.toLowerCase().includes('store not found') || msg.toLowerCase().includes('toko tidak ditemukan')) {
         onShowToast?.('Profil toko belum terdaftar di server. Silakan lengkapi profil toko terlebih dahulu.');
       } else {

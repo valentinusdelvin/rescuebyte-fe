@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { AuthPayload, UserPayload } from '../types';
+import { extractErrorMessage } from '../api/client';
 import { api } from './api';
 
 const AUTH_STORAGE_KEY = 'rescuebyte_auth';
@@ -87,38 +87,7 @@ function notifyAuthListeners(user: UserPayload | null) {
  * Extracts descriptive user-friendly message from backend error response
  */
 export function extractApiErrorMessage(err: unknown, defaultMessage: string): string {
-  if (axios.isAxiosError(err) && err.response?.data) {
-    const data = err.response.data as {
-      payload?: {
-        error?: {
-          message?: string;
-          error?: string;
-          error_code?: string;
-          details?: unknown;
-        };
-      };
-      message?: string;
-    };
-
-    if (typeof data.payload?.error?.details === 'string' && data.payload.error.details) {
-      return data.payload.error.details;
-    }
-    if (data.payload?.error?.message) {
-      return data.payload.error.message;
-    }
-    if (data.payload?.error?.error) {
-      return data.payload.error.error;
-    }
-    if (data.message) {
-      return data.message;
-    }
-  }
-
-  if (err instanceof Error && err.message) {
-    return err.message;
-  }
-
-  return defaultMessage;
+  return extractErrorMessage(err, defaultMessage);
 }
 
 /**
