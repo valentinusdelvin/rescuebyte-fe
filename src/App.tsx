@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { Header } from './components/layout/Header';
-import { Sidebar } from './components/layout/Sidebar';
+import { useState, useEffect, useCallback } from 'react';
 import { Toast, ToastType } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
 import { useAuth } from './hooks/useAuth';
 import { useToastContext } from './context/ToastContext';
-import { ActiveViewId, OrderStatusTab, CustomerMysteryBox, CheckoutPayload, PaymentOrderData, CheckoutItem } from './types';
+import { ActiveViewId, OrderStatusTab, CustomerMysteryBox, CheckoutPayload, PaymentOrderData } from './types';
 import {
   handleGoogleCallback,
   extractApiErrorMessage,
@@ -14,87 +12,12 @@ import {
   subscribeToAuth,
 } from './services/authService';
 import { getStoreProfile } from './services/storeService';
-import { getCustomerOrders, fetchOrderDetailApi } from './services/orderService';
+import { fetchOrderDetailApi } from './services/orderService';
 import { productApi } from './api/services/productApi';
+import { useHashNavigation } from './app/useHashNavigation';
+import { findOrderById } from './app/orderRouteData';
+import { AppRoutes } from './app/AppRoutes';
 import { isCustomerOrderDetailPath, parseHash, safeDecode } from './app/hashRouting';
-
-// Route-level code splitting using React.lazy() to eliminate Vite chunk size warning
-const CustomerHome = React.lazy(() => import('./pages/customer/CustomerHome').then((m) => ({ default: m.CustomerHome })));
-const CustomerMarketplace = React.lazy(() => import('./pages/customer/CustomerMarketplace').then((m) => ({ default: m.CustomerMarketplace })));
-const CustomerContact = React.lazy(() => import('./pages/customer/CustomerContact').then((m) => ({ default: m.CustomerContact })));
-const CustomerProductDetail = React.lazy(() => import('./pages/customer/CustomerProductDetail').then((m) => ({ default: m.CustomerProductDetail })));
-const CustomerCart = React.lazy(() => import('./pages/customer/CustomerCart').then((m) => ({ default: m.CustomerCart })));
-const CustomerCheckout = React.lazy(() => import('./pages/customer/CustomerCheckout').then((m) => ({ default: m.CustomerCheckout })));
-const CustomerOrderDetail = React.lazy(() => import('./pages/customer/CustomerOrderDetail').then((m) => ({ default: m.CustomerOrderDetail })));
-const CustomerOrderHistory = React.lazy(() => import('./pages/customer/CustomerOrderHistory').then((m) => ({ default: m.CustomerOrderHistory })));
-const CustomerStoreDetail = React.lazy(() => import('./pages/customer/CustomerStoreDetail').then((m) => ({ default: m.CustomerStoreDetail })));
-const AuthRoleSelection = React.lazy(() => import('./pages/auth/AuthRoleSelection').then((m) => ({ default: m.AuthRoleSelection })));
-const CustomerAuth = React.lazy(() => import('./pages/auth/CustomerAuth').then((m) => ({ default: m.CustomerAuth })));
-const CustomerProfile = React.lazy(() => import('./pages/customer/CustomerProfile').then((m) => ({ default: m.CustomerProfile })));
-const Dashboard = React.lazy(() => import('./pages/seller/Dashboard').then((m) => ({ default: m.Dashboard })));
-const StoreProfile = React.lazy(() => import('./pages/seller/StoreProfile').then((m) => ({ default: m.StoreProfile })));
-const OrderHistory = React.lazy(() => import('./pages/seller/OrderHistory').then((m) => ({ default: m.OrderHistory })));
-const BuatDagangan = React.lazy(() => import('./pages/seller/BuatDagangan').then((m) => ({ default: m.BuatDagangan })));
-const Daganganku = React.lazy(() => import('./pages/seller/Daganganku').then((m) => ({ default: m.Daganganku })));
-const PlaceholderPage = React.lazy(() => import('./pages/shared/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
-
-function findOrderById(orderId: string): PaymentOrderData | null {
-  try {
-    const orders = getCustomerOrders();
-    const found = orders.find(
-      (o) => o.id === orderId || o.orderNumber === orderId
-    );
-    if (!found) return null;
-    if (found.orderData) return found.orderData;
-    return {
-      orderId: found.orderNumber || found.id,
-      backendOrderId: found.id,
-      status: found.status,
-      items: [
-        {
-          id: found.id,
-          name: found.productName,
-          storeId: found.storeId,
-          storeName: found.storeName,
-          storeAvatar: found.imageUrl,
-          storeAddress: found.storeAddress,
-          rating: found.storeRating,
-          reviewCount: found.storeReviewCount,
-          distanceText: found.storeDistance,
-          categoryTags: found.storeTags || [],
-          originalPrice: found.originalPrice || found.finalPrice + 15000,
-          rescuePrice: found.finalPrice,
-          discountPercent: 50,
-          quantity: found.productBoxCount,
-          pickupTime: found.pickupTime,
-        },
-      ],
-      primaryStore: {
-        storeId: found.storeId,
-        storeName: found.storeName,
-        storeAvatar: found.imageUrl,
-        storeAddress: found.storeAddress,
-        rating: found.storeRating,
-        reviewCount: found.storeReviewCount,
-      },
-      pickupDate: found.pickupDate,
-      pickupTimeSlot: found.pickupTime,
-      customerInfo: {
-        name: 'Pelanggan',
-        phone: '08123456789',
-        email: '',
-      },
-      totalBoxes: found.productBoxCount,
-      subtotal: found.finalPrice,
-      discountTotal: 15000,
-      serviceFee: 2000,
-      grandTotal: found.finalPrice,
-      createdAt: found.createdAt,
-    };
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Root Application Component
@@ -530,211 +453,19 @@ export function App() {
     [showToast, selectedProduct, paymentOrderData, selectedStoreName, user]
   );
 
-  // Sync with browser back/forward hash changes with deep linking
-  useEffect(() => {
-    const handleHashChange = () => {
-      const { path, params } = parseHash();
-      if (path.startsWith('beranda-seller') || path === 'beranda') {
-        setActiveView('view-beranda');
-        setActiveLabel('Beranda Toko');
-      } else if (path.startsWith('profil-seller') || path === 'profil') {
-        setActiveView('view-profil');
-        setActiveLabel('Profil Toko');
-      } else if (path.startsWith('riwayat-seller') || path.startsWith('riwayat')) {
-        setActiveView('view-riwayat');
-        setActiveLabel('Riwayat Pesanan');
-        const match = window.location.hash.match(/tab=([a-z-]+)/);
-        if (match && ['perlu-konfirmasi', 'diproses', 'siap-diambil', 'selesai', 'konfirmasi', 'habis', 'kendala', 'batal'].includes(match[1])) {
-          setOrderTab(match[1] as OrderStatusTab);
-        }
-      } else if (path.startsWith('buat-dagangan-seller') || path.startsWith('buat-dagangan')) {
-        setActiveView('view-buat-dagangan');
-        setActiveLabel('Buat Dagangan');
-      } else if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) {
-        setActiveView('view-daganganku');
-        setActiveLabel('Daganganku');
-      } else if (isCustomerOrderDetailPath(path)) {
-        if (!getCurrentUser() && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        const oId = params.get('id');
-        if (oId) {
-          const cached = findOrderById(oId);
-          if (cached) setPaymentOrderData(cached);
-          else {
-            fetchOrderDetailApi(oId).then((apiDetail) => {
-              if (apiDetail) {
-                setPaymentOrderData({
-                  orderId: apiDetail.order_number || apiDetail.id || oId,
-                  backendOrderId: apiDetail.id,
-                  status: apiDetail.status,
-                  items: (apiDetail.items || []).map((it: any) => ({
-                    id: it.id,
-                    name: it.product_name || 'Paket Surplus',
-                    storeName: apiDetail.store_name || 'Toko Mitra',
-                    categoryTags: ['Surplus Makanan'],
-                    originalPrice: it.normal_price || it.price || 40000,
-                    rescuePrice: it.rescue_price || it.price || 20000,
-                    discountPercent: 50,
-                    quantity: it.quantity || 1,
-                  })),
-                  primaryStore: {
-                    storeName: apiDetail.store_name || 'Toko Mitra',
-                    storeAddress: apiDetail.store_address || '',
-                  },
-                  pickupDate: apiDetail.pickup_date || '',
-                  pickupTimeSlot: apiDetail.pickup_window || '15.00 - 17.00 WIB',
-                  customerInfo: {
-                    name: apiDetail.customer_name || 'Pelanggan',
-                    phone: apiDetail.customer_phone || '',
-                    email: '',
-                  },
-                  totalBoxes: apiDetail.total_items || 1,
-                  subtotal: apiDetail.total_amount || 20000,
-                  discountTotal: 0,
-                  serviceFee: 2000,
-                  grandTotal: (apiDetail.total_amount || 20000) + 2000,
-                });
-              }
-            }).catch(() => {});
-          }
-        } else if (!paymentOrderData) {
-          setActiveView('view-customer-home');
-          setActiveLabel('Beranda Pelanggan');
-          window.history.replaceState(null, '', '#beranda-customer');
-          return;
-        }
-        setActiveView('view-customer-order-detail');
-        setActiveLabel('Detail Pesanan');
-      } else if (path.startsWith('detail-produk') || path.startsWith('detail') || path.startsWith('mystery-box-detail')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        const pId = params.get('id');
-        if (pId && (!selectedProduct || selectedProduct.id !== pId)) {
-          productApi.getProductDetail(pId).then((prod) => {
-            if (prod) {
-              const firstVariant = prod.variants?.[0];
-              const norm = firstVariant?.normal_price || prod.min_normal_price || 40000;
-              const resc = firstVariant?.rescue_price || prod.min_rescue_price || 20000;
-              const disc = Math.round(((norm - resc) / norm) * 100);
-              setSelectedProduct({
-                id: prod.id || pId,
-                name: prod.name,
-                category: 'Surplus Food Box',
-                storeId: prod.store_id,
-                storeName: (prod as any).store_name || 'Toko Mitra',
-                distanceText: '1.2 km',
-                remainingBoxesText: `Sisa ${prod.total_current_stock} Box`,
-                discountPercent: disc,
-                originalPrice: norm,
-                rescuePrice: resc,
-                pickupTime: '15.00 - 17.00 WIB',
-                description: prod.description || 'Paket makanan surplus bermutu tinggi.',
-                tags: ['✓ Halal', 'Surplus Makanan'],
-                imageSrc: prod.main_image_url || '',
-                variantId: firstVariant?.id,
-                stock: prod.total_current_stock,
-              });
-            }
-          }).catch(() => {});
-        }
-        setActiveView('view-customer-product-detail');
-        setActiveLabel('Detail Produk');
-      } else if (path.startsWith('keranjang') || path.startsWith('cart')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-cart');
-        setActiveLabel('Keranjang Saya');
-      } else if (path.startsWith('checkout')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk melakukan checkout.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-checkout');
-        setActiveLabel('Checkout');
-      } else if (path.startsWith('pesanan-saya') || path.startsWith('pesanan') || path.startsWith('riwayat-pesanan')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses pesanan Anda.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-orders');
-        setActiveLabel('Riwayat Pesanan');
-      } else if (path.startsWith('toko') || path.startsWith('store') || path.startsWith('detail-toko')) {
-        if (params.get('name')) {
-          setSelectedStoreName(safeDecode(params.get('name')!));
-        }
-        if (params.get('id')) {
-          setSelectedStoreId(params.get('id')!);
-        }
-        setActiveView('view-customer-store');
-        setActiveLabel('Detail Toko');
-      } else if (path.startsWith('kontak') || path.startsWith('contact') || path.startsWith('saran')) {
-        setActiveView('view-customer-contact');
-        setActiveLabel('Kontak');
-      } else if (path.startsWith('marketplace')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-marketplace');
-        setActiveLabel('Marketplace');
-      } else if (path.startsWith('akun') || path.startsWith('profil-user') || path.startsWith('profil-customer') || path.startsWith('profile')) {
-        const currentUser = getCurrentUser();
-        if (!currentUser && !user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses Informasi Akun.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-profile');
-        setActiveLabel('Informasi Akun');
-      } else if (path.startsWith('masuk-mitra') || path.startsWith('daftar-mitra') || path.startsWith('auth-seller') || path.startsWith('seller-auth')) {
-        setActiveView('view-seller-auth');
-        setActiveLabel('Masuk sebagai Mitra Toko');
-      } else if (path.startsWith('masuk-customer') || path.startsWith('daftar-customer')) {
-        setActiveView('view-customer-auth');
-        setActiveLabel('Masuk sebagai Customer');
-      } else if (path.startsWith('masuk') || path.startsWith('daftar') || path.startsWith('auth') || path.startsWith('login') || path.startsWith('pilih-role')) {
-        setActiveView('view-auth-role-selection');
-        setActiveLabel('Pilih Peran Akun');
-      } else {
-        setActiveView('view-customer-home');
-        setActiveLabel('Beranda Pelanggan');
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [showToast, paymentOrderData, selectedProduct, user]);
+  useHashNavigation({
+    showToast,
+    isAuthenticated: Boolean(user),
+    paymentOrderData,
+    setPaymentOrderData,
+    selectedProduct,
+    setSelectedProduct,
+    setSelectedStoreName,
+    setSelectedStoreId,
+    setActiveView,
+    setActiveLabel,
+    setOrderTab,
+  });
 
   // If user logs out while on protected routes, automatically redirect to login
   useEffect(() => {
@@ -786,302 +517,28 @@ export function App() {
 
   return (
     <>
-      <Suspense fallback={<BrandLoadingOverlay isVisible={true} title="RescueBite" subtitle="Memuat halaman..." />}>
-        {/* 1. Customer Views */}
-        {activeView === 'view-customer-home' ? (
-          <CustomerHome
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateStore={handleNavigateStore}
-            onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onNavigateDetail={(item: CustomerMysteryBox) => {
-              const currentUser = getCurrentUser();
-              if (!currentUser && !user) {
-                showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-                handleNavigate('view-auth-role-selection', 'Pilih Peran Akun');
-                return;
-              }
-              setSelectedProduct(item);
-              handleNavigate('view-customer-product-detail', 'Detail Produk');
-            }}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-contact' ? (
-          <CustomerContact
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-marketplace' ? (
-          <CustomerMarketplace
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onNavigateDetail={(item: CustomerMysteryBox) => {
-              setSelectedProduct(item);
-              handleNavigate('view-customer-product-detail', 'Detail Produk');
-            }}
-            onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-            onNavigateStore={handleNavigateStore}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-product-detail' ? (
-          <CustomerProductDetail
-            product={selectedProduct}
-            onNavigateBack={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateStore={handleNavigateStore}
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-            onNavigateCheckout={(product: CustomerMysteryBox, qty: number) => {
-              setCheckoutPayload({
-                source: 'direct',
-                items: [
-                  {
-                    id: product.id,
-                    name: product.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
-                    storeId: 'store-terasa',
-                    storeName: (product.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak',
-                    storeAvatar: 'TR',
-                    storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-                    rating: product.rating || 4.8,
-                    reviewCount: typeof product.reviewCount === 'number' ? product.reviewCount : Number(product.reviewCount) || 320,
-                    distanceText: product.distanceText || '1.2 km',
-                    categoryTags:
-                      product.tags && product.tags.length > 0
-                        ? product.tags
-                        : ['Roti & Pastry', '✓ Halal'],
-                    originalPrice: product.originalPrice || 40000,
-                    rescuePrice: product.rescuePrice || 20000,
-                    discountPercent: product.discountPercent || 50,
-                    quantity: qty,
-                    imageSrc: product.imageSrc,
-                    pickupTime: product.pickupTime,
-                  },
-                ],
-              });
-              handleNavigate('view-customer-checkout', 'Checkout');
-            }}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-cart' ? (
-          <CustomerCart
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateStore={handleNavigateStore}
-            onNavigateDetail={(item: CustomerMysteryBox) => {
-              setSelectedProduct(item);
-              handleNavigate('view-customer-product-detail', 'Detail Produk');
-            }}
-            onNavigateCheckout={(items?: CheckoutItem[]) => {
-              setCheckoutPayload({
-                source: 'cart',
-                items: items && items.length > 0 ? items : [],
-              });
-              handleNavigate('view-customer-checkout', 'Checkout');
-            }}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-checkout' ? (
-          <CustomerCheckout
-            payload={checkoutPayload}
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-            onNavigateDetail={() => handleNavigate('view-customer-product-detail', 'Detail Produk')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateOrderDetail={(orderData: PaymentOrderData) => {
-              setPaymentOrderData(orderData);
-              handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-            }}
-            onNavigatePayment={(orderData: PaymentOrderData) => {
-              setPaymentOrderData(orderData);
-              handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-            }}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-orders' ? (
-          <CustomerOrderHistory
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateStore={handleNavigateStore}
-            onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-            onNavigateOrderDetail={(order: PaymentOrderData) => {
-              setPaymentOrderData(order);
-              handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-            }}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-order-detail' ? (
-          <CustomerOrderDetail
-            orderData={paymentOrderData}
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateStore={handleNavigateStore}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-store' ? (
-          <CustomerStoreDetail
-            storeName={selectedStoreName}
-            storeId={selectedStoreId}
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onNavigateProductDetail={(item: CustomerMysteryBox) => {
-              setSelectedProduct(item);
-              handleNavigate('view-customer-product-detail', 'Detail Produk');
-            }}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-auth-role-selection' ? (
-          <AuthRoleSelection
-            onSelectCustomer={() => handleNavigate('view-customer-auth', 'Masuk sebagai Customer')}
-            onSelectSeller={() => handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko')}
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          />
-        ) : activeView === 'view-customer-auth' ? (
-          <CustomerAuth
-            roleType="customer"
-            initialMode={
-              typeof window !== 'undefined' &&
-                (window.location.hash.toLowerCase().includes('daftar') ||
-                  window.location.hash.toLowerCase().includes('register'))
-                ? 'register'
-                : 'login'
-            }
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onSwitchRole={(nextRole: 'customer' | 'seller') => {
-              if (nextRole === 'seller') {
-                handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
-              } else {
-                handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
-              }
-            }}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-seller-auth' ? (
-          <CustomerAuth
-            roleType="seller"
-            initialMode={
-              typeof window !== 'undefined' &&
-                (window.location.hash.toLowerCase().includes('daftar') ||
-                  window.location.hash.toLowerCase().includes('register'))
-                ? 'register'
-                : 'login'
-            }
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-            onSwitchRole={(nextRole: 'customer' | 'seller') => {
-              if (nextRole === 'seller') {
-                handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
-              } else {
-                handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
-              }
-            }}
-            onShowToast={showToast}
-          />
-        ) : activeView === 'view-customer-profile' ? (
-          <CustomerProfile
-            onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-            onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-            onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-            onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-            onShowToast={showToast}
-          />
-        ) : (
-          /* 2. Merchant / Seller View: Portal Layout */
-          <>
-            <Header
-              storeName={storeName}
-              onNavigate={(view: string) => handleNavigate(view)}
-              onToggleMobileMenu={() => setIsMobileOpen((prev) => !prev)}
-              onShowToast={showToast}
-            />
-
-            <div className="flex min-h-[calc(100vh-80px)] bg-surface-app relative">
-              <Sidebar
-                activeView={activeView}
-                storeName={storeName}
-                isMobileOpen={isMobileOpen}
-                onNavigate={(view: string, label: string) => handleNavigate(view, label)}
-                onCloseMobile={() => setIsMobileOpen(false)}
-              />
-
-              <main className="flex-1 p-[32px_36px] max-md:p-[24px_20px] bg-surface-app overflow-y-auto min-w-0" id="main-content">
-                {activeView === 'view-beranda' && (
-                  <Dashboard
-                    storeName={storeName}
-                    onShowToast={showToast}
-                    onNavigateToOrders={(tabId: string) => handleNavigate('view-riwayat', 'Riwayat Pesanan', tabId as OrderStatusTab)}
-                  />
-                )}
-                {activeView === 'view-profil' && (
-                  <StoreProfile
-                    storeName={storeName}
-                    onStoreNameChange={setStoreName}
-                    onShowToast={showToast}
-                    onTriggerLoading={triggerLoading}
-                  />
-                )}
-                {activeView === 'view-riwayat' && (
-                  <OrderHistory
-                    key={orderTab}
-                    storeName={storeName}
-                    initialTab={orderTab}
-                    onShowToast={showToast}
-                  />
-                )}
-                {activeView === 'view-buat-dagangan' && (
-                  <BuatDagangan
-                    onShowToast={showToast}
-                    onNavigateToProducts={() => handleNavigate('view-daganganku', 'Daganganku')}
-                    onTriggerLoading={triggerLoading}
-                  />
-                )}
-                {activeView === 'view-daganganku' && (
-                  <Daganganku
-                    onShowToast={showToast}
-                    onNavigateToCreate={() => handleNavigate('view-buat-dagangan', 'Buat Dagangan')}
-                    onTriggerLoading={triggerLoading}
-                  />
-                )}
-                {activeView !== 'view-beranda' &&
-                  activeView !== 'view-profil' &&
-                  activeView !== 'view-riwayat' &&
-                  activeView !== 'view-buat-dagangan' &&
-                  activeView !== 'view-daganganku' && (
-                    <PlaceholderPage
-                      title={activeLabel}
-                      onBackToBeranda={() => handleNavigate('view-beranda', 'Beranda Toko')}
-                    />
-                  )}
-              </main>
-            </div>
-          </>
-        )}
-      </Suspense>
+      <AppRoutes
+        activeView={activeView}
+        activeLabel={activeLabel}
+        orderTab={orderTab}
+        selectedProduct={selectedProduct}
+        setSelectedProduct={setSelectedProduct}
+        checkoutPayload={checkoutPayload}
+        setCheckoutPayload={setCheckoutPayload}
+        paymentOrderData={paymentOrderData}
+        setPaymentOrderData={setPaymentOrderData}
+        selectedStoreName={selectedStoreName}
+        selectedStoreId={selectedStoreId}
+        storeName={storeName}
+        setStoreName={setStoreName}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+        isAuthenticated={Boolean(user)}
+        showToast={showToast}
+        handleNavigate={handleNavigate}
+        handleNavigateStore={handleNavigateStore}
+        triggerLoading={triggerLoading}
+      />
 
       {/* Global Toast & Loading Overlay */}
       <Toast message={toastMessage} isVisible={isToastVisible} type={toastType} />
