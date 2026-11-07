@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Loader2, Star } from 'lucide-react';
-import { ProductDescriptionModal } from '../components/products/ProductDescriptionModal';
-import { FormattedDescription } from '../components/common/FormattedDescription';
-import { createProduct } from '../services/productService';
-import { uploadImage } from '../services/storageService';
-import cloudTambahkanIcon from '../assets/cloud-tambahkan.svg';
+import { ProductDescriptionModal } from '../../components/products/ProductDescriptionModal';
+import { FormattedDescription } from '../../components/common/FormattedDescription';
+import { createProduct } from '../../services/productService';
+import { uploadImage } from '../../services/storageService';
+import cloudTambahkanIcon from '../../assets/cloud-tambahkan.svg';
 
 export interface BuatDaganganProps {
   onShowToast?: (message: string) => void;

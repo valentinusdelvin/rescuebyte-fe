@@ -11,11 +11,11 @@ import {
   User,
   ShoppingBag,
 } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
-import { CartItem, StoreCartGroup, CustomerMysteryBox } from '../types';
-import { formatRupiah } from '../utils/currency';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { CartItem, StoreCartGroup, CustomerMysteryBox } from '../../types';
+import { formatRupiah } from '../../utils/currency';
 import {
   getStoredCart,
   saveCart,
@@ -27,8 +27,8 @@ import {
   fetchBackendCart,
   subscribeToCart,
   getStoreInitials,
-} from '../services/cartService';
-import { getAllStores } from '../services/storeService';
+} from '../../services/cartService';
+import { getAllStores } from '../../services/storeService';
 
 export type { CartItem, StoreCartGroup };
 
@@ -36,7 +36,7 @@ export interface CustomerCartProps {
   onNavigateHome?: () => void;
   onNavigateMarketplace?: () => void;
   onNavigateSeller?: () => void;
-  onNavigateCheckout?: (items?: import('../types').CheckoutItem[]) => void;
+  onNavigateCheckout?: (items?: import('../../types').CheckoutItem[]) => void;
   onNavigateStore?: (storeName: string) => void;
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onShowToast?: (message: string) => void;

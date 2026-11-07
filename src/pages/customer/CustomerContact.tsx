@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { MessageSquare, ShieldCheck } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { getCurrentUser } from '../services/authService';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { getCurrentUser } from '../../services/authService';
 
 export interface CustomerContactProps {
   onNavigateHome?: () => void;

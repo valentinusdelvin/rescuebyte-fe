@@ -1,21 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ShoppingBag } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CheckoutItem, CheckoutPayload, PaymentOrderData, CustomerOrderStatus } from '../types';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CheckoutItem, CheckoutPayload, PaymentOrderData, CustomerOrderStatus } from '../../types';
 import {
   createCustomerOrder,
   checkoutOrderApi,
   fetchPaymentStatusApi,
   fetchOrderDetailApi,
   mapBackendStatusToCustomerStatus,
-} from '../services/orderService';
-import { getProductVariantId } from '../services/cartService';
-import { getCurrentUser } from '../services/authService';
-import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../services/locationService';
-import { getAllStores, StoreProfileData } from '../services/storeService';
-import { launchMidtransPayment } from '../services/midtransService';
-import { formatRupiah } from '../utils/currency';
+} from '../../services/orderService';
+import { getProductVariantId } from '../../services/cartService';
+import { getCurrentUser } from '../../services/authService';
+import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../../services/locationService';
+import { getAllStores, StoreProfileData } from '../../services/storeService';
+import { launchMidtransPayment } from '../../services/midtransService';
+import { formatRupiah } from '../../utils/currency';
 import {
   CheckoutContactForm,
   CheckoutItemsList,
@@ -23,7 +23,7 @@ import {
   CheckoutSummary,
   StoreCheckoutGroup,
   PaymentMethod,
-} from '../components/customer/checkout';
+} from '../../components/customer/checkout';
 
 export type { StoreCheckoutGroup, PaymentMethod };
 

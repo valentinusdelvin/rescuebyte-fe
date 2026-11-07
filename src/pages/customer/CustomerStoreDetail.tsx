@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerMysteryBox } from '../types';
-import { getAllStores } from '../services/storeService';
-import { getPublicProducts, getStoredProducts } from '../services/productService';
-import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../services/locationService';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CustomerMysteryBox } from '../../types';
+import { getAllStores } from '../../services/storeService';
+import { getPublicProducts, getStoredProducts } from '../../services/productService';
+import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../../services/locationService';
 import {
   StoreHero,
   StoreTabs,
@@ -15,8 +15,8 @@ import {
   StoreProductItem,
   StoreReviewItem,
   StoreDetailInfo,
-} from '../components/customer/store';
-import cardPastry from '../assets/customer/card-monsieur-spoon.jpg';
+} from '../../components/customer/store';
+import cardPastry from '../../assets/customer/card-monsieur-spoon.jpg';
 
 export interface CustomerStoreDetailProps {
   storeName?: string;

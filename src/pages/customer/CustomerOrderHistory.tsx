@@ -15,19 +15,19 @@ import {
   AlertCircle,
   Clock,
 } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerProfileSidebar } from '../components/customer/CustomerProfileSidebar';
-import { getCurrentUser, logoutUser, clearAuth } from '../services/authService';
-import { PaymentOrderData, UserPayload, CustomerOrderStatus } from '../types';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CustomerProfileSidebar } from '../../components/customer/CustomerProfileSidebar';
+import { getCurrentUser, logoutUser, clearAuth } from '../../services/authService';
+import { PaymentOrderData, UserPayload, CustomerOrderStatus } from '../../types';
 import {
   CustomerOrderItem,
   getCustomerOrders,
   subscribeToOrders,
   fetchCustomerOrdersApi,
-} from '../services/orderService';
-import { getAllStores } from '../services/storeService';
-import { formatRupiah } from '../utils/currency';
+} from '../../services/orderService';
+import { getAllStores } from '../../services/storeService';
+import { formatRupiah } from '../../utils/currency';
 
 export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 

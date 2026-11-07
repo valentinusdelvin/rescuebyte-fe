@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { OrderStatusTab, OrderTabItem } from '../types';
-import emptyOrdersIllustration from '../assets/pesanan-kosong.svg';
-import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
+import { OrderStatusTab, OrderTabItem } from '../../types';
+import emptyOrdersIllustration from '../../assets/pesanan-kosong.svg';
+import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 import {
   MerchantOrderItem,
   getMerchantOrders,
@@ -13,9 +13,9 @@ import {
   processMerchantOrder,
   completeMerchantOrder,
   subscribeToMerchantOrders,
-} from '../services/orderService';
-import { SellerOrderDetailModal } from '../components/seller/SellerOrderDetailModal';
-import { formatRupiah } from '../utils/currency';
+} from '../../services/orderService';
+import { SellerOrderDetailModal } from '../../components/seller/SellerOrderDetailModal';
+import { formatRupiah } from '../../utils/currency';
 
 export interface OrderHistoryProps {
   storeName?: string;

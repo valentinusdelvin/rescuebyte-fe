@@ -9,10 +9,10 @@ import {
   clearAuth,
   getRoleForEmail,
   setRoleForEmail,
-} from '../services/authService';
-import { CustomerAuthArtwork } from '../components/auth/CustomerAuthArtwork';
-import { CustomerLoginForm } from '../components/auth/CustomerLoginForm';
-import { CustomerRegisterForm } from '../components/auth/CustomerRegisterForm';
+} from '../../services/authService';
+import { CustomerAuthArtwork } from '../../components/auth/CustomerAuthArtwork';
+import { CustomerLoginForm } from '../../components/auth/CustomerLoginForm';
+import { CustomerRegisterForm } from '../../components/auth/CustomerRegisterForm';
 
 export interface CustomerAuthProps {
   initialMode?: 'login' | 'register';

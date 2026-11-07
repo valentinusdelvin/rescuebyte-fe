@@ -16,58 +16,27 @@ import {
 import { getStoreProfile } from './services/storeService';
 import { getCustomerOrders, fetchOrderDetailApi } from './services/orderService';
 import { productApi } from './api/services/productApi';
+import { isCustomerOrderDetailPath, parseHash, safeDecode } from './app/hashRouting';
 
 // Route-level code splitting using React.lazy() to eliminate Vite chunk size warning
-const CustomerHome = React.lazy(() => import('./pages/CustomerHome').then((m) => ({ default: m.CustomerHome })));
-const CustomerMarketplace = React.lazy(() => import('./pages/CustomerMarketplace').then((m) => ({ default: m.CustomerMarketplace })));
-const CustomerContact = React.lazy(() => import('./pages/CustomerContact').then((m) => ({ default: m.CustomerContact })));
-const CustomerProductDetail = React.lazy(() => import('./pages/CustomerProductDetail').then((m) => ({ default: m.CustomerProductDetail })));
-const CustomerCart = React.lazy(() => import('./pages/CustomerCart').then((m) => ({ default: m.CustomerCart })));
-const CustomerCheckout = React.lazy(() => import('./pages/CustomerCheckout').then((m) => ({ default: m.CustomerCheckout })));
-const CustomerOrderDetail = React.lazy(() => import('./pages/CustomerOrderDetail').then((m) => ({ default: m.CustomerOrderDetail })));
-const CustomerOrderHistory = React.lazy(() => import('./pages/CustomerOrderHistory').then((m) => ({ default: m.CustomerOrderHistory })));
-const CustomerStoreDetail = React.lazy(() => import('./pages/CustomerStoreDetail').then((m) => ({ default: m.CustomerStoreDetail })));
-const AuthRoleSelection = React.lazy(() => import('./pages/AuthRoleSelection').then((m) => ({ default: m.AuthRoleSelection })));
-const CustomerAuth = React.lazy(() => import('./pages/CustomerAuth').then((m) => ({ default: m.CustomerAuth })));
-const CustomerProfile = React.lazy(() => import('./pages/CustomerProfile').then((m) => ({ default: m.CustomerProfile })));
-const Dashboard = React.lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
-const StoreProfile = React.lazy(() => import('./pages/StoreProfile').then((m) => ({ default: m.StoreProfile })));
-const OrderHistory = React.lazy(() => import('./pages/OrderHistory').then((m) => ({ default: m.OrderHistory })));
-const BuatDagangan = React.lazy(() => import('./pages/BuatDagangan').then((m) => ({ default: m.BuatDagangan })));
-const Daganganku = React.lazy(() => import('./pages/Daganganku').then((m) => ({ default: m.Daganganku })));
-const PlaceholderPage = React.lazy(() => import('./pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
-
-/**
- * Parse URL hash and query parameters for deep linking
- * Supports: #detail-produk?id=..., #toko?name=... or #toko?id=..., #detail-pesanan?id=...
- */
-function safeDecode(val: string): string {
-  try {
-    return decodeURIComponent(val);
-  } catch {
-    return val;
-  }
-}
-
-function parseHash(hashStr: string = typeof window !== 'undefined' ? window.location.hash : ''): { path: string; params: URLSearchParams } {
-  const clean = hashStr.startsWith('#') ? hashStr.slice(1) : hashStr;
-  const qIndex = clean.indexOf('?');
-  if (qIndex === -1) {
-    return { path: clean.toLowerCase(), params: new URLSearchParams() };
-  }
-  const path = clean.slice(0, qIndex).toLowerCase();
-  const searchStr = clean.slice(qIndex + 1);
-  return { path, params: new URLSearchParams(searchStr) };
-}
-
-function isCustomerOrderDetailPath(path: string): boolean {
-  return (
-    path.startsWith('pembayaran') ||
-    path.startsWith('payment') ||
-    path.startsWith('detail-pesanan') ||
-    path.startsWith('order-detail')
-  );
-}
+const CustomerHome = React.lazy(() => import('./pages/customer/CustomerHome').then((m) => ({ default: m.CustomerHome })));
+const CustomerMarketplace = React.lazy(() => import('./pages/customer/CustomerMarketplace').then((m) => ({ default: m.CustomerMarketplace })));
+const CustomerContact = React.lazy(() => import('./pages/customer/CustomerContact').then((m) => ({ default: m.CustomerContact })));
+const CustomerProductDetail = React.lazy(() => import('./pages/customer/CustomerProductDetail').then((m) => ({ default: m.CustomerProductDetail })));
+const CustomerCart = React.lazy(() => import('./pages/customer/CustomerCart').then((m) => ({ default: m.CustomerCart })));
+const CustomerCheckout = React.lazy(() => import('./pages/customer/CustomerCheckout').then((m) => ({ default: m.CustomerCheckout })));
+const CustomerOrderDetail = React.lazy(() => import('./pages/customer/CustomerOrderDetail').then((m) => ({ default: m.CustomerOrderDetail })));
+const CustomerOrderHistory = React.lazy(() => import('./pages/customer/CustomerOrderHistory').then((m) => ({ default: m.CustomerOrderHistory })));
+const CustomerStoreDetail = React.lazy(() => import('./pages/customer/CustomerStoreDetail').then((m) => ({ default: m.CustomerStoreDetail })));
+const AuthRoleSelection = React.lazy(() => import('./pages/auth/AuthRoleSelection').then((m) => ({ default: m.AuthRoleSelection })));
+const CustomerAuth = React.lazy(() => import('./pages/auth/CustomerAuth').then((m) => ({ default: m.CustomerAuth })));
+const CustomerProfile = React.lazy(() => import('./pages/customer/CustomerProfile').then((m) => ({ default: m.CustomerProfile })));
+const Dashboard = React.lazy(() => import('./pages/seller/Dashboard').then((m) => ({ default: m.Dashboard })));
+const StoreProfile = React.lazy(() => import('./pages/seller/StoreProfile').then((m) => ({ default: m.StoreProfile })));
+const OrderHistory = React.lazy(() => import('./pages/seller/OrderHistory').then((m) => ({ default: m.OrderHistory })));
+const BuatDagangan = React.lazy(() => import('./pages/seller/BuatDagangan').then((m) => ({ default: m.BuatDagangan })));
+const Daganganku = React.lazy(() => import('./pages/seller/Daganganku').then((m) => ({ default: m.Daganganku })));
+const PlaceholderPage = React.lazy(() => import('./pages/shared/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 
 function findOrderById(orderId: string): PaymentOrderData | null {
   try {

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StoreInfoForm } from '../components/seller/StoreInfoForm';
-import { OperationalCard } from '../components/seller/OperationalCard';
-import { StoreLocationMap } from '../components/seller/StoreLocationMap';
-import { StoreLocation, Coordinates, DaysSchedule, DayKey } from '../types';
+import { StoreInfoForm } from '../../components/seller/StoreInfoForm';
+import { OperationalCard } from '../../components/seller/OperationalCard';
+import { StoreLocationMap } from '../../components/seller/StoreLocationMap';
+import { StoreLocation, Coordinates, DaysSchedule, DayKey } from '../../types';
 import {
   getStoreProfile,
   updateStoreProfile,
   updateStoreOperational,
   toggleStoreStatus,
   createStore,
-} from '../services/storeService';
-import { getCurrentUser } from '../services/authService';
-import { toIndoTime, toApiTime, isValidTimeFormat } from '../utils/time';
+} from '../../services/storeService';
+import { getCurrentUser } from '../../services/authService';
+import { toIndoTime, toApiTime, isValidTimeFormat } from '../../utils/time';
 
 const DEFAULT_COORDS: StoreLocation = {
   lat: -7.9526,

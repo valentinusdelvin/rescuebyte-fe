@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Minus, Package, Eye, EyeOff, Search, ChevronDown, Trash2 } from 'lucide-react';
-import { ProductItem, ProductStatusTab } from '../types';
-import { formatRupiah } from '../utils/currency';
+import { ProductItem, ProductStatusTab } from '../../types';
+import { formatRupiah } from '../../utils/currency';
 import {
   getStoredProducts,
   updateProduct,
@@ -12,8 +12,8 @@ import {
   deleteProductApi,
   updateProductStockApi,
   syncProductToMarketplaceCache,
-} from '../services/productService';
-import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
+} from '../../services/productService';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 
 export interface DagangankuProps {
   onShowToast?: (message: string) => void;

@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ShoppingCart, Plus, ChevronLeft, ChevronUp, ChevronDown, Package, Clock, User } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { FormattedDescription } from '../components/common/FormattedDescription';
-import { CustomerMysteryBox } from '../types';
-import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../services/cartService';
-import { getAllStores } from '../services/storeService';
-import { formatRupiah } from '../utils/currency';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { FormattedDescription } from '../../components/common/FormattedDescription';
+import { CustomerMysteryBox } from '../../types';
+import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../../services/cartService';
+import { getAllStores } from '../../services/storeService';
+import { formatRupiah } from '../../utils/currency';
 
 export interface CustomerProductDetailProps {
   product?: CustomerMysteryBox | null;

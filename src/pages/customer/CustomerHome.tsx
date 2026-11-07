@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { MysteryBoxCard } from '../components/customer/MysteryBoxCard';
-import { CustomerOrderModal } from '../components/customer/CustomerOrderModal';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerMysteryBox, TestimonialItem } from '../types';
-import { getCurrentUser } from '../services/authService';
-import { getPublicProducts, PublicProductItem } from '../services/productService';
-import { formatDistanceKm } from '../services/locationService';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { MysteryBoxCard } from '../../components/customer/MysteryBoxCard';
+import { CustomerOrderModal } from '../../components/customer/CustomerOrderModal';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CustomerMysteryBox, TestimonialItem } from '../../types';
+import { getCurrentUser } from '../../services/authService';
+import { getPublicProducts, PublicProductItem } from '../../services/productService';
+import { formatDistanceKm } from '../../services/locationService';
 
-import heroFullBanner from '../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
-import aboutUsTopImg from '../assets/customer/about-us-top.svg';
-import aboutUsBottomImg from '../assets/customer/about-us-bottom.svg';
-import bgShapeTopRight from '../assets/customer/bg-shape-top-right.svg';
-import bgShapeCircle from '../assets/customer/bg-shape-circle.svg';
-import bgShapeBottomLeft from '../assets/customer/bg-shape-bottom-left.svg';
-import bgShapeBottom from '../assets/customer/bg-shape-bottom.svg';
-import bgShapeAccent from '../assets/customer/bg-shape-accent.svg';
-import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
-import avatarReza from '../assets/customer/avatar-reza.jpg';
-import avatarFahmi from '../assets/customer/avatar-fahmi.jpg';
+import heroFullBanner from '../../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
+import aboutUsTopImg from '../../assets/customer/about-us-top.svg';
+import aboutUsBottomImg from '../../assets/customer/about-us-bottom.svg';
+import bgShapeTopRight from '../../assets/customer/bg-shape-top-right.svg';
+import bgShapeCircle from '../../assets/customer/bg-shape-circle.svg';
+import bgShapeBottomLeft from '../../assets/customer/bg-shape-bottom-left.svg';
+import bgShapeBottom from '../../assets/customer/bg-shape-bottom.svg';
+import bgShapeAccent from '../../assets/customer/bg-shape-accent.svg';
+import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
+import avatarReza from '../../assets/customer/avatar-reza.jpg';
+import avatarFahmi from '../../assets/customer/avatar-fahmi.jpg';
 
 export interface CustomerHomeProps {
   onNavigateSeller?: () => void;

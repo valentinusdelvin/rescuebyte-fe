@@ -1,7 +1,7 @@
-import { ActivityCards } from '../components/dashboard/ActivityCards';
-import { FinanceCard } from '../components/dashboard/FinanceCard';
-import { PerformanceChart } from '../components/dashboard/PerformanceChart';
-import { OrderStatusTab } from '../types';
+import { ActivityCards } from '../../components/dashboard/ActivityCards';
+import { FinanceCard } from '../../components/dashboard/FinanceCard';
+import { PerformanceChart } from '../../components/dashboard/PerformanceChart';
+import { OrderStatusTab } from '../../types';
 
 export interface DashboardProps {
   storeName?: string;

@@ -5,9 +5,9 @@ import {
   UserCheck,
   Calendar,
 } from 'lucide-react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { formatRupiah } from '../utils/currency';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { formatRupiah } from '../../utils/currency';
 import {
   OrderStepper,
   OrderItemsList,
@@ -16,8 +16,8 @@ import {
   OrderReviewSection,
   OrderReviewModal,
   OrderItemDetail,
-} from '../components/customer/order';
-import { PaymentOrderData, CustomerOrderStatus } from '../types';
+} from '../../components/customer/order';
+import { PaymentOrderData, CustomerOrderStatus } from '../../types';
 import {
   fetchOrderDetailApi,
   fetchPaymentDetailsApi,
@@ -27,15 +27,15 @@ import {
   createCustomerOrder,
   subscribeToCustomerOrders,
   getCustomerOrders,
-} from '../services/orderService';
-import { getPublicProducts, PublicProductItem } from '../services/productService';
-import { getUserCoordinates } from '../services/locationService';
-import { getCurrentUser } from '../services/authService';
-import { launchMidtransPayment } from '../services/midtransService';
-import { getStoreById, StoreProfileData } from '../services/storeService';
-import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
+} from '../../services/orderService';
+import { getPublicProducts, PublicProductItem } from '../../services/productService';
+import { getUserCoordinates } from '../../services/locationService';
+import { getCurrentUser } from '../../services/authService';
+import { launchMidtransPayment } from '../../services/midtransService';
+import { getStoreById, StoreProfileData } from '../../services/storeService';
+import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 
-import saladStopCard from '../assets/customer/card-saladstop.jpg';
+import saladStopCard from '../../assets/customer/card-saladstop.jpg';
 
 export interface CustomerOrderDetailProps {
   orderData?: PaymentOrderData | null;

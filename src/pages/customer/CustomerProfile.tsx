@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { CustomerHeader } from '../components/customer/CustomerHeader';
-import { CustomerFooter } from '../components/customer/CustomerFooter';
-import { CustomerProfileSidebar } from '../components/customer/CustomerProfileSidebar';
-import { ProfileAvatar } from '../components/common/ProfileAvatar';
-import { AccountInfoCard } from '../components/customer/AccountInfoCard';
-import { CustomerProfileForm } from '../components/customer/CustomerProfileForm';
-import { getCurrentUser, clearAuth, logoutUser } from '../services/authService';
-import { getUserProfile, updateUserProfile } from '../services/userService';
-import { getTodayFormatted, parseIsoToIndonesianDate, parseIndonesianDateToIso } from '../utils/date';
-import { UserPayload } from '../types';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CustomerProfileSidebar } from '../../components/customer/CustomerProfileSidebar';
+import { ProfileAvatar } from '../../components/common/ProfileAvatar';
+import { AccountInfoCard } from '../../components/customer/AccountInfoCard';
+import { CustomerProfileForm } from '../../components/customer/CustomerProfileForm';
+import { getCurrentUser, clearAuth, logoutUser } from '../../services/authService';
+import { getUserProfile, updateUserProfile } from '../../services/userService';
+import { getTodayFormatted, parseIsoToIndonesianDate, parseIndonesianDateToIso } from '../../utils/date';
+import { UserPayload } from '../../types';
 
 export interface CustomerProfileProps {
   onNavigateHome?: () => void;
