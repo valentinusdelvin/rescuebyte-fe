@@ -1,0 +1,79 @@
+diff --git a/src/services/locationService.ts b/src/services/locationService.ts
+index 548c26c..b898233 100644
+--- a/src/services/locationService.ts
++++ b/src/services/locationService.ts
+@@ -92,7 +92,7 @@ export async function searchOpenStreetMap(
+   const cleanQuery = query.trim();
+   const results: OSMSearchResult[] = [];
+ 
+-  // 1. Check local POI matches first (instant response)
++  // Cek kecocokan POI lokal terlebih dahulu untuk respons instan
+   const localMatches = LOCAL_POPULAR_POIS.filter(
+     (poi) =>
+       poi.name.toLowerCase().includes(cleanQuery.toLowerCase()) ||
+@@ -114,7 +114,7 @@ export async function searchOpenStreetMap(
+     });
+   });
+ 
+-  // 2. Fetch Photon by Komoot (Fast autocomplete OSM search)
++  // Query pencarian autocomplete via Photon Komoot
+   try {
+     let photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=5`;
+     if (nearCoords && nearCoords.lat && nearCoords.lng) {
+@@ -162,7 +162,7 @@ export async function searchOpenStreetMap(
+     console.warn('Photon autocomplete query failed or timed out:', err);
+   }
+ 
+-  // 3. Fetch Nominatim OpenStreetMap (Comprehensive Indonesian address search)
++  // Fallback pencarian alamat komprehensif via Nominatim OpenStreetMap
+   try {
+     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+       cleanQuery,
+diff --git a/src/services/sellerAnalyticsService.ts b/src/services/sellerAnalyticsService.ts
+index 287bf10..52e7208 100644
+--- a/src/services/sellerAnalyticsService.ts
++++ b/src/services/sellerAnalyticsService.ts
+@@ -201,37 +201,36 @@ export async function getSellerPerformanceData(
+     storeName ||
+     (typeof window !== 'undefined' ? localStorage.getItem('rescuebyte_store_name') || '' : '');
+ 
+-  // 1. Fetch freshest orders from backend GET /api/v1/orders/seller
++  // Ambil pesanan terbaru dari backend GET /api/v1/orders/seller
+   try {
+     await fetchMerchantOrdersApi(activeStore, 'all');
+   } catch (err) {
+     console.warn('Backend fetchMerchantOrdersApi failed, using cached store orders:', err);
+   }
+ 
+-  // 2. Read normalized merchant orders for this store
++  // Baca pesanan merchant yang telah dinormalisasi untuk toko ini
+   const allOrders = getMerchantOrders(activeStore);
+ 
+-  // 3. Filter orders according to selected period
++  // Filter pesanan sesuai rentang periode yang dipilih
+   const filteredOrders = filterOrdersByPeriod(allOrders, period);
+ 
+-  // 4. Calculate Total Pemasukan:
+-  // Defined as sum of grandTotal of completed orders in that period
++  // Hitung total pemasukan dari akumulasi grandTotal pesanan selesai
+   const totalPemasukan = filteredOrders
+     .filter((o) => o.status === 'selesai')
+     .reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+ 
+   const totalOrdersCount = filteredOrders.length;
+ 
+   const completedOrdersCount = filteredOrders.filter((o) => o.status === 'selesai').length;
+ 
+-  // 5. Calculate unique buyers in that period
++  // Hitung jumlah pembeli unik dalam periode terkait
+   const buyersSet = new Set<string>();
+   filteredOrders.forEach((o) => {
+     const key = o.customerName?.trim() || o.id;
+     if (key) buyersSet.add(key.toLowerCase());
+   });
+ 
+-  // 6. Compute 6 trend data points for the SVG chart
++  // Hitung titik data tren untuk visualisasi grafik SVG
+   const trendPoints = computeTrendPoints(allOrders, period);
+ 
+   return {

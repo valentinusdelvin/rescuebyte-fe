@@ -1,27 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CustomerHome } from './pages/CustomerHome';
-import { CustomerMarketplace } from './pages/CustomerMarketplace';
-import { CustomerContact } from './pages/CustomerContact';
-import { CustomerProductDetail } from './pages/CustomerProductDetail';
-import { CustomerCart } from './pages/CustomerCart';
-import { CustomerCheckout } from './pages/CustomerCheckout';
-import { CustomerOrderDetail } from './pages/CustomerOrderDetail';
-import { CustomerOrderHistory } from './pages/CustomerOrderHistory';
-import { CustomerStoreDetail } from './pages/CustomerStoreDetail';
-import { AuthRoleSelection } from './pages/AuthRoleSelection';
-import { CustomerAuth } from './pages/CustomerAuth';
-import { CustomerProfile } from './pages/CustomerProfile';
-import { Header } from './components/layout/Header';
-import { Sidebar } from './components/layout/Sidebar';
-import { Dashboard } from './pages/Dashboard';
-import { StoreProfile } from './pages/StoreProfile';
-import { OrderHistory } from './pages/OrderHistory';
-import { BuatDagangan } from './pages/BuatDagangan';
-import { Daganganku } from './pages/Daganganku';
-import { PlaceholderPage } from './pages/PlaceholderPage';
-import { Toast, ToastType } from './components/common/Toast';
+import { ToastType } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
+import { useAuth } from './hooks/useAuth';
+import { useToastContext } from './context/ToastContext';
 import { ActiveViewId, OrderStatusTab, CustomerMysteryBox, CheckoutPayload, PaymentOrderData } from './types';
 import {
   handleGoogleCallback,
@@ -30,99 +12,107 @@ import {
   subscribeToAuth,
 } from './services/authService';
 import { getStoreProfile } from './services/storeService';
+import { fetchOrderDetailApi } from './services/orderService';
+import { productApi } from './api/services/productApi';
+import { useHashNavigation } from './app/useHashNavigation';
+import { findOrderById } from './app/orderRouteData';
+import { AppRoutes } from './app/AppRoutes';
+import { isCustomerOrderDetailPath, parseHash, safeDecode } from './app/hashRouting';
 
-function isCustomerOrderDetailHash(hash: string): boolean {
-  return (
-    hash.startsWith('#pembayaran') ||
-    hash.startsWith('#payment') ||
-    hash.startsWith('#detail-pesanan') ||
-    hash.startsWith('#order-detail')
-  );
-}
-
-/**
- * Root Application Component
- * Coordinates customer and seller views, URL hash navigation (#namapage-seller),
- * global toasts, and brand transitions.
- * Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.
- */
+/** Komponen Shell Utama Aplikasi: Mengatur modular routing hash, deep linking, dan auth guard. */
 export function App() {
   const { isLoading, loadingTitle, loadingSubtitle, triggerLoading } = useBrandLoading();
+  const { user } = useAuth();
+  const { showToast: toastContextShow } = useToastContext();
 
   const [activeView, setActiveView] = useState<ActiveViewId>(() => {
-    const hash = window.location.hash.toLowerCase();
-    if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'view-beranda';
-    if (hash.startsWith('#profil-seller') || hash === '#profil') return 'view-profil';
-    if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) return 'view-riwayat';
-    if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'view-buat-dagangan';
-    if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'view-daganganku';
-    // Order detail data is held in memory, so a fresh page load returns to the landing page.
-    if (isCustomerOrderDetailHash(hash)) return 'view-customer-home';
-    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+    const { path, params } = parseHash();
+    const isSellerPath =
+      path.startsWith('beranda-seller') ||
+      path === 'beranda' ||
+      path.startsWith('profil-seller') ||
+      path === 'profil' ||
+      path.startsWith('riwayat-seller') ||
+      path.startsWith('riwayat') ||
+      path.startsWith('buat-dagangan-seller') ||
+      path.startsWith('buat-dagangan') ||
+      path.startsWith('daganganku-seller') ||
+      path.startsWith('daganganku') ||
+      path.startsWith('ulasan-seller') ||
+      path === 'ulasan';
+
+    if (isSellerPath) {
+      if (!getCurrentUser()) return 'view-auth-role-selection';
+      if (path.startsWith('beranda-seller') || path === 'beranda') return 'view-beranda';
+      if (path.startsWith('profil-seller') || path === 'profil') return 'view-profil';
+      if (path.startsWith('riwayat-seller') || path.startsWith('riwayat')) return 'view-riwayat';
+      if (path.startsWith('buat-dagangan-seller') || path.startsWith('buat-dagangan')) return 'view-buat-dagangan';
+      if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) return 'view-daganganku';
+      if (path.startsWith('ulasan-seller') || path === 'ulasan') return 'view-ulasan';
+    }
+
+    if (isCustomerOrderDetailPath(path)) {
+      if (params.get('id') || findOrderById(params.get('id') || '')) {
+        return 'view-customer-order-detail';
+      }
+      return 'view-customer-home';
+    }
+
+    if (path.startsWith('detail-produk') || path.startsWith('detail') || path.startsWith('mystery-box-detail')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-product-detail';
     }
-    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+    if (path.startsWith('keranjang') || path.startsWith('cart')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-cart';
     }
-    if (
-      hash.startsWith('#pembayaran') ||
-      hash.startsWith('#payment') ||
-      hash.startsWith('#detail-pesanan') ||
-      hash.startsWith('#order-detail')
-    ) {
-      if (!getCurrentUser()) return 'view-auth-role-selection';
-      return 'view-customer-order-detail';
-    }
-    if (
-      hash.startsWith('#pesanan-saya') ||
-      hash.startsWith('#pesanan') ||
-      hash.startsWith('#riwayat-pesanan') ||
-      hash.startsWith('#customer-orders')
-    ) {
+    if (path.startsWith('pesanan-saya') || path.startsWith('pesanan') || path.startsWith('riwayat-pesanan') || path.startsWith('customer-orders')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-orders';
     }
-    if (
-      hash.startsWith('#toko') ||
-      hash.startsWith('#store') ||
-      hash.startsWith('#detail-toko')
-    ) {
+    if (path.startsWith('toko') || path.startsWith('store') || path.startsWith('detail-toko')) {
       return 'view-customer-store';
     }
-    if (hash.startsWith('#checkout')) {
+    if (path.startsWith('checkout')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-checkout';
     }
-    if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) return 'view-customer-contact';
-    if (hash.startsWith('#marketplace')) {
-      if (!getCurrentUser()) {
-        return 'view-auth-role-selection';
-      }
+    if (path.startsWith('kontak') || path.startsWith('contact') || path.startsWith('saran')) return 'view-customer-contact';
+    if (path.startsWith('marketplace')) {
+      if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-marketplace';
     }
-    if (hash.startsWith('#akun') || hash.startsWith('#profil-user') || hash.startsWith('#profil-customer') || hash.startsWith('#profile')) {
+    if (path.startsWith('akun') || path.startsWith('profil-user') || path.startsWith('profil-customer') || path.startsWith('profile')) {
       if (!getCurrentUser()) return 'view-auth-role-selection';
       return 'view-customer-profile';
     }
-    if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
+    if (path.startsWith('masuk-mitra') || path.startsWith('daftar-mitra') || path.startsWith('auth-seller') || path.startsWith('seller-auth')) {
       return 'view-seller-auth';
     }
-    if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
+    if (path.startsWith('masuk-customer') || path.startsWith('daftar-customer')) {
       return 'view-customer-auth';
     }
-    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
+    if (path.startsWith('masuk') || path.startsWith('daftar') || path.startsWith('auth') || path.startsWith('login') || path.startsWith('pilih-role')) {
       return 'view-auth-role-selection';
     }
-    // Default to Customer Landing Page
     return 'view-customer-home';
   });
 
   const [selectedProduct, setSelectedProduct] = useState<CustomerMysteryBox | null>(null);
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
-  const [paymentOrderData, setPaymentOrderData] = useState<PaymentOrderData | null>(null);
+  const [paymentOrderData, setPaymentOrderData] = useState<PaymentOrderData | null>(() => {
+    const { params } = parseHash();
+    const orderId = params.get('id');
+    if (orderId) {
+      return findOrderById(orderId);
+    }
+    return null;
+  });
+
   const [selectedStoreName, setSelectedStoreName] = useState<string>(() => {
+    const { params } = parseHash();
+    const qName = params.get('name');
+    if (qName && qName.trim()) return safeDecode(qName.trim());
     try {
       const saved = localStorage.getItem('rescuebyte_selected_store');
       if (saved && saved.trim() && saved !== 'TerasRasa Bakery') return saved.trim();
@@ -131,10 +121,13 @@ export function App() {
     } catch { }
     return 'Toko Rejak';
   });
-  const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(undefined);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(() => {
+    const { params } = parseHash();
+    return params.get('id') || undefined;
+  });
 
   const [orderTab, setOrderTab] = useState<OrderStatusTab>(() => {
-    const hash = window.location.hash.toLowerCase();
+    const { hash } = window.location;
     if (hash.includes('tab=')) {
       const match = hash.match(/tab=([a-z-]+)/);
       if (match && ['perlu-konfirmasi', 'diproses', 'siap-diambil', 'selesai', 'konfirmasi', 'habis', 'kendala', 'batal'].includes(match[1])) {
@@ -145,77 +138,54 @@ export function App() {
   });
 
   const [activeLabel, setActiveLabel] = useState<string>(() => {
-    const hash = window.location.hash.toLowerCase();
-    if (hash.startsWith('#profil-seller') || hash === '#profil') return 'Profil Toko';
-    if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) return 'Riwayat Pesanan';
-    if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) return 'Buat Dagangan';
-    if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) return 'Daganganku';
-    if (hash.startsWith('#beranda-seller') || hash === '#beranda') return 'Beranda Toko';
-    if (isCustomerOrderDetailHash(hash)) return 'Beranda Pelanggan';
-    if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
+    const { path } = parseHash();
+    if (path.startsWith('profil-seller') || path === 'profil') return 'Profil Toko';
+    if (path.startsWith('riwayat-seller') || path.startsWith('riwayat')) return 'Riwayat Pesanan';
+    if (path.startsWith('buat-dagangan-seller') || path.startsWith('buat-dagangan')) return 'Buat Dagangan';
+    if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) return 'Daganganku';
+    if (path.startsWith('beranda-seller') || path === 'beranda') return 'Beranda Toko';
+    if (isCustomerOrderDetailPath(path)) return 'Detail Pesanan';
+    if (path.startsWith('detail-produk') || path.startsWith('detail') || path.startsWith('mystery-box-detail')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Detail Produk';
     }
-    if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
+    if (path.startsWith('keranjang') || path.startsWith('cart')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Keranjang Saya';
     }
-    if (
-      hash.startsWith('#pembayaran') ||
-      hash.startsWith('#payment') ||
-      hash.startsWith('#detail-pesanan') ||
-      hash.startsWith('#order-detail')
-    ) {
-      if (!getCurrentUser()) return 'Pilih Peran Akun';
-      return 'Detail Pesanan';
-    }
-    if (
-      hash.startsWith('#pesanan-saya') ||
-      hash.startsWith('#pesanan') ||
-      hash.startsWith('#riwayat-pesanan')
-    ) {
+    if (path.startsWith('pesanan-saya') || path.startsWith('pesanan') || path.startsWith('riwayat-pesanan')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Riwayat Pesanan';
     }
-    if (
-      hash.startsWith('#toko') ||
-      hash.startsWith('#store') ||
-      hash.startsWith('#detail-toko')
-    ) {
+    if (path.startsWith('toko') || path.startsWith('store') || path.startsWith('detail-toko')) {
       return 'Detail Toko';
     }
-    if (hash.startsWith('#checkout')) {
+    if (path.startsWith('checkout')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Checkout';
     }
-    if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) {
+    if (path.startsWith('kontak') || path.startsWith('contact') || path.startsWith('saran')) {
       return 'Kontak';
     }
-    if (hash.startsWith('#marketplace')) {
+    if (path.startsWith('marketplace')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Marketplace';
     }
-    if (hash.startsWith('#akun') || hash.startsWith('#profil-user') || hash.startsWith('#profil-customer') || hash.startsWith('#profile')) {
+    if (path.startsWith('akun') || path.startsWith('profil-user') || path.startsWith('profil-customer') || path.startsWith('profile')) {
       if (!getCurrentUser()) return 'Pilih Peran Akun';
       return 'Informasi Akun';
     }
-    if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
+    if (path.startsWith('masuk-mitra') || path.startsWith('daftar-mitra') || path.startsWith('auth-seller') || path.startsWith('seller-auth')) {
       return 'Masuk sebagai Mitra Toko';
     }
-    if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
+    if (path.startsWith('masuk-customer') || path.startsWith('daftar-customer')) {
       return 'Masuk sebagai Customer';
     }
-    if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
+    if (path.startsWith('masuk') || path.startsWith('daftar') || path.startsWith('auth') || path.startsWith('login') || path.startsWith('pilih-role')) {
       return 'Pilih Peran Akun';
     }
     return 'Beranda Pelanggan';
   });
-
-  useEffect(() => {
-    if (isCustomerOrderDetailHash(window.location.hash.toLowerCase())) {
-      window.history.replaceState(null, '', '#beranda-customer');
-    }
-  }, []);
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [storeName, setStoreName] = useState<string>(() => {
@@ -241,62 +211,138 @@ export function App() {
     };
   }, []);
 
-  // Toast state
-  const [toastMessage, setToastMessage] = useState<string>('');
-  const [toastType, setToastType] = useState<ToastType>('success');
-  const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
-
+  // Toast handler (no-op / context delegate per R1)
   const showToast = useCallback(
     (message: string, typeOrDuration?: ToastType | number, maybeDuration?: number) => {
-      let type: ToastType = 'success';
-      let duration = 3000;
+      const type: ToastType = typeof typeOrDuration === 'string' ? typeOrDuration : 'success';
+      const duration: number =
+        typeof typeOrDuration === 'number'
+          ? typeOrDuration
+          : typeof maybeDuration === 'number'
+          ? maybeDuration
+          : 3000;
 
-      if (typeof typeOrDuration === 'string') {
-        type = typeOrDuration;
-        if (typeof maybeDuration === 'number') duration = maybeDuration;
-      } else if (typeof typeOrDuration === 'number') {
-        duration = typeOrDuration;
+      // Delegate to context if available
+      if (toastContextShow) {
+        toastContextShow(message, type, duration);
       }
-
-      if (
-        type === 'success' &&
-        /(minimal|tidak cocok|gagal|harus|salah|belum|wajib|silakan isi|error|batal)/i.test(message)
-      ) {
-        type = 'error';
-      }
-
-      setToastMessage(message);
-      setToastType(type);
-      setIsToastVisible(true);
-      const timer = setTimeout(() => {
-        setIsToastVisible(false);
-      }, duration);
-      return () => clearTimeout(timer);
     },
-    []
+    [toastContextShow]
   );
 
-  // Handle Google OAuth2 callback query parameters if redirected back
+  // Deep linking initial resolution for product / order / store params
+  useEffect(() => {
+    const { path, params } = parseHash();
+
+    // Deep linking untuk halaman detail produk: #detail-produk?id=...
+    if (
+      (path.startsWith('detail-produk') || path.startsWith('detail') || path.startsWith('mystery-box-detail')) &&
+      params.get('id')
+    ) {
+      const prodId = params.get('id')!;
+      if (!selectedProduct || selectedProduct.id !== prodId) {
+        productApi.getProductDetail(prodId)
+          .then((prod) => {
+            if (prod) {
+              const firstVariant = prod.variants?.[0];
+              const norm = firstVariant?.normal_price || prod.min_normal_price || 40000;
+              const resc = firstVariant?.rescue_price || prod.min_rescue_price || 20000;
+              const disc = Math.round(((norm - resc) / norm) * 100);
+              setSelectedProduct({
+                id: prod.id || prodId,
+                name: prod.name,
+                category: 'Surplus Food Box',
+                storeId: prod.store_id,
+                storeName: (prod as any).store_name || 'Toko Mitra',
+                distanceText: '1.2 km',
+                remainingBoxesText: `Sisa ${prod.total_current_stock} Box`,
+                discountPercent: disc,
+                originalPrice: norm,
+                rescuePrice: resc,
+                pickupTime: '15.00 - 17.00 WIB',
+                description: prod.description || 'Paket makanan surplus bermutu tinggi.',
+                tags: ['✓ Halal', 'Surplus Makanan'],
+                imageSrc: prod.main_image_url || '',
+                variantId: firstVariant?.id,
+                stock: prod.total_current_stock,
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    // Deep linking untuk halaman detail pesanan: #detail-pesanan?id=...
+    if (isCustomerOrderDetailPath(path) && params.get('id')) {
+      const orderId = params.get('id')!;
+      if (!paymentOrderData || (paymentOrderData.orderId !== orderId && paymentOrderData.backendOrderId !== orderId)) {
+        const found = findOrderById(orderId);
+        if (found) {
+          setPaymentOrderData(found);
+        } else {
+          fetchOrderDetailApi(orderId)
+            .then((apiDetail) => {
+              if (apiDetail) {
+                setPaymentOrderData({
+                  orderId: apiDetail.order_number || apiDetail.id || orderId,
+                  backendOrderId: apiDetail.id,
+                  status: apiDetail.status,
+                  items: (apiDetail.items || []).map((it: any) => ({
+                    id: it.id,
+                    productId: it.product_id || it.productId || it.id,
+                    name: it.product_name || 'Paket Surplus',
+                    storeName: apiDetail.store_name || 'Toko Mitra',
+                    categoryTags: ['Surplus Makanan'],
+                    originalPrice: it.normal_price || it.price || 40000,
+                    rescuePrice: it.rescue_price || it.price || 20000,
+                    discountPercent: 50,
+                    quantity: it.quantity || 1,
+                  })),
+                  primaryStore: {
+                    storeId: apiDetail.store_id || '',
+                    storeName: apiDetail.store_name || 'Toko Mitra',
+                    storeAddress: apiDetail.store_address || '',
+                  },
+                  pickupDate: apiDetail.pickup_date || '',
+                  pickupTimeSlot: apiDetail.pickup_window || '15.00 - 17.00 WIB',
+                  customerInfo: {
+                    name: apiDetail.customer_name || 'Pelanggan',
+                    phone: apiDetail.customer_phone || '',
+                    email: '',
+                  },
+                  totalBoxes: apiDetail.total_items || 1,
+                  subtotal: apiDetail.total_amount || 20000,
+                  discountTotal: 0,
+                  serviceFee: 2000,
+                  grandTotal: (apiDetail.total_amount || 20000) + 2000,
+                });
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    }
+
+    // Deep linking untuk halaman toko: #toko?name=... atau #toko?id=...
+    if (path.startsWith('toko') || path.startsWith('store') || path.startsWith('detail-toko')) {
+      if (params.get('name')) {
+        setSelectedStoreName(safeDecode(params.get('name')!));
+      }
+      if (params.get('id')) {
+        setSelectedStoreId(params.get('id')!);
+      }
+    }
+  }, []);
+
+  // Tangani callback otorisasi Google OAuth
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
-    const oauthError = urlParams.get('error');
-
-    if (oauthError) {
-      sessionStorage.removeItem('oauth_state');
-      showToast(
-        urlParams.get('error_description') || 'Google membatalkan proses masuk. Coba lagi.',
-        'error'
-      );
-      return;
-    }
 
     if (code && state) {
-      const expectedState = sessionStorage.getItem('oauth_state');
-      sessionStorage.removeItem('oauth_state');
-
-      if (!expectedState || state !== expectedState) {
+      const storedState = sessionStorage.getItem('google_auth_state');
+      if (storedState && storedState !== state) {
         showToast('Verifikasi Google tidak cocok. Silakan mulai proses masuk lagi.', 'error');
         return;
       }
@@ -304,10 +350,10 @@ export function App() {
       handleGoogleCallback(code, state)
         .then((payload) => {
           showToast(`Berhasil masuk dengan akun Google (${payload.user.name})!`, 'success');
-          const user = getCurrentUser();
-          const role = (user?.role || '').toLowerCase();
+          const authCurrent = getCurrentUser();
+          const role = (authCurrent?.role || '').toLowerCase();
           const isSeller =
-            user?.role_id === 3 ||
+            authCurrent?.role_id === 3 ||
             role.includes('seller') ||
             role.includes('merchant') ||
             role.includes('mitra') ||
@@ -326,24 +372,27 @@ export function App() {
 
   // Sync store name from backend for seller portal
   useEffect(() => {
-    const user = getCurrentUser();
-    const isCustomer = user && (user.role_id === 1 || user.role_id === 2 || user.role?.toLowerCase() === 'user' || user.role?.toLowerCase() === 'customer');
-    if (user && !isCustomer && (user.role_id === 3 || user.role === 'Seller' || localStorage.getItem('rescuebyte_user_role') === 'seller')) {
+    const currentUser = getCurrentUser();
+    const isCustomer = currentUser && (currentUser.role_id === 1 || currentUser.role_id === 2 || currentUser.role?.toLowerCase() === 'user' || currentUser.role?.toLowerCase() === 'customer');
+    if (currentUser && !isCustomer && (currentUser.role_id === 3 || currentUser.role === 'Seller' || localStorage.getItem('rescuebyte_user_role') === 'seller')) {
       getStoreProfile()
         .then((store) => {
           if (store?.name) {
             setStoreName(store.name);
             localStorage.setItem('rescuebyte_store_name', store.name);
           }
+          if (store?.id) {
+            localStorage.setItem('rescuebyte_store_id', store.id);
+          }
         })
         .catch(() => {});
     }
   }, []);
 
-  // Sync hash on navigation
+  // Sync hash on navigation with deep linking query params
   const handleNavigate = useCallback(
     (viewId: string, label: string = '', tab?: OrderStatusTab) => {
-      // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, orders, or order detail
+      // Auth guard: Wajib login untuk mengakses marketplace, checkout, dan pesanan
       if (
         viewId === 'view-customer-marketplace' ||
         viewId === 'view-customer-product-detail' ||
@@ -352,8 +401,8 @@ export function App() {
         viewId === 'view-customer-orders' ||
         viewId === 'view-customer-order-detail'
       ) {
-        const user = getCurrentUser();
-        if (!user) {
+        const currentUser = getCurrentUser();
+        if (!currentUser && !user) {
           const message =
             viewId === 'view-customer-marketplace'
               ? 'Silakan masuk terlebih dahulu untuk mengakses Marketplace.'
@@ -377,7 +426,8 @@ export function App() {
       } else if (viewId === 'view-customer-marketplace') {
         window.history.replaceState(null, '', '#marketplace');
       } else if (viewId === 'view-customer-product-detail') {
-        window.history.replaceState(null, '', '#detail-produk');
+        const pId = selectedProduct?.id;
+        window.history.replaceState(null, '', pId ? `#detail-produk?id=${pId}` : '#detail-produk');
       } else if (viewId === 'view-customer-cart') {
         window.history.replaceState(null, '', '#keranjang');
       } else if (viewId === 'view-customer-checkout') {
@@ -385,9 +435,13 @@ export function App() {
       } else if (viewId === 'view-customer-orders') {
         window.history.replaceState(null, '', '#pesanan-saya');
       } else if (viewId === 'view-customer-order-detail') {
-        window.history.replaceState(null, '', '#detail-pesanan');
+        const oId = paymentOrderData?.orderId || paymentOrderData?.backendOrderId;
+        window.history.replaceState(null, '', oId ? `#detail-pesanan?id=${oId}` : '#detail-pesanan');
       } else if (viewId === 'view-customer-store') {
-        window.history.replaceState(null, '', '#toko');
+        const hash = window.location.hash || '';
+        if (!hash.startsWith('#toko?') && !hash.includes('section=') && !hash.includes('ulasan-pelanggan')) {
+          window.history.replaceState(null, '', selectedStoreName ? `#toko?name=${encodeURIComponent(selectedStoreName)}` : '#toko');
+        }
       } else if (viewId === 'view-customer-profile') {
         window.history.replaceState(null, '', '#akun');
       } else if (viewId === 'view-customer-contact') {
@@ -408,197 +462,61 @@ export function App() {
         window.history.replaceState(null, '', '#buat-dagangan-seller');
       } else if (viewId === 'view-daganganku') {
         window.history.replaceState(null, '', '#daganganku-seller');
+      } else if (viewId === 'view-ulasan') {
+        window.history.replaceState(null, '', '#ulasan-seller');
       }
 
       setIsMobileOpen(false);
     },
-    [showToast]
+    [showToast, selectedProduct, paymentOrderData, selectedStoreName, user]
   );
 
-  // Sync with browser back/forward hash changes
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.toLowerCase();
-      if (hash.startsWith('#beranda-seller') || hash === '#beranda') {
-        setActiveView('view-beranda');
-        setActiveLabel('Beranda Toko');
-      } else if (hash.startsWith('#profil-seller') || hash === '#profil') {
-        setActiveView('view-profil');
-        setActiveLabel('Profil Toko');
-      } else if (hash.startsWith('#riwayat-seller') || hash.startsWith('#riwayat')) {
-        setActiveView('view-riwayat');
-        setActiveLabel('Riwayat Pesanan');
-        const match = hash.match(/tab=([a-z-]+)/);
-        if (match && ['perlu-konfirmasi', 'diproses', 'siap-diambil', 'selesai', 'konfirmasi', 'habis', 'kendala', 'batal'].includes(match[1])) {
-          setOrderTab(match[1] as OrderStatusTab);
-        }
-      } else if (hash.startsWith('#buat-dagangan-seller') || hash.startsWith('#buat-dagangan')) {
-        setActiveView('view-buat-dagangan');
-        setActiveLabel('Buat Dagangan');
-      } else if (hash.startsWith('#daganganku-seller') || hash.startsWith('#daganganku')) {
-        setActiveView('view-daganganku');
-        setActiveLabel('Daganganku');
-      } else if (isCustomerOrderDetailHash(hash)) {
-        if (!getCurrentUser()) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        if (!paymentOrderData) {
-          setActiveView('view-customer-home');
-          setActiveLabel('Beranda Pelanggan');
-          window.history.replaceState(null, '', '#beranda-customer');
-          return;
-        }
-        setActiveView('view-customer-order-detail');
-        setActiveLabel('Detail Pesanan');
-      } else if (hash.startsWith('#detail-produk') || hash.startsWith('#detail') || hash.startsWith('#mystery-box-detail')) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-product-detail');
-        setActiveLabel('Detail Produk');
-      } else if (hash.startsWith('#keranjang') || hash.startsWith('#cart')) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-cart');
-        setActiveLabel('Keranjang Saya');
-      } else if (hash.startsWith('#checkout')) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk melakukan checkout.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-checkout');
-        setActiveLabel('Checkout');
-      } else if (
-        hash.startsWith('#pesanan-saya') ||
-        hash.startsWith('#pesanan') ||
-        hash.startsWith('#riwayat-pesanan')
-      ) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses pesanan Anda.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-orders');
-        setActiveLabel('Riwayat Pesanan');
-      } else if (
-        hash.startsWith('#pembayaran') ||
-        hash.startsWith('#payment') ||
-        hash.startsWith('#detail-pesanan') ||
-        hash.startsWith('#order-detail')
-      ) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-order-detail');
-        setActiveLabel('Detail Pesanan');
-      } else if (
-        hash.startsWith('#toko') ||
-        hash.startsWith('#store') ||
-        hash.startsWith('#detail-toko')
-      ) {
-        setActiveView('view-customer-store');
-        setActiveLabel('Detail Toko');
-      } else if (hash.startsWith('#kontak') || hash.startsWith('#contact') || hash.startsWith('#saran')) {
-        setActiveView('view-customer-contact');
-        setActiveLabel('Kontak');
-      } else if (hash.startsWith('#marketplace')) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses Marketplace.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-marketplace');
-        setActiveLabel('Marketplace');
-      } else if (hash.startsWith('#akun') || hash.startsWith('#profil-user') || hash.startsWith('#profil-customer') || hash.startsWith('#profile')) {
-        const user = getCurrentUser();
-        if (!user) {
-          showToast('Silakan masuk terlebih dahulu untuk mengakses Informasi Akun.', 'warning');
-          setActiveView('view-auth-role-selection');
-          setActiveLabel('Pilih Peran Akun');
-          window.history.replaceState(null, '', '#auth');
-          return;
-        }
-        setActiveView('view-customer-profile');
-        setActiveLabel('Informasi Akun');
-      } else if (hash.startsWith('#masuk-mitra') || hash.startsWith('#daftar-mitra') || hash.startsWith('#auth-seller') || hash.startsWith('#seller-auth')) {
-        setActiveView('view-seller-auth');
-        setActiveLabel('Masuk sebagai Mitra Toko');
-      } else if (hash.startsWith('#masuk-customer') || hash.startsWith('#daftar-customer')) {
-        setActiveView('view-customer-auth');
-        setActiveLabel('Masuk sebagai Customer');
-      } else if (hash.startsWith('#masuk') || hash.startsWith('#daftar') || hash.startsWith('#auth') || hash.startsWith('#login') || hash.startsWith('#pilih-role')) {
-        setActiveView('view-auth-role-selection');
-        setActiveLabel('Pilih Peran Akun');
-      } else {
-        // Customer view for #beranda-customer, #customer, or empty hash
-        setActiveView('view-customer-home');
-        setActiveLabel('Beranda Pelanggan');
-      }
-    };
+  useHashNavigation({
+    showToast,
+    isAuthenticated: Boolean(user),
+    paymentOrderData,
+    setPaymentOrderData,
+    selectedProduct,
+    setSelectedProduct,
+    setSelectedStoreName,
+    setSelectedStoreId,
+    setActiveView,
+    setActiveLabel,
+    setOrderTab,
+  });
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [showToast, paymentOrderData]);
-
-  // If user logs out while on protected routes, automatically redirect to login
+  // Redirect otomatis ke halaman login jika user logout saat berada di route terproteksi
   useEffect(() => {
-    const unsubscribe = subscribeToAuth((user) => {
-      const hash = window.location.hash.toLowerCase();
-      if (!user) {
+    const unsubscribe = subscribeToAuth((authLatest) => {
+      const { path } = parseHash();
+      if (!authLatest) {
         if (
-          hash.startsWith('#marketplace') ||
-          hash.startsWith('#detail-produk') ||
-          hash.startsWith('#detail') ||
-          hash.startsWith('#mystery-box-detail') ||
-          hash.startsWith('#keranjang') ||
-          hash.startsWith('#cart') ||
-          hash.startsWith('#checkout') ||
-          hash.startsWith('#pesanan-saya') ||
-          hash.startsWith('#pesanan') ||
-          hash.startsWith('#riwayat-pesanan') ||
-          hash.startsWith('#pembayaran') ||
-          hash.startsWith('#payment') ||
-          hash.startsWith('#detail-pesanan') ||
-          hash.startsWith('#order-detail') ||
-          hash.startsWith('#akun') ||
-          hash.startsWith('#profile') ||
-          hash.startsWith('#beranda-seller') ||
-          hash.startsWith('#profil-seller') ||
-          hash.startsWith('#riwayat-seller') ||
-          hash.startsWith('#buat-dagangan-seller') ||
-          hash.startsWith('#daganganku-seller')
+          path.startsWith('marketplace') ||
+          path.startsWith('detail-produk') ||
+          path.startsWith('detail') ||
+          path.startsWith('mystery-box-detail') ||
+          path.startsWith('keranjang') ||
+          path.startsWith('cart') ||
+          path.startsWith('checkout') ||
+          path.startsWith('pesanan-saya') ||
+          path.startsWith('pesanan') ||
+          path.startsWith('riwayat-pesanan') ||
+          path.startsWith('pembayaran') ||
+          path.startsWith('payment') ||
+          path.startsWith('detail-pesanan') ||
+          path.startsWith('order-detail') ||
+          path.startsWith('akun') ||
+          path.startsWith('profile') ||
+          path.startsWith('beranda-seller') ||
+          path.startsWith('profil-seller') ||
+          path.startsWith('riwayat-seller') ||
+          path.startsWith('buat-dagangan-seller') ||
+          path.startsWith('daganganku-seller') ||
+          path.startsWith('ulasan-seller') ||
+          path === 'ulasan'
         ) {
-          handleNavigate('view-customer-home', 'Beranda Pelanggan');
+          handleNavigate('view-auth-role-selection', 'Pilih Peran');
+          window.history.replaceState(null, '', '#auth');
         }
       }
     });
@@ -606,317 +524,57 @@ export function App() {
   }, [handleNavigate]);
 
   const handleNavigateStore = useCallback(
-    (targetStoreName?: string, targetStoreId?: string) => {
+    (targetStoreName?: string, targetStoreId?: string, section?: string) => {
       const cleanName = targetStoreName && targetStoreName.trim() && targetStoreName.trim() !== 'TerasRasa Bakery' ? targetStoreName.trim() : 'Toko Rejak';
       setSelectedStoreName(cleanName);
       try {
         localStorage.setItem('rescuebyte_selected_store', cleanName);
       } catch { }
       setSelectedStoreId(targetStoreId);
-      handleNavigate('view-customer-store', 'Detail Toko');
+
+      const query = new URLSearchParams();
+      if (cleanName) query.set('name', cleanName);
+      if (targetStoreId) query.set('id', targetStoreId);
+      if (section) query.set('section', section);
+      window.location.hash = `#toko?${query.toString()}`;
+
+      if (!section) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      setActiveView('view-customer-store');
+      setActiveLabel('Detail Toko');
+      setIsMobileOpen(false);
     },
-    [handleNavigate]
+    [setActiveView, setActiveLabel, setIsMobileOpen]
   );
 
   return (
     <>
-      {/* 1. Customer Views */}
-      {activeView === 'view-customer-home' ? (
-        <CustomerHome
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={handleNavigateStore}
-          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onNavigateDetail={(item) => {
-            const user = getCurrentUser();
-            if (!user) {
-              showToast('Silakan masuk terlebih dahulu untuk memesan Mystery Box.', 'warning');
-              handleNavigate('view-auth-role-selection', 'Pilih Peran Akun');
-              return;
-            }
-            setSelectedProduct(item);
-            handleNavigate('view-customer-product-detail', 'Detail Produk');
-          }}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-contact' ? (
-        <CustomerContact
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-marketplace' ? (
-        <CustomerMarketplace
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onNavigateDetail={(item) => {
-            setSelectedProduct(item);
-            handleNavigate('view-customer-product-detail', 'Detail Produk');
-          }}
-          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-          onNavigateStore={handleNavigateStore}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-product-detail' ? (
-        <CustomerProductDetail
-          product={selectedProduct}
-          onNavigateBack={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={handleNavigateStore}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-          onNavigateCheckout={(product, qty) => {
-            setCheckoutPayload({
-              source: 'direct',
-              items: [
-                {
-                  id: product.id,
-                  name: product.category ? product.category.replace(/^[^\w\s]+/, '').trim() : 'Mystery Bakery Box',
-                  storeId: 'store-terasa',
-                  storeName: (product.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak',
-                  storeAvatar: 'TR',
-                  storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-                  rating: product.rating || 4.8,
-                  reviewCount: typeof product.reviewCount === 'number' ? product.reviewCount : Number(product.reviewCount) || 320,
-                  distanceText: product.distanceText || '1.2 km',
-                  categoryTags:
-                    product.tags && product.tags.length > 0
-                      ? product.tags
-                      : ['Roti & Pastry', '✓ Halal'],
-                  originalPrice: product.originalPrice || 40000,
-                  rescuePrice: product.rescuePrice || 20000,
-                  discountPercent: product.discountPercent || 50,
-                  quantity: qty,
-                  imageSrc: product.imageSrc,
-                  pickupTime: product.pickupTime,
-                },
-              ],
-            });
-            handleNavigate('view-customer-checkout', 'Checkout');
-          }}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateAuth={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-cart' ? (
-        <CustomerCart
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateStore={handleNavigateStore}
-          onNavigateDetail={(item) => {
-            setSelectedProduct(item);
-            handleNavigate('view-customer-product-detail', 'Detail Produk');
-          }}
-          onNavigateCheckout={(items) => {
-            setCheckoutPayload({
-              source: 'cart',
-              items: items && items.length > 0 ? items : [],
-            });
-            handleNavigate('view-customer-checkout', 'Checkout');
-          }}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-checkout' ? (
-        <CustomerCheckout
-          payload={checkoutPayload}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateCart={() => handleNavigate('view-customer-cart', 'Keranjang Saya')}
-          onNavigateDetail={() => handleNavigate('view-customer-product-detail', 'Detail Produk')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateOrderDetail={(orderData) => {
-            setPaymentOrderData(orderData);
-            handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-          }}
-          onNavigatePayment={(orderData) => {
-            setPaymentOrderData(orderData);
-            handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-          }}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-orders' ? (
-        <CustomerOrderHistory
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateStore={handleNavigateStore}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrderDetail={(order) => {
-            setPaymentOrderData(order);
-            handleNavigate('view-customer-order-detail', 'Detail Pesanan');
-          }}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-order-detail' ? (
-        <CustomerOrderDetail
-          orderData={paymentOrderData}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateStore={handleNavigateStore}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-store' ? (
-        <CustomerStoreDetail
-          storeName={selectedStoreName}
-          storeId={selectedStoreId}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateProfile={() => handleNavigate('view-customer-profile', 'Informasi Akun')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onNavigateProductDetail={(item) => {
-            setSelectedProduct(item);
-            handleNavigate('view-customer-product-detail', 'Detail Produk');
-          }}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-auth-role-selection' ? (
-        <AuthRoleSelection
-          onSelectCustomer={() => handleNavigate('view-customer-auth', 'Masuk sebagai Customer')}
-          onSelectSeller={() => handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko')}
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-        />
-      ) : activeView === 'view-customer-auth' ? (
-        <CustomerAuth
-          roleType="customer"
-          initialMode={
-            typeof window !== 'undefined' &&
-              (window.location.hash.toLowerCase().includes('daftar') ||
-                window.location.hash.toLowerCase().includes('register'))
-              ? 'register'
-              : 'login'
-          }
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onSwitchRole={(nextRole) => {
-            if (nextRole === 'seller') {
-              handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
-            } else {
-              handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
-            }
-          }}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-seller-auth' ? (
-        <CustomerAuth
-          roleType="seller"
-          initialMode={
-            typeof window !== 'undefined' &&
-              (window.location.hash.toLowerCase().includes('daftar') ||
-                window.location.hash.toLowerCase().includes('register'))
-              ? 'register'
-              : 'login'
-          }
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateRoleSelection={() => handleNavigate('view-auth-role-selection', 'Pilih Peran Akun')}
-          onSwitchRole={(nextRole) => {
-            if (nextRole === 'seller') {
-              handleNavigate('view-seller-auth', 'Masuk sebagai Mitra Toko');
-            } else {
-              handleNavigate('view-customer-auth', 'Masuk sebagai Customer');
-            }
-          }}
-          onShowToast={showToast}
-        />
-      ) : activeView === 'view-customer-profile' ? (
-        <CustomerProfile
-          onNavigateHome={() => handleNavigate('view-customer-home', 'Beranda Pelanggan')}
-          onNavigateMarketplace={() => handleNavigate('view-customer-marketplace', 'Marketplace')}
-          onNavigateSeller={() => handleNavigate('view-beranda', 'Beranda Toko')}
-          onNavigateOrders={() => handleNavigate('view-customer-orders', 'Riwayat Pesanan')}
-          onShowToast={showToast}
-        />
-      ) : (
-        /* 2. Merchant / Seller View: Portal Layout */
-        <>
-          <Header
-            storeName={storeName}
-            onNavigate={(view: string) => handleNavigate(view)}
-            onToggleMobileMenu={() => setIsMobileOpen((prev) => !prev)}
-            onShowToast={showToast}
-          />
+      <AppRoutes
+        activeView={activeView}
+        activeLabel={activeLabel}
+        orderTab={orderTab}
+        selectedProduct={selectedProduct}
+        setSelectedProduct={setSelectedProduct}
+        checkoutPayload={checkoutPayload}
+        setCheckoutPayload={setCheckoutPayload}
+        paymentOrderData={paymentOrderData}
+        setPaymentOrderData={setPaymentOrderData}
+        selectedStoreName={selectedStoreName}
+        selectedStoreId={selectedStoreId}
+        storeName={storeName}
+        setStoreName={setStoreName}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+        isAuthenticated={Boolean(user)}
+        showToast={showToast}
+        handleNavigate={handleNavigate}
+        handleNavigateStore={handleNavigateStore}
+        triggerLoading={triggerLoading}
+      />
 
-          <div className="flex min-h-[calc(100vh-80px)] bg-surface-app relative">
-            <Sidebar
-              activeView={activeView}
-              storeName={storeName}
-              isMobileOpen={isMobileOpen}
-              onNavigate={(view: string, label: string) => handleNavigate(view, label)}
-              onCloseMobile={() => setIsMobileOpen(false)}
-            />
-
-            <main className="flex-1 p-[32px_36px] max-md:p-[24px_20px] bg-surface-app overflow-y-auto min-w-0" id="main-content">
-              {activeView === 'view-beranda' && (
-                <Dashboard
-                  storeName={storeName}
-                  onShowToast={showToast}
-                  onNavigateToOrders={(tabId) => handleNavigate('view-riwayat', 'Riwayat Pesanan', tabId)}
-                />
-              )}
-              {activeView === 'view-profil' && (
-                <StoreProfile
-                  storeName={storeName}
-                  onStoreNameChange={setStoreName}
-                  onShowToast={showToast}
-                  onTriggerLoading={triggerLoading}
-                />
-              )}
-              {activeView === 'view-riwayat' && (
-                <OrderHistory
-                  key={orderTab}
-                  storeName={storeName}
-                  initialTab={orderTab}
-                  onShowToast={showToast}
-                />
-              )}
-              {activeView === 'view-buat-dagangan' && (
-                <BuatDagangan
-                  onShowToast={showToast}
-                  onNavigateToProducts={() => handleNavigate('view-daganganku', 'Daganganku')}
-                  onTriggerLoading={triggerLoading}
-                />
-              )}
-              {activeView === 'view-daganganku' && (
-                <Daganganku
-                  onShowToast={showToast}
-                  onNavigateToCreate={() => handleNavigate('view-buat-dagangan', 'Buat Dagangan')}
-                  onTriggerLoading={triggerLoading}
-                />
-              )}
-              {activeView !== 'view-beranda' &&
-                activeView !== 'view-profil' &&
-                activeView !== 'view-riwayat' &&
-                activeView !== 'view-buat-dagangan' &&
-                activeView !== 'view-daganganku' && (
-                  <PlaceholderPage
-                    title={activeLabel}
-                    onBackToBeranda={() => handleNavigate('view-beranda', 'Beranda Toko')}
-                  />
-                )}
-            </main>
-          </div>
-        </>
-      )}
-
-      {/* Global Toast & Loading Overlay */}
-      <Toast message={toastMessage} isVisible={isToastVisible} type={toastType} />
+      {/* Loading Overlay */}
       <BrandLoadingOverlay
         isVisible={isLoading}
         title={loadingTitle}

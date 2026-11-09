@@ -68,10 +68,7 @@ const STORAGE_KEY = 'rescuebyte_merchant_products';
 
 const INITIAL_PRODUCTS: ProductItem[] = [];
 
-/**
- * Get all merchant products from localStorage.
- * Automatically filters out legacy mock placeholder products and ensures fallback to real initial products.
- */
+/** Ambil seluruh produk merchant dari localStorage dan saring dummy legacy. */
 export function getStoredProducts(): ProductItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -98,9 +95,6 @@ export function getStoredProducts(): ProductItem[] {
   }
 }
 
-/**
- * Save all products to localStorage.
- */
 export function saveAllProducts(products: ProductItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
@@ -109,9 +103,6 @@ export function saveAllProducts(products: ProductItem[]): void {
   }
 }
 
-/**
- * Add a new product to the list.
- */
 export function addProduct(newProduct: Omit<ProductItem, 'id' | 'createdAt'>): ProductItem {
   const products = getStoredProducts();
   const now = new Date();
@@ -136,9 +127,6 @@ export function addProduct(newProduct: Omit<ProductItem, 'id' | 'createdAt'>): P
   return created;
 }
 
-/**
- * Update an existing product.
- */
 export function updateProduct(id: string, updates: Partial<ProductItem>): ProductItem[] {
   const products = getStoredProducts();
   const updated = products.map((item) => (item.id === id ? { ...item, ...updates } : item));
@@ -146,9 +134,6 @@ export function updateProduct(id: string, updates: Partial<ProductItem>): Produc
   return updated;
 }
 
-/**
- * Delete a product.
- */
 export function deleteProduct(id: string): ProductItem[] {
   const products = getStoredProducts();
   const updated = products.filter((item) => item.id !== id);
@@ -178,20 +163,9 @@ export function deleteProduct(id: string): ProductItem[] {
   return updated;
 }
 
-/**
- * Format number into Indonesian Rupiah format.
- */
-export function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+export { formatRupiah } from '../utils/currency';
 
-/**
- * Maps a backend ProductResponse or PublicProductItem to frontend ProductItem model.
- */
+/** Mapper DTO ProductResponse backend ke model frontend ProductItem. */
 export function mapBackendProductToItem(p: any): ProductItem {
   const stock =
     typeof p.stock === 'number'
@@ -256,10 +230,7 @@ export function mapBackendProductToItem(p: any): ProductItem {
   };
 }
 
-/**
- * Create a new product in the backend via POST /api/v1/products.
- * Automatically synchronizes with local storage cache upon creation.
- */
+/** Buat produk baru di backend via POST /api/v1/products dan sinkronkan ke cache lokal. */
 export async function createProduct(payload: CreateProductPayload): Promise<ProductResponse> {
   try {
     const response = await api.post('/api/v1/products', payload);
@@ -269,7 +240,7 @@ export async function createProduct(payload: CreateProductPayload): Promise<Prod
       throw new Error('Gagal mendapatkan rincian produk dari server.');
     }
 
-    // Sync into local cache
+    // Sinkronkan ke cache lokal
     const item = mapBackendProductToItem(created);
     const existing = getStoredProducts();
     saveAllProducts([item, ...existing.filter((p) => p.id !== item.id)]);
@@ -281,10 +252,7 @@ export async function createProduct(payload: CreateProductPayload): Promise<Prod
   }
 }
 
-/**
- * Fetch the merchant's product list from GET /api/v1/products/me/list.
- * A successful empty response is authoritative; cached data is used only when the request fails.
- */
+/** Ambil daftar produk merchant dari GET /api/v1/products/me/list. */
 export async function getMerchantProducts(params?: GetMerchantProductsParams): Promise<ProductItem[]> {
   try {
     const response = await api.get('/api/v1/products/me/list', { params });
@@ -492,10 +460,7 @@ export interface GetPublicProductsParams {
   limit?: number;
 }
 
-/**
- * Fetch marketplace public products via GET /api/v1/products.
- * Supports location coordinates (latitude, longitude) for dynamic distance calculation.
- */
+/** Ambil produk publik marketplace via GET /api/v1/products dengan dukungan kalkulasi jarak koordinat. */
 export async function getPublicProducts(params?: GetPublicProductsParams): Promise<PublicProductItem[]> {
   try {
     const response = await api.get('/api/v1/products', { params });

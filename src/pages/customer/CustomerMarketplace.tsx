@@ -1,0 +1,803 @@
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import {
+  Search,
+  MapPin,
+  ChevronDown,
+  LocateFixed,
+  Check,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Package,
+  X,
+  ShoppingCart,
+} from 'lucide-react';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
+import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { CustomerOrderModal } from '../../components/customer/CustomerOrderModal';
+import { MysteryBoxCard } from '../../components/customer/MysteryBoxCard';
+import { CustomerMysteryBox } from '../../types';
+import { getCartCount, subscribeToCart } from '../../services/cartService';
+import { formatRupiah, formatPriceInput, parsePriceInput } from '../../utils/currency';
+import { getPublicProducts } from '../../services/productService';
+import { useGeolocation } from '../../hooks';
+import { batchFetchProductRatings } from '../../services/productRatingService';
+import {
+  CITY_COORDINATES, DEFAULT_COORDS, MarketplaceBoxItem, MARKETPLACE_CACHE_KEY,
+  getInitialMarketplaceProducts, mapPublicProductToItem, CITIES, DISTANCE_OPTIONS,
+  SORT_OPTIONS, SortField, SortOrder, parsePickupMinutes,
+} from '../../features/customer/marketplace/model';
+
+export type { MarketplaceBoxItem, SortField, SortOrder } from '../../features/customer/marketplace/model';
+
+export interface CustomerMarketplaceProps {
+  onNavigateHome?: () => void;
+  onNavigateSeller?: () => void;
+  onNavigateAuth?: () => void;
+  onNavigateDetail?: (item: CustomerMysteryBox) => void;
+  onNavigateStore?: (storeName: string, storeId?: string) => void;
+  onNavigateCart?: () => void;
+  onNavigateProfile?: () => void;
+  onNavigateOrders?: () => void;
+  onShowToast?: (message: string) => void;
+}
+
+export function CustomerMarketplace({
+  onNavigateHome,
+  onNavigateSeller,
+  onNavigateAuth,
+  onNavigateDetail,
+  onNavigateStore,
+  onNavigateCart,
+  onNavigateProfile,
+  onNavigateOrders,
+  onShowToast,
+}: CustomerMarketplaceProps) {
+  // Cart Badge Synchronization
+  const [cartCount, setCartCount] = useState<number>(getCartCount);
+  useEffect(() => {
+    const unsubscribe = subscribeToCart((count) => {
+      setCartCount(count);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Consume centralized geolocation
+  const {
+    coordinates: userCoords,
+    isLoading: isLoadingLoc,
+    requestLocation,
+    setManualLocation,
+  } = useGeolocation();
+
+  // Dynamic Marketplace Products with Stale-While-Revalidate (instant 0ms render from cache)
+  const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(getInitialMarketplaceProducts);
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    const initial = getInitialMarketplaceProducts();
+    return initial.length === 0;
+  });
+
+  const hasProductsRef = useRef(apiProducts.length > 0);
+  useEffect(() => {
+    hasProductsRef.current = apiProducts.length > 0;
+  }, [apiProducts.length]);
+
+  // Search & Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState('Lokasi Saat Ini');
+  const [appliedMinPrice, setAppliedMinPrice] = useState<number | null>(null);
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | null>(null);
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [distanceFilter, setDistanceFilter] = useState('semua');
+  const [sortField, setSortField] = useState<SortField>('lokasi');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [openDropdown, setOpenDropdown] = useState<'harga' | 'jarak' | 'urutkan' | 'kota' | null>(null);
+
+  // Fetch products from backend GET /api/v1/products with coordinates and batch ratings
+  const fetchMarketplaceProducts = useCallback(
+    async (coords: { lat: number; lng: number }, query?: string) => {
+      if (!hasProductsRef.current) {
+        setIsLoadingProducts(true);
+      }
+      try {
+        const publicItems = await getPublicProducts({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          search: query?.trim() ? query.trim() : undefined,
+        });
+
+        // Batch fetch real ratings for products to prevent N+1 queries
+        const ratingMap = await batchFetchProductRatings(publicItems.map((p) => p.id));
+
+        const enriched = publicItems.map((p) => {
+          const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
+          return {
+            ...p,
+            rating: summary.rating,
+            reviewCount: summary.reviewCount,
+          };
+        });
+
+        const mappedApi = enriched.map((p) => mapPublicProductToItem(p, 'Malang'));
+
+        setApiProducts(mappedApi);
+        try {
+          localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(mappedApi));
+        } catch {}
+      } catch (err) {
+        console.warn('Gagal mengambil produk marketplace:', err);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    },
+    []
+  );
+
+  // Initial instant products fetch on mount & coordinates change
+  useEffect(() => {
+    fetchMarketplaceProducts(userCoords);
+  }, [fetchMarketplaceProducts, userCoords]);
+
+  // Synchronize immediately whenever product stock or status updates
+  useEffect(() => {
+    const handleProductUpdated = () => {
+      fetchMarketplaceProducts(userCoords);
+    };
+    window.addEventListener('rescuebyte_product_updated', handleProductUpdated);
+    return () => {
+      window.removeEventListener('rescuebyte_product_updated', handleProductUpdated);
+    };
+  }, [fetchMarketplaceProducts, userCoords]);
+
+  // Request browser live location
+  const handleRequestLiveLocation = useCallback(async () => {
+    setOpenDropdown(null);
+    const coords = await requestLocation(true);
+    if (coords) {
+      setSelectedCity('Lokasi Saat Ini');
+      fetchMarketplaceProducts(coords);
+    }
+  }, [requestLocation, fetchMarketplaceProducts]);
+
+  // Modal State
+  const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+
+  // Close dropdown on click outside or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.filter-dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Marketplace products (sourced from backend API & merchant store)
+  const allProducts = useMemo(() => {
+    return apiProducts;
+  }, [apiProducts]);
+
+  // Filtered & Sorted products list
+  const filteredProducts = useMemo(() => {
+    return allProducts
+      .filter((item) => {
+        // Search Query filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const matchName =
+            item.storeName.toLowerCase().includes(query) ||
+            (item.productName && item.productName.toLowerCase().includes(query));
+          const matchDesc = item.description.toLowerCase().includes(query);
+          const matchCat = item.category.toLowerCase().includes(query);
+          const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
+          if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
+        }
+
+        // City filter (based on live loc or selected city)
+        if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini') {
+          if (item.city !== selectedCity) return false;
+        }
+
+        // Price filter (Min - Max Range)
+        if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
+        if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
+
+        // Distance filter
+        if (distanceFilter !== 'semua') {
+          const dist = parseFloat(item.distanceText) || 0;
+          if (distanceFilter === '<1km' && dist >= 1.0) return false;
+          if (distanceFilter === '<5km' && dist >= 5.0) return false;
+          if (distanceFilter === '<10km' && dist >= 10.0) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortField === 'jam_ambil') {
+          const timeA = parsePickupMinutes(a.pickupTime);
+          const timeB = parsePickupMinutes(b.pickupTime);
+          return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+        if (sortField === 'lokasi') {
+          const distA = typeof a.distanceKm === 'number' ? a.distanceKm : (parseFloat(a.distanceText) || 9999);
+          const distB = typeof b.distanceKm === 'number' ? b.distanceKm : (parseFloat(b.distanceText) || 9999);
+          return sortOrder === 'asc' ? distA - distB : distB - distA;
+        }
+        if (sortField === 'ulasan') {
+          const ratingA = Number(a.rating) || 0;
+          const ratingB = Number(b.rating) || 0;
+          return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
+        }
+        return 0;
+      });
+  }, [
+    allProducts,
+    searchQuery,
+    selectedCity,
+    appliedMinPrice,
+    appliedMaxPrice,
+    distanceFilter,
+    sortField,
+    sortOrder,
+  ]);
+
+  const handleOpenOrder = (box: CustomerMysteryBox) => {
+    if (onNavigateDetail) {
+      onNavigateDetail(box);
+    } else {
+      setSelectedBox(box);
+      setIsOrderModalOpen(true);
+    }
+  };
+
+  const handleConfirmOrder = (_box: CustomerMysteryBox, _quantity: number, _notes?: string) => {
+    setIsOrderModalOpen(false);
+    if (onShowToast) {
+      onShowToast('Pesanan berhasil dibuat!');
+    }
+  };
+
+  const handleHeaderTab = (tab: 'beranda' | 'marketplace' | 'kontak') => {
+    if (tab === 'beranda') {
+      if (onNavigateHome) {
+        onNavigateHome();
+      } else {
+        window.location.hash = '#beranda-customer';
+      }
+    } else if (tab === 'marketplace') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'kontak') {
+      window.location.hash = '#kontak';
+    }
+  };
+
+  return (
+    <div
+      className="bg-[#fcf9f8] min-h-screen text-[#1b1c1c] font-sans antialiased flex flex-col justify-between"
+      id="marketplace-page-root"
+    >
+      <div>
+        {/* 1. Floating Pill Header (Active on Marketplace) */}
+        <CustomerHeader
+          activeTab="marketplace"
+          onSelectTab={handleHeaderTab}
+          onNavigateSeller={onNavigateSeller}
+          onNavigateProfile={onNavigateProfile}
+          onNavigateOrders={onNavigateOrders}
+          onNavigateAuth={onNavigateAuth}
+          onShowToast={onShowToast}
+          onOpenAuthModal={() => {
+            if (onNavigateAuth) {
+              onNavigateAuth();
+            }
+          }}
+        />
+
+        {/* 2. Main Marketplace Content Area */}
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
+          {/* Header Bar: Title + Search & City Selector */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-5">
+            {/* Left Title & Subtitle */}
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#1b1c1c] tracking-tight flex items-center">
+                  <span>Jelajahi </span>
+                  <span className="text-brand-green ml-1.5">Mystery Box</span>
+                </h1>
+                {/* 4 Diagonal Footprints (Jejak Kaki Hitam Sesuai Desain Referensi) */}
+                <svg
+                  viewBox="0 0 49 89"
+                  width="26"
+                  height="46"
+                  fill="#1b1c1c"
+                  className="shrink-0 select-none ml-2 inline-block align-middle"
+                  aria-label="Jejak kaki"
+                  role="img"
+                >
+                  <path d="M 3,1 L 5,1 L 7,1 L 8,2 L 10,3 L 11,4 L 12,5 L 13,6 L 14,7 L 15,8 L 16,10 L 15,11 L 14,12 L 13,13 L 12,14 L 11,13 L 10,12 L 8,11 L 6,11 L 5,10 L 4,9 L 3,8 L 2,7 L 1,5 L 1,3 L 2,2 L 3,1 Z" />
+                  <path d="M 18,13 L 19,14 L 20,15 L 21,17 L 20,19 L 19,20 L 17,20 L 16,19 L 15,18 L 14,17 L 15,15 L 17,14 L 18,13 Z" />
+                  <path d="M 5,30 L 7,31 L 9,32 L 10,33 L 11,35 L 12,36 L 12,38 L 13,40 L 14,42 L 13,43 L 12,44 L 11,45 L 10,46 L 9,45 L 8,44 L 6,43 L 5,41 L 4,40 L 3,38 L 2,36 L 2,34 L 2,32 L 3,31 L 5,30 Z" />
+                  <path d="M 33,35 L 35,35 L 37,35 L 38,36 L 39,37 L 40,38 L 41,39 L 42,40 L 43,42 L 43,44 L 44,45 L 44,47 L 42,48 L 40,49 L 39,48 L 38,47 L 37,46 L 35,45 L 34,44 L 33,43 L 32,41 L 32,39 L 32,37 L 33,35 Z" />
+                  <path d="M 16,45 L 17,46 L 18,47 L 19,48 L 19,50 L 18,51 L 17,52 L 15,51 L 13,50 L 13,48 L 14,47 L 15,46 L 16,45 Z" />
+                  <path d="M 45,50 L 46,51 L 47,52 L 47,54 L 46,56 L 45,57 L 44,56 L 42,55 L 41,54 L 41,52 L 43,51 L 45,50 Z" />
+                  <path d="M 33,66 L 35,66 L 37,67 L 38,68 L 39,69 L 40,71 L 41,73 L 41,75 L 42,77 L 42,79 L 40,80 L 39,81 L 37,80 L 36,79 L 35,78 L 34,77 L 33,76 L 32,74 L 31,72 L 31,70 L 31,68 L 32,67 L 33,66 Z" />
+                  <path d="M 44,81 L 46,81 L 47,82 L 48,84 L 47,86 L 46,87 L 44,87 L 43,86 L 42,85 L 41,84 L 42,83 L 43,82 L 44,81 Z" />
+                </svg>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
+                Temukan makanan murah berkualitas disekitarmu
+              </p>
+            </div>
+
+            {/* Right: Search Bar & City Selector */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1 sm:w-72 lg:w-80">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari makanan, toko atau kategori..."
+                  className="w-full bg-white border border-black/25 rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-medium text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-2xs transition-all"
+                  aria-label="Cari makanan, toko atau kategori"
+                />
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                  <Search className="w-4 h-4" />
+                </div>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs cursor-pointer p-1"
+                    title="Hapus pencarian"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* City Dropdown Selector with Live Location */}
+              <div className="relative filter-dropdown-container min-w-38.75 sm:min-w-43.75">
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === 'kota' ? null : 'kota')}
+                  className={`w-full bg-white border rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#1b1c1c] flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all ${
+                    openDropdown === 'kota'
+                      ? 'border-primary ring-1 ring-primary'
+                      : 'border-black/25 hover:border-black/45'
+                  }`}
+                  aria-expanded={openDropdown === 'kota'}
+                  aria-haspopup="listbox"
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-700" />
+                    <span className="truncate">
+                      {isLoadingLoc ? 'Mendeteksi...' : selectedCity}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                      openDropdown === 'kota' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {openDropdown === 'kota' && (
+                  <div className="absolute top-full right-0 mt-1.5 w-full min-w-50 bg-white border border-black/15 rounded-xl shadow-lg z-40 py-1.5 overflow-hidden">
+                    {/* Live Location option */}
+                    <button
+                      type="button"
+                      onClick={handleRequestLiveLocation}
+                      className="w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold text-[#1b1c1c] hover:bg-gray-100 flex items-center justify-between border-b border-gray-100 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <LocateFixed className="w-4 h-4 text-emerald-700 shrink-0" />
+                        <span>{isLoadingLoc ? 'Mendeteksi...' : 'Gunakan Live Loc'}</span>
+                      </div>
+                      {selectedCity === 'Lokasi Saat Ini' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black text-white">
+                          Aktif
+                        </span>
+                      )}
+                    </button>
+
+                    {CITIES.map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCity(city);
+                          setOpenDropdown(null);
+                          const coords = CITY_COORDINATES[city] || DEFAULT_COORDS;
+                          setManualLocation(coords, city);
+                          fetchMarketplaceProducts(coords);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                          selectedCity === city
+                            ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                            : 'text-[#1b1c1c] hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>{city}</span>
+                        {selectedCity === city && <Check className="w-3.5 h-3.5 text-emerald-700" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Dropdowns Row (Harga, Jarak, Urutkan) */}
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-8">
+            {/* 1. Filter Harga */}
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'harga' ? null : 'harga')}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'harga'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
+                    : appliedMinPrice !== null || appliedMaxPrice !== null
+                      ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                      : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'harga'}
+              >
+                <span className="truncate">
+                  {appliedMinPrice !== null && appliedMaxPrice !== null
+                    ? `Rp ${formatRupiah(appliedMinPrice)} - ${formatRupiah(appliedMaxPrice)}`
+                    : appliedMinPrice !== null
+                      ? `≥ Rp ${formatRupiah(appliedMinPrice)}`
+                      : appliedMaxPrice !== null
+                        ? `≤ Rp ${formatRupiah(appliedMaxPrice)}`
+                        : 'Harga'}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'harga' ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openDropdown === 'harga' && (
+                <div className="absolute top-full left-0 w-72 sm:w-80 mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-4 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                    <span className="text-xs font-bold text-[#1b1c1c]">Rentang Harga (Rp)</span>
+                    {(appliedMinPrice !== null || appliedMaxPrice !== null) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedMinPrice(null);
+                          setAppliedMaxPrice(null);
+                          setMinPriceInput('');
+                          setMaxPriceInput('');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-[11px] font-semibold text-red-600 hover:text-red-700 cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 block mb-1">MINIMUM</label>
+                      <input
+                        type="text"
+                        placeholder="0"
+                        value={minPriceInput}
+                        onChange={(e) => setMinPriceInput(formatPriceInput(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 block mb-1">MAKSIMUM</label>
+                      <input
+                        type="text"
+                        placeholder="100.000"
+                        value={maxPriceInput}
+                        onChange={(e) => setMaxPriceInput(formatPriceInput(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-black"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preset quick buttons */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {[
+                      { label: '< Rp 25rb', min: null, max: 25000 },
+                      { label: 'Rp 25rb - 50rb', min: 25000, max: 50000 },
+                      { label: '> Rp 50rb', min: 50000, max: null },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setAppliedMinPrice(preset.min);
+                          setAppliedMaxPrice(preset.max);
+                          setMinPriceInput(preset.min ? formatRupiah(preset.min) : '');
+                          setMaxPriceInput(preset.max ? formatRupiah(preset.max) : '');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#1b1c1c] transition cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedMinPrice(parsePriceInput(minPriceInput));
+                      setAppliedMaxPrice(parsePriceInput(maxPriceInput));
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-[#0b1510] text-[#bbf381] text-xs font-bold transition hover:bg-[#1a2c22] cursor-pointer"
+                  >
+                    Terapkan Filter
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Filter Jarak */}
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'jarak' ? null : 'jarak')}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'jarak'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
+                    : distanceFilter !== 'semua'
+                      ? 'border-brand-green bg-[#f4f8f4] text-[#1b1c1c]'
+                      : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'jarak'}
+              >
+                <span className="truncate">
+                  {distanceFilter === 'semua'
+                    ? 'Jarak'
+                    : DISTANCE_OPTIONS.find((o) => o.value === distanceFilter)?.label}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'jarak' ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openDropdown === 'jarak' && (
+                <div className="absolute top-full left-0 right-0 w-full mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 py-1.5 overflow-hidden min-w-50 sm:min-w-full animate-in fade-in zoom-in-95 duration-150">
+                  {DISTANCE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setDistanceFilter(opt.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${distanceFilter === opt.value
+                          ? 'bg-gray-100 text-[#1b1c1c] font-bold'
+                          : 'text-[#1b1c1c] hover:bg-gray-50 font-medium'
+                        }`}
+                    >
+                      <span>{opt.label}</span>
+                      {distanceFilter === opt.value && <Check className="w-3.5 h-3.5 text-emerald-700" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. Filter Urutkan (dengan fitur panah Asc / Desc) */}
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'urutkan' ? null : 'urutkan')}
+                className={`w-full bg-white border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs cursor-pointer transition-all ${openDropdown === 'urutkan'
+                    ? 'border-primary ring-1 ring-primary text-[#1b1c1c]'
+                    : 'border-black/25 text-[#1b1c1c] hover:border-black/45'
+                  }`}
+                aria-expanded={openDropdown === 'urutkan'}
+              >
+                <div className="flex items-center gap-1 truncate">
+                  <span className="truncate">
+                    {SORT_OPTIONS.find((s) => s.id === sortField)?.label || 'Urutkan'}
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">
+                    {sortOrder === 'asc' ? '↑' : '↓'}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 shrink-0 text-black transition-transform duration-200 ${
+                    openDropdown === 'urutkan' ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openDropdown === 'urutkan' && (
+                <div className="absolute top-full right-0 w-64 sm:w-72 mt-1.5 bg-white border border-black/15 rounded-2xl shadow-xl z-30 p-2 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="text-[11px] font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wide border-b border-gray-100">
+                    Urutkan Berdasarkan
+                  </div>
+                  <div className="py-1">
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = sortField === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`rounded-xl px-3 py-2 flex items-center justify-between transition-colors ${
+                            isSelected ? 'bg-[#f4f8f4]' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              } else {
+                                setSortField(opt.id);
+                                setSortOrder(opt.defaultOrder);
+                              }
+                              setOpenDropdown(null);
+                            }}
+                            className="flex-1 text-left cursor-pointer"
+                          >
+                            <p
+                              className={`text-xs sm:text-sm font-semibold ${
+                                isSelected ? 'text-[#1b1c1c] font-bold' : 'text-[#1b1c1c]'
+                              }`}
+                            >
+                              {opt.label}
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                              {isSelected
+                                ? sortOrder === 'asc'
+                                  ? opt.ascLabel
+                                  : opt.descLabel
+                                : opt.defaultOrder === 'asc'
+                                ? opt.ascLabel
+                                : opt.descLabel}
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSortField(opt.id);
+                              setSortOrder(
+                                isSelected ? (sortOrder === 'asc' ? 'desc' : 'asc') : opt.defaultOrder
+                              );
+                              setOpenDropdown(null);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-gray-200 transition cursor-pointer text-[#1b1c1c]"
+                            title="Balik urutan (Naik / Turun)"
+                          >
+                            {isSelected ? (
+                              sortOrder === 'asc' ? (
+                                <ArrowUp className="w-3.5 h-3.5 text-emerald-700" />
+                              ) : (
+                                <ArrowDown className="w-3.5 h-3.5 text-emerald-700" />
+                              )
+                            ) : (
+                              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Product Cards Grid (3 Columns) */}
+          {isLoadingProducts ? (
+            <div className="p-16 text-center bg-white rounded-3xl border border-slate-200">
+              <Package className="w-10 h-10 text-emerald-700 animate-pulse mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-700">Memuat Mystery Box...</p>
+              <p className="text-xs text-slate-400 mt-1">Mengambil paket surplus segar dari database</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="marketplace-grid">
+              {filteredProducts.map((item) => (
+                <MysteryBoxCard
+                  key={item.id}
+                  item={item}
+                  onOrderClick={handleOpenOrder}
+                  onStoreClick={(storeName) => {
+                    if (onNavigateStore) onNavigateStore(storeName, item.storeId);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="text-center py-20 bg-white rounded-3xl border border-black/10 shadow-xs px-4">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <Search className="w-8 h-8" />
+              </div>
+              <h2 className="text-lg font-bold text-[#1b1c1c] mb-1">
+                Tidak ada Mystery Box yang cocok
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto mb-6">
+                Coba sesuaikan kata kunci pencarian, ubah filter jarak, atau pilih kota lain.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCity('Lokasi Saat Ini');
+                  setAppliedMinPrice(null);
+                  setAppliedMaxPrice(null);
+                  setMinPriceInput('');
+                  setMaxPriceInput('');
+                  setDistanceFilter('semua');
+                  fetchMarketplaceProducts(userCoords);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-brand-green text-white text-xs sm:text-sm font-bold shadow-xs hover:bg-[#325800] transition cursor-pointer"
+              >
+                Reset Semua Filter
+              </button>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Floating Cart Button (matching CustomerProductDetail design) */}
+      <button
+        type="button"
+        onClick={() => {
+          if (onNavigateCart) {
+            onNavigateCart();
+          } else {
+            window.location.hash = '#keranjang';
+          }
+        }}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-white border-2 border-brand-green shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer group"
+        title="Keranjang Pesanan"
+        aria-label="Buka Keranjang Pesanan"
+        id="floating-cart-button"
+      >
+        <ShoppingCart className="w-6 h-6 text-brand-green" strokeWidth={2.2} />
+        <span
+          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs"
+          id="cart-badge-count"
+        >
+          {cartCount}
+        </span>
+      </button>
+
+      {/* 4. Customer Footer */}
+      <CustomerFooter variant="full" onNavigateSeller={onNavigateSeller} />
+
+      {/* Order Modal Component */}
+      {selectedBox && (
+        <CustomerOrderModal
+          isOpen={isOrderModalOpen}
+          item={selectedBox}
+          onClose={() => setIsOrderModalOpen(false)}
+          onConfirmOrder={(item, qty, notes) => handleConfirmOrder(item, qty, notes)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default CustomerMarketplace;

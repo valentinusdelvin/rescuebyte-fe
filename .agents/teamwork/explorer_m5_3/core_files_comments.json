@@ -1,0 +1,1157 @@
+[
+  {
+    "file": "src/api/client.ts",
+    "line": 37,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* Queue item for requests stalled while an access token refresh is in flight.\n*/"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 59,
+    "endLine": 61,
+    "type": "block",
+    "raw": "/**\n* Extracts a normalized, human-friendly error message from any backend API or network error.\n*/"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 91,
+    "endLine": 91,
+    "type": "line",
+    "raw": "// Keep actionable business messages from the API, but never expose transport/server internals."
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 129,
+    "endLine": 131,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Request Interceptor: Injects Authorization Header from localStorage\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 145,
+    "endLine": 147,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Response Interceptor: Unwraps Payload + Transparent 401 Refresh Queue\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 154,
+    "endLine": 154,
+    "type": "line",
+    "raw": "// Unwraps { request_id, payload } envelope while keeping backward-compatibility"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 159,
+    "endLine": 159,
+    "type": "line",
+    "raw": "// Expose self-referencing .payload and .request_id property non-enumerably"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 160,
+    "endLine": 160,
+    "type": "line",
+    "raw": "// This satisfies callers doing `response.data.payload` AND callers doing `response.data`"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 179,
+    "endLine": 179,
+    "type": "line",
+    "raw": "// If sealed/frozen, skip definition"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 191,
+    "endLine": 191,
+    "type": "line",
+    "raw": "// Attach normalized message on error for easy UI consumption"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 206,
+    "endLine": 206,
+    "type": "line",
+    "raw": "// Handle 401 Unauthorized on protected routes with automatic token refresh"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 211,
+    "endLine": 211,
+    "type": "line",
+    "raw": "// No refresh token available, session is completely expired"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 236,
+    "endLine": 236,
+    "type": "line",
+    "raw": "// Perform direct token refresh using an isolated axios call to avoid interceptor recursion"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 257,
+    "endLine": 257,
+    "type": "line",
+    "raw": "// Update localStorage"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 271,
+    "endLine": 271,
+    "type": "line",
+    "raw": "// Ignore parse errors on cached user"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 274,
+    "endLine": 274,
+    "type": "line",
+    "raw": "// Broadcast auth refreshed event"
+  },
+  {
+    "file": "src/api/client.ts",
+    "line": 292,
+    "endLine": 292,
+    "type": "line",
+    "raw": "// Wipe credentials on hard refresh failure"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 1,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/**\n* Comprehensive Backend API TypeScript Definitions matching Swagger 2.0 contract.\n* Source Swagger: https://dolpin-fourthree.bccdev.id/swagger/doc.json\n* Base URL: https://dolpin-fourthree.bccdev.id/\n*/"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 7,
+    "endLine": 9,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Universal Envelope & Error Contracts\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 49,
+    "endLine": 51,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* System Enums\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 95,
+    "endLine": 97,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Auth DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 142,
+    "endLine": 144,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* User DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 159,
+    "endLine": 161,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Cart DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 219,
+    "endLine": 221,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Product DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 311,
+    "endLine": 313,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Store DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 377,
+    "endLine": 379,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Order DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 510,
+    "endLine": 512,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Storage DTOs\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 521,
+    "endLine": 523,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Review DTOs & Store Summary\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/types.ts",
+    "line": 564,
+    "endLine": 566,
+    "type": "block",
+    "raw": "/* ==========================================================================\n* Compatibility Aliases for Swagger Raw Models\n* ========================================================================== */"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 13,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/**\n* Get Google OAuth2 authorization URL\n* GET /api/v1/auth/google\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 22,
+    "endLine": 25,
+    "type": "block",
+    "raw": "/**\n* Exchange Google OAuth2 callback authorization code\n* GET /api/v1/auth/google/callback\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 33,
+    "endLine": 36,
+    "type": "block",
+    "raw": "/**\n* Authenticate user with email and password\n* POST /api/v1/auth/login\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 42,
+    "endLine": 45,
+    "type": "block",
+    "raw": "/**\n* Revoke session and invalidate refresh token\n* POST /api/v1/auth/logout\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 53,
+    "endLine": 56,
+    "type": "block",
+    "raw": "/**\n* Fetch current authenticated user profile\n* GET /api/v1/auth/me\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 62,
+    "endLine": 65,
+    "type": "block",
+    "raw": "/**\n* Renew expired access token using refresh token\n* POST /api/v1/auth/refresh\n*/"
+  },
+  {
+    "file": "src/api/services/authApi.ts",
+    "line": 73,
+    "endLine": 76,
+    "type": "block",
+    "raw": "/**\n* Register a new customer or merchant user account\n* POST /api/v1/auth/register\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 11,
+    "endLine": 14,
+    "type": "block",
+    "raw": "/**\n* Fetch customer cart details and calculate store groups\n* GET /api/v1/cart\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 20,
+    "endLine": 23,
+    "type": "block",
+    "raw": "/**\n* Clear all items across all stores from the cart\n* DELETE /api/v1/cart\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 29,
+    "endLine": 32,
+    "type": "block",
+    "raw": "/**\n* Get total cart item count\n* GET /api/v1/cart/count\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 38,
+    "endLine": 41,
+    "type": "block",
+    "raw": "/**\n* Add a product variant to the cart\n* POST /api/v1/cart/items\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 47,
+    "endLine": 50,
+    "type": "block",
+    "raw": "/**\n* Remove a single item from the cart\n* DELETE /api/v1/cart/items/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 56,
+    "endLine": 59,
+    "type": "block",
+    "raw": "/**\n* Update the quantity of a specific cart item\n* PATCH /api/v1/cart/items/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/cartApi.ts",
+    "line": 65,
+    "endLine": 68,
+    "type": "block",
+    "raw": "/**\n* Remove all items belonging to a particular store\n* DELETE /api/v1/cart/stores/{store_id}\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 21,
+    "endLine": 24,
+    "type": "block",
+    "raw": "/**\n* List customer order history\n* GET /api/v1/orders\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 30,
+    "endLine": 33,
+    "type": "block",
+    "raw": "/**\n* Create a new checkout order with Midtrans snap token\n* POST /api/v1/orders/checkout\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 39,
+    "endLine": 42,
+    "type": "block",
+    "raw": "/**\n* List merchant incoming and fulfilled orders\n* GET /api/v1/orders/seller\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 48,
+    "endLine": 51,
+    "type": "block",
+    "raw": "/**\n* Get full order detail by ID\n* GET /api/v1/orders/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 57,
+    "endLine": 60,
+    "type": "block",
+    "raw": "/**\n* Customer-initiated order cancellation\n* POST /api/v1/orders/{id}/cancel\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 69,
+    "endLine": 72,
+    "type": "block",
+    "raw": "/**\n* Merchant updates order fulfillment status\n* PATCH /api/v1/orders/{id}/status\n*/"
+  },
+  {
+    "file": "src/api/services/orderApi.ts",
+    "line": 84,
+    "endLine": 87,
+    "type": "block",
+    "raw": "/**\n* Query payment transaction status for an order\n* GET /api/v1/payments/order/{order_id}\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 32,
+    "endLine": 35,
+    "type": "block",
+    "raw": "/**\n* Query marketplace products with spatial distance and filters\n* GET /api/v1/products\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 41,
+    "endLine": 44,
+    "type": "block",
+    "raw": "/**\n* Merchant creates a new product and initial variants\n* POST /api/v1/products\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 50,
+    "endLine": 53,
+    "type": "block",
+    "raw": "/**\n* Merchant retrieves their own product catalog\n* GET /api/v1/products/me/list\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 59,
+    "endLine": 62,
+    "type": "block",
+    "raw": "/**\n* Get public product detail with variants and image gallery\n* GET /api/v1/products/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 68,
+    "endLine": 71,
+    "type": "block",
+    "raw": "/**\n* Merchant updates product info and stock\n* PUT /api/v1/products/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 77,
+    "endLine": 80,
+    "type": "block",
+    "raw": "/**\n* Merchant deletes a product\n* DELETE /api/v1/products/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/productApi.ts",
+    "line": 86,
+    "endLine": 89,
+    "type": "block",
+    "raw": "/**\n* Merchant toggles product active status\n* PATCH /api/v1/products/{id}/status\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 16,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/**\n* List newest reviews for a product\n* GET /api/v1/products/{product_id}/reviews\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 31,
+    "endLine": 34,
+    "type": "block",
+    "raw": "/**\n* Create a rating and review for a product as authenticated user\n* POST /api/v1/products/{product_id}/reviews\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 46,
+    "endLine": 49,
+    "type": "block",
+    "raw": "/**\n* List newest reviews for a store\n* GET /api/v1/stores/{store_id}/reviews\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 61,
+    "endLine": 64,
+    "type": "block",
+    "raw": "/**\n* Create a rating and review for a store as authenticated user\n* POST /api/v1/stores/{store_id}/reviews\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 76,
+    "endLine": 79,
+    "type": "block",
+    "raw": "/**\n* Get store rating summary (average_rating, total_reviews)\n* GET /api/v1/stores/{id}/summary\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 87,
+    "endLine": 90,
+    "type": "block",
+    "raw": "/**\n* Edit a review's content and rating (author or admin)\n* PATCH /api/v1/reviews/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/reviewApi.ts",
+    "line": 102,
+    "endLine": 105,
+    "type": "block",
+    "raw": "/**\n* Delete a review (author or admin)\n* DELETE /api/v1/reviews/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 18,
+    "endLine": 21,
+    "type": "block",
+    "raw": "/**\n* List public merchant stores\n* GET /api/v1/stores\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 27,
+    "endLine": 30,
+    "type": "block",
+    "raw": "/**\n* Create seller store profile\n* POST /api/v1/stores\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 36,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* Update store operational hours and open days\n* PUT /api/v1/stores/me/operational\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 45,
+    "endLine": 48,
+    "type": "block",
+    "raw": "/**\n* Get authenticated merchant store profile\n* GET /api/v1/stores/me/profile\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 54,
+    "endLine": 57,
+    "type": "block",
+    "raw": "/**\n* Update seller store profile details\n* PUT /api/v1/stores/me/profile\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 63,
+    "endLine": 66,
+    "type": "block",
+    "raw": "/**\n* Toggle store operational status (ACTIVE / INACTIVE)\n* PATCH /api/v1/stores/me/status\n*/"
+  },
+  {
+    "file": "src/api/services/storeApi.ts",
+    "line": 72,
+    "endLine": 75,
+    "type": "block",
+    "raw": "/**\n* Get single store detail by ID\n* GET /api/v1/stores/{id}\n*/"
+  },
+  {
+    "file": "src/api/services/storageApi.ts",
+    "line": 7,
+    "endLine": 10,
+    "type": "block",
+    "raw": "/**\n* Upload a single image file to cloud storage\n* POST /api/v1/storage/upload\n*/"
+  },
+  {
+    "file": "src/api/services/storageApi.ts",
+    "line": 27,
+    "endLine": 30,
+    "type": "block",
+    "raw": "/**\n* Upload multiple image files to cloud storage\n* POST /api/v1/storage/upload-multiple\n*/"
+  },
+  {
+    "file": "src/api/services/userApi.ts",
+    "line": 9,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/**\n* Fetch authenticated user profile\n* GET /api/v1/users/profile\n*/"
+  },
+  {
+    "file": "src/api/services/userApi.ts",
+    "line": 18,
+    "endLine": 21,
+    "type": "block",
+    "raw": "/**\n* Update authenticated user profile details\n* PUT /api/v1/users/profile\n*/"
+  },
+  {
+    "file": "src/api/services/userApi.ts",
+    "line": 27,
+    "endLine": 30,
+    "type": "block",
+    "raw": "/**\n* Update user role (e.g., switch between customer and merchant)\n* PATCH /api/v1/users/role\n*/"
+  },
+  {
+    "file": "src/api/services/enumApi.ts",
+    "line": 5,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/**\n* Fetch backend system enums (genders, roles, active statuses)\n* GET /api/v1/enums\n*/"
+  },
+  {
+    "file": "src/api/services/enumApi.ts",
+    "line": 16,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/**\n* Check backend health status\n* GET /health\n*/"
+  },
+  {
+    "file": "src/hooks/useAuth.ts",
+    "line": 3,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/**\n* Custom hook providing authentication state and operations.\n*/"
+  },
+  {
+    "file": "src/hooks/useCart.ts",
+    "line": 3,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/**\n* Custom hook providing shopping cart state and backend-synchronized mutation actions.\n*/"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 76,
+    "endLine": 76,
+    "type": "line",
+    "raw": "// Track checked/selected items in cart (default: all checked)"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 84,
+    "endLine": 84,
+    "type": "line",
+    "raw": "// Synchronize cart from backend database if user is authenticated"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 105,
+    "endLine": 105,
+    "type": "line",
+    "raw": "// Synchronize cartStores with cartService updates"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 120,
+    "endLine": 120,
+    "type": "line",
+    "raw": "// Default select all if previously empty but new items arrived"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 130,
+    "endLine": 130,
+    "type": "line",
+    "raw": "// Enrich cartStores with real backend store profile pictures and operational times"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 174,
+    "endLine": 174,
+    "type": "line",
+    "raw": "// Selection toggle handlers"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 203,
+    "endLine": 203,
+    "type": "line",
+    "raw": "// Calculate totals matching the design based on SELECTED items"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 218,
+    "endLine": 218,
+    "type": "line",
+    "raw": "// Discount matching 50%"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 233,
+    "endLine": 233,
+    "type": "line",
+    "raw": "// Stepper handlers"
+  },
+  {
+    "file": "src/hooks/useCustomerCart.ts",
+    "line": 257,
+    "endLine": 257,
+    "type": "line",
+    "raw": "// Decreasing when quantity is 1 triggers confirmation popup"
+  },
+  {
+    "file": "src/hooks/useGeolocation.ts",
+    "line": 13,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/**\n* Custom hook to access centralized geolocation state and controls.\n* Provides live coordinates, permission status, automatic startup location,\n* and graceful fallback to default coordinates.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 24,
+    "endLine": 27,
+    "type": "block",
+    "raw": "/**\n* Calculates average rating rounded to 1 decimal place from a list of reviews.\n* Returns 0 if there are no reviews.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 36,
+    "endLine": 38,
+    "type": "block",
+    "raw": "/**\n* Calculates distribution of 1 to 5 stars counts from a list of reviews.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 54,
+    "endLine": 56,
+    "type": "block",
+    "raw": "/**\n* Custom hook to fetch and manage product reviews.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 139,
+    "endLine": 141,
+    "type": "block",
+    "raw": "/**\n* Custom hook to fetch and manage store reviews and store rating summary.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 254,
+    "endLine": 256,
+    "type": "block",
+    "raw": "/**\n* Custom hook to fetch store rating summary (average_rating, total_reviews).\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 315,
+    "endLine": 318,
+    "type": "block",
+    "raw": "/**\n* Custom hook to manage review mutations (create product/store review, update, delete).\n* Includes automatic toast feedback and clean error handling.\n*/"
+  },
+  {
+    "file": "src/hooks/useReviews.ts",
+    "line": 439,
+    "endLine": 442,
+    "type": "block",
+    "raw": "/**\n* Custom hook to fetch and aggregate product reviews for all products belonging to a store.\n* Uses Promise.allSettled to fetch in parallel without failing if one product has no reviews.\n*/"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 20,
+    "endLine": 22,
+    "type": "block",
+    "raw": "/**\n* Parses the JWT expiration timestamp (exp claim in milliseconds).\n*/"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 35,
+    "endLine": 37,
+    "type": "block",
+    "raw": "/**\n* Calculates effective session expiration timestamp based on JWT exp and 24h absolute cap.\n*/"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 50,
+    "endLine": 52,
+    "type": "block",
+    "raw": "/**\n* Completely wipes all sensitive authentication and customer/store session items.\n*/"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 121,
+    "endLine": 121,
+    "type": "line",
+    "raw": "// Ignore parse error"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 147,
+    "endLine": 147,
+    "type": "line",
+    "raw": "// Record login timestamp if not present"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 155,
+    "endLine": 155,
+    "type": "line",
+    "raw": "// Track role for email heuristic"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 164,
+    "endLine": 164,
+    "type": "line",
+    "raw": "// Ignore storage error"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 202,
+    "endLine": 202,
+    "type": "line",
+    "raw": "// Ignore parse error"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 215,
+    "endLine": 215,
+    "type": "line",
+    "raw": "// Initialize session on mount"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 222,
+    "endLine": 222,
+    "type": "line",
+    "raw": "// Instant expiration check on startup"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 232,
+    "endLine": 232,
+    "type": "line",
+    "raw": "// Schedule single timer"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 235,
+    "endLine": 235,
+    "type": "line",
+    "raw": "// Visibility and focus listeners for active tab restoration"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 247,
+    "endLine": 247,
+    "type": "line",
+    "raw": "// Cross-tab synchronization via storage event"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 346,
+    "endLine": 346,
+    "type": "line",
+    "raw": "// Ignore parse error"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 358,
+    "endLine": 358,
+    "type": "line",
+    "raw": "// Ignore parse error"
+  },
+  {
+    "file": "src/context/CartContext.tsx",
+    "line": 59,
+    "endLine": 59,
+    "type": "line",
+    "raw": "// Sync cart when authentication state changes"
+  },
+  {
+    "file": "src/context/CartContext.tsx",
+    "line": 158,
+    "endLine": 158,
+    "type": "line",
+    "raw": "// Compute total count and subtotal"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 41,
+    "endLine": 41,
+    "type": "line",
+    "raw": "// Module-level guard to ensure startup prompt runs exactly once"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 58,
+    "endLine": 58,
+    "type": "line",
+    "raw": "// ignore parse error"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 70,
+    "endLine": 70,
+    "type": "line",
+    "raw": "// ignore"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 100,
+    "endLine": 100,
+    "type": "line",
+    "raw": "// ignore storage error"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 138,
+    "endLine": 138,
+    "type": "line",
+    "raw": "// Graceful fallback to Malang without throwing or popping intrusive toasts"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 160,
+    "endLine": 160,
+    "type": "line",
+    "raw": "// Automatic customer geolocation upon application startup"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 184,
+    "endLine": 184,
+    "type": "line",
+    "raw": "// Already denied, do not force prompt to avoid browser warnings"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 189,
+    "endLine": 189,
+    "type": "line",
+    "raw": "// status is 'prompt': attempt non-blocking startup prompt"
+  },
+  {
+    "file": "src/context/LocationContext.tsx",
+    "line": 194,
+    "endLine": 194,
+    "type": "line",
+    "raw": "// Permissions query unsupported or failed, attempt direct prompt"
+  },
+  {
+    "file": "src/utils/currency.ts",
+    "line": 1,
+    "endLine": 4,
+    "type": "block",
+    "raw": "/**\n* Centralized Indonesian Rupiah Currency Utilities\n* Formats, cleans, and parses currency numbers and inputs according to Indonesian localization standards (id-ID).\n*/"
+  },
+  {
+    "file": "src/utils/currency.ts",
+    "line": 6,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/**\n* Format numeric amount to Indonesian Rupiah thousands dot-separated string.\n* Examples:\n* - 35000 -> \"35.000\"\n* - 0 -> \"0\"\n* - 1250000 -> \"1.250.000\"\n*/"
+  },
+  {
+    "file": "src/utils/currency.ts",
+    "line": 20,
+    "endLine": 25,
+    "type": "block",
+    "raw": "/**\n* Format numeric amount with standardized Indonesian Rupiah prefix \"Rp\".\n* Follows RescueByte design guide: strictly cohesive weight, no space or dot after Rp.\n* Examples:\n* - 35000 -> \"Rp35.000\"\n*/"
+  },
+  {
+    "file": "src/utils/currency.ts",
+    "line": 30,
+    "endLine": 36,
+    "type": "block",
+    "raw": "/**\n* Format raw input string into thousands dot separated string while user types.\n* Strips any non-digit characters.\n* Examples:\n* - \"10000\" -> \"10.000\"\n* - \"\" -> \"\"\n*/"
+  },
+  {
+    "file": "src/utils/currency.ts",
+    "line": 44,
+    "endLine": 49,
+    "type": "block",
+    "raw": "/**\n* Parse thousands dot separated string back into a numeric value.\n* Examples:\n* - \"10.000\" -> 10000\n* - \"\" -> null\n*/"
+  },
+  {
+    "file": "src/utils/time.ts",
+    "line": 1,
+    "endLine": 4,
+    "type": "block",
+    "raw": "/**\n* Utility functions for operational time handling and formatting.\n* Complies with RescueByte design tokens and backend API specifications.\n*/"
+  },
+  {
+    "file": "src/utils/time.ts",
+    "line": 6,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/**\n* Validates if time string conforms to 24-hour clock (00.00 - 23.59 or 00:00 - 23:59).\n*/"
+  },
+  {
+    "file": "src/utils/time.ts",
+    "line": 19,
+    "endLine": 22,
+    "type": "block",
+    "raw": "/**\n* Converts backend time format (e.g. \"07:00:00\", \"07:00\", \"07.00\") to Indonesian dot format (\"07.00\").\n* Preserves raw value if parsing is not applicable, without silently rewriting hour values.\n*/"
+  },
+  {
+    "file": "src/utils/time.ts",
+    "line": 35,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* Converts Indonesian time format (e.g. \"22.00\", \"22:00\") to API format (\"22:00\" or \"08:00\").\n* Backend expects HH:mm or HH.mm format (rejects HH:mm:ss with seconds).\n* Does not overwrite invalid hours (validation must occur before calling this).\n*/"
+  },
+  {
+    "file": "src/utils/markdown.ts",
+    "line": 3,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/**\n* Parses inline markdown into React nodes:\n* - ***bold & italic***\n* - **bold**\n* - *italic* or _italic_\n*/"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 27,
+    "endLine": 27,
+    "type": "line",
+    "raw": "// Base interactive styles with accessible focus indicator"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 33,
+    "endLine": 33,
+    "type": "line",
+    "raw": "// Botanical Rescue variants"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 47,
+    "endLine": 47,
+    "type": "line",
+    "raw": "// Standard touch and responsive sizes"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 18,
+    "endLine": 18,
+    "type": "line",
+    "raw": "// Pill geometry with accessible contrast conforming to WCAG AA"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 23,
+    "endLine": 23,
+    "type": "line",
+    "raw": "// Halal Verified: soft leaf container with deep emerald text (6.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 25,
+    "endLine": 25,
+    "type": "line",
+    "raw": "// Urgent Stock: soft blush container with urgent vermilion text (4.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 27,
+    "endLine": 27,
+    "type": "line",
+    "raw": "// Discount Ratio: deep botanical green with white text (5.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 29,
+    "endLine": 29,
+    "type": "line",
+    "raw": "// Mystery Package: warm marigold container with amber text (4.9:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 31,
+    "endLine": 31,
+    "type": "line",
+    "raw": "// Neutral: light surface container with charcoal text (7.2:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 36,
+    "endLine": 36,
+    "type": "line",
+    "raw": "// Keyboard trap and Escape listener"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 73,
+    "endLine": 73,
+    "type": "line",
+    "raw": "// Save previous active element to restore focus on close"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 76,
+    "endLine": 76,
+    "type": "line",
+    "raw": "// Lock body scrolling"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 80,
+    "endLine": 80,
+    "type": "line",
+    "raw": "// Attach key listener"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 83,
+    "endLine": 83,
+    "type": "line",
+    "raw": "// Initial focus on dialog"
+  },
+  {
+    "file": "src/app/hashRouting.ts",
+    "line": 1,
+    "endLine": 1,
+    "type": "block",
+    "raw": "/** Helpers for parsing the app's hash-based routes and query parameters. */"
+  },
+  {
+    "file": "src/app/hashRouting.ts",
+    "line": 16,
+    "endLine": 16,
+    "type": "line",
+    "raw": "// Extract secondary anchor if present (e.g. #toko?name=abc#ulasan-pelanggan)"
+  },
+  {
+    "file": "src/app/useHashNavigation.ts",
+    "line": 29,
+    "endLine": 29,
+    "type": "line",
+    "raw": "// Sync with browser back/forward hash changes with deep linking"
+  },
+  {
+    "file": "src/app/AppRoutes.tsx",
+    "line": 11,
+    "endLine": 11,
+    "type": "line",
+    "raw": "// Route-level code splitting using React.lazy() to eliminate Vite chunk size warning"
+  },
+  {
+    "file": "src/app/AppRoutes.tsx",
+    "line": 287,
+    "endLine": 287,
+    "type": "block",
+    "raw": "/* 2. Merchant / Seller View: Portal Layout */"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 22,
+    "endLine": 25,
+    "type": "block",
+    "raw": "/**\n* Root Application Component\n* Modernized with route-level code splitting, deep linking hash params, and context consumption.\n*/"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 217,
+    "endLine": 217,
+    "type": "line",
+    "raw": "// Toast handler (no-op / context delegate per R1)"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 228,
+    "endLine": 228,
+    "type": "line",
+    "raw": "// Delegate to context if available"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 236,
+    "endLine": 236,
+    "type": "line",
+    "raw": "// Deep linking initial resolution for product / order / store params"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 240,
+    "endLine": 240,
+    "type": "line",
+    "raw": "// Deep linking for product detail: #detail-produk?id=..."
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 278,
+    "endLine": 278,
+    "type": "line",
+    "raw": "// Deep linking for order detail: #detail-pesanan?id=..."
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 329,
+    "endLine": 329,
+    "type": "line",
+    "raw": "// Deep linking for store: #toko?name=... or #toko?id=..."
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 340,
+    "endLine": 340,
+    "type": "line",
+    "raw": "// Handle Google OAuth Callback"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 376,
+    "endLine": 376,
+    "type": "line",
+    "raw": "// Sync store name from backend for seller portal"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 395,
+    "endLine": 395,
+    "type": "line",
+    "raw": "// Sync hash on navigation with deep linking query params"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 398,
+    "endLine": 398,
+    "type": "line",
+    "raw": "// Auth guard: Require login before accessing marketplace, product detail, cart, checkout, orders, or order detail"
+  },
+  {
+    "file": "src/App.tsx",
+    "line": 491,
+    "endLine": 491,
+    "type": "line",
+    "raw": "// If user logs out while on protected routes, automatically redirect to login"
+  }
+]

@@ -17,6 +17,7 @@ interface CustomerLoginFormProps {
   onShowPrivacy: () => void;
   isSubmitting: boolean;
   roleType?: 'customer' | 'seller';
+  errorMessage?: string | null;
 }
 
 export function CustomerLoginForm({
@@ -35,6 +36,7 @@ export function CustomerLoginForm({
   onShowPrivacy,
   isSubmitting,
   roleType = 'customer',
+  errorMessage,
 }: CustomerLoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isSeller = roleType === 'seller';
@@ -50,6 +52,16 @@ export function CustomerLoginForm({
           ? 'Kelola dagangan surplus dan pantau pesanan tokomu.'
           : 'Masuk untuk menemukan Mystery Box favoritmu.'}
       </p>
+
+      {errorMessage && (
+        <div
+          role="alert"
+          className="p-3 mb-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-medium flex items-start gap-2"
+        >
+          <span className="shrink-0 text-sm font-bold">✕</span>
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-4">
         {/* Email Field */}

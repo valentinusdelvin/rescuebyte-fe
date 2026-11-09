@@ -90,6 +90,24 @@ export function getCartCount(): number {
 }
 
 /**
+ * Fetch total cart item count from backend API if authenticated, fallback to local cart.
+ */
+export async function getCartCountApi(): Promise<number> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (!token) return getCartCount();
+  try {
+    const res = await api.get('/api/v1/cart/count');
+    const payload = res.data?.payload;
+    if (typeof payload?.count === 'number') {
+      return payload.count;
+    }
+    return getCartCount();
+  } catch {
+    return getCartCount();
+  }
+}
+
+/**
  * Helper to get 2-letter uppercase initials for a store name.
  */
 export function getStoreInitials(name: string): string {
@@ -157,8 +175,12 @@ export async function fetchBackendCart(): Promise<StoreCartGroup[] | null> {
         storeName: store.store_name,
         storeAvatar: getStoreInitials(store.store_name),
         storeAddress: fullAddress,
-        rating: 4.9,
-        reviewCount: 42,
+        rating: typeof (store as any).rating === 'number' ? (store as any).rating : 0,
+        reviewCount: typeof (store as any).review_count === 'number'
+          ? (store as any).review_count
+          : typeof (store as any).reviewCount === 'number'
+          ? (store as any).reviewCount
+          : 0,
         distanceText: typeof store.distance_km === 'number' ? `${store.distance_km.toFixed(1)} km` : '0.0 km',
         pickupTime: formattedPickup,
         availablePickupTimes: [formattedPickup],
@@ -257,8 +279,8 @@ export function addToCart(box: CustomerMysteryBox, quantityToAdd: number = 1): n
       storeId: targetStoreId,
       storeName: box.storeName,
       storeAvatar: avatar,
-      rating: box.rating ?? 4.8,
-      reviewCount: typeof box.reviewCount === 'number' ? box.reviewCount : Number(box.reviewCount) || 100,
+      rating: box.rating ?? 0,
+      reviewCount: typeof box.reviewCount === 'number' ? box.reviewCount : Number(box.reviewCount) || 0,
       distanceText: box.distanceText || '0.0 km',
       pickupTime: box.pickupTime || '15.00 - 18.00 WIB',
       availablePickupTimes: [box.pickupTime || '15.00 - 18.00 WIB', '18.00 - 20.00 WIB'],

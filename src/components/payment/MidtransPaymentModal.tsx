@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, CheckCircle2, ShieldCheck, QrCode, CreditCard, Building2, Smartphone } from 'lucide-react';
+import { formatRupiah } from '../../utils/currency';
 
 export interface MidtransPaymentModalProps {
   isOpen: boolean;
@@ -9,10 +10,6 @@ export interface MidtransPaymentModalProps {
   snapToken?: string;
   onSuccess: () => void;
   onClose: () => void;
-}
-
-function formatRupiah(amount: number): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 export function MidtransPaymentModal({

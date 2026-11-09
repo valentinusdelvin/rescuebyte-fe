@@ -3,6 +3,15 @@ import { api } from './api';
 import { extractApiErrorMessage, getCurrentUser } from './authService';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import { clearCart } from './cartService';
+export { fetchMerchantOrdersApi } from './orders/sellerOrders';
+export { fetchOrderDetailApi, fetchCustomerOrdersApi } from './orders/customerOrders';
+export { checkoutOrderApi } from './orders/checkoutService';
+export type { CheckoutApiPayload, CheckoutApiResponse } from './orders/checkoutService';
+import { getOrderStatusLabel } from './orders/orderStatus';
+export { getOrderStatusLabel } from './orders/orderStatus';
+export { mapBackendStatusToCustomerStatus } from './orders/orderStatus';
+export { fetchPaymentDetailsApi, fetchPaymentStatusApi } from './orders/paymentService';
+export type { BackendPaymentState, BackendPaymentDetails } from './orders/paymentService';
 
 export interface CustomerOrderItem {
   id: string;
@@ -30,7 +39,7 @@ export interface CustomerOrderItem {
 }
 
 const CUSTOMER_ORDERS_STORAGE_KEY = 'rescuebyte_customer_orders';
-const MERCHANT_ORDERS_STORAGE_KEY = 'rescuebyte_merchant_orders';
+export const MERCHANT_ORDERS_STORAGE_KEY = 'rescuebyte_merchant_orders';
 const ORDERS_UPDATE_EVENT = 'rescuebyte_orders_update';
 
 export const PLACEHOLDER_ORDER_IDS = new Set([
@@ -105,25 +114,6 @@ export function inferItemCategory(
   return 'meal';
 }
 
-export function getOrderStatusLabel(status: CustomerOrderStatus): string {
-  switch (status) {
-    case 'menunggu-pembayaran':
-      return 'Menunggu Pembayaran';
-    case 'menunggu-konfirmasi':
-      return 'Menunggu Konfirmasi';
-    case 'diproses':
-      return 'Diproses';
-    case 'siap-diambil':
-      return 'Siap Diambil';
-    case 'selesai':
-      return 'Selesai';
-    case 'dibatalkan':
-      return 'Dibatalkan';
-    default:
-      return 'Diproses';
-  }
-}
-
 /**
  * Retrieve all customer orders from localStorage, filtering out legacy placeholder dummy orders.
  */
@@ -190,10 +180,7 @@ export function saveCustomerOrders(orders: CustomerOrderItem[]): void {
 }
 
 /**
- * Create a new customer order from checkout payment data.
- * - Saves order to customer order history
- * - Clears cart if order originated from cart
- * - Syncs to merchant order queue
+ * Buat pesanan baru dari data pembayaran checkout, bersihkan keranjang, dan masukkan ke antrean merchant.
  */
 export function createCustomerOrder(
   paymentData: PaymentOrderData,
@@ -244,12 +231,12 @@ export function createCustomerOrder(
     },
   };
 
-  // 1. Prepend new order to customer list
+  // Sisipkan pesanan baru di posisi terdepan riwayat pesanan pelanggan
   const existingOrders = getCustomerOrders();
   const updatedOrders = [newOrder, ...existingOrders.filter((o) => o.orderNumber !== paymentData.orderId)];
   saveCustomerOrders(updatedOrders);
 
-  // 2. Also register in merchant order queue if already paid / waiting confirmation
+  // Daftarkan ke antrean pesanan masuk merchant jika sudah terbayar atau menunggu konfirmasi
   if (initialStatus !== 'menunggu-pembayaran') {
     try {
       const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
@@ -297,7 +284,7 @@ export function createCustomerOrder(
     }
   }
 
-  // 3. Clear cart if order originated from cart
+  // Bersihkan keranjang jika pesanan berasal dari keranjang belanja
   if (paymentData.source === 'cart') {
     try {
       clearCart();
@@ -400,125 +387,6 @@ export function updateCustomerOrderStatus(
   }
 }
 
-export interface CheckoutApiPayload {
-  store_id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string;
-  payment_method: 'ONLINE' | 'CASH_ON_PICKUP';
-  pickup_date: string;
-  pickup_time_start: string;
-  pickup_time_end: string;
-  items: Array<{
-    product_variant_id: string;
-    quantity: number;
-  }>;
-  notes?: string;
-}
-
-export interface CheckoutApiResponse {
-  order: {
-    id: string;
-    order_number: string;
-    store_id: string;
-    store_name: string;
-    store_address: string;
-    store_city: string;
-    store_district: string;
-    customer_name: string;
-    customer_phone: string;
-    customer_email: string;
-    pickup_date: string;
-    pickup_time: string;
-    total_original_price: number;
-    total_discount: number;
-    subtotal: number;
-    service_fee: number;
-    packaging_fee: number;
-    total_amount: number;
-    status: string;
-    status_label: string;
-    payment_method: string;
-    notes?: string;
-    created_at: string;
-    items: Array<{
-      id: string;
-      product_id: string;
-      product_variant_id: string;
-      product_name: string;
-      variant_name: string;
-      product_image_url: string;
-      normal_price: number;
-      rescue_price: number;
-      quantity: number;
-      subtotal: number;
-    }>;
-  };
-  snap_token?: string;
-  snap_redirect_url?: string;
-}
-
-export function mapBackendStatusToCustomerStatus(backendStatus: string): CustomerOrderStatus {
-  const s = (backendStatus || '').toUpperCase();
-  if (s === 'PAID' || s === 'SETTLEMENT' || s === 'CAPTURE' || s === 'PAYMENT_SUCCESS' || s === 'SUCCESS') return 'menunggu-konfirmasi';
-  if (s === 'WAITING_PAYMENT' || s === 'PENDING' || s === 'UNPAID' || s === 'NEW' || s === 'PENDING_PAYMENT') return 'menunggu-pembayaran';
-  if (s.includes('PAYMENT')) return 'menunggu-pembayaran';
-  if (s.includes('CONFIRM') || s === 'WAITING_CONFIRMATION') return 'menunggu-konfirmasi';
-  if (s.includes('PROCESS') || s === 'PREPARING' || s === 'CONFIRMED') return 'diproses';
-  if (s.includes('READY') || s === 'READY_FOR_PICKUP') return 'siap-diambil';
-  if (s.includes('COMPLETE') || s === 'COMPLETED' || s === 'FINISHED') return 'selesai';
-  if (s.includes('CANCEL') || s === 'CANCELLED') return 'dibatalkan';
-  // Unknown backend states must never be presented as payment-confirmed.
-  return 'menunggu-pembayaran';
-}
-
-export type BackendPaymentState = 'paid' | 'pending' | 'failed' | 'unknown';
-
-export interface BackendPaymentDetails {
-  status?: string;
-  transaction_status?: string;
-  payment_status?: string;
-  snap_token?: string;
-  snap_redirect_url?: string;
-}
-
-/** Fetch the current payment record, including the reusable Snap token when available. */
-export async function fetchPaymentDetailsApi(orderId: string): Promise<BackendPaymentDetails | null> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token || !orderId) return null;
-
-  try {
-    const response = await api.get(`/api/v1/payments/order/${encodeURIComponent(orderId)}`);
-    const payload = response.data?.payload;
-    const payment = payload?.payment || payload?.order?.payment || payload?.order || payload;
-    if (!payment || typeof payment !== 'object') return null;
-
-    return {
-      status: payment.status,
-      transaction_status: payment.transaction_status,
-      payment_status: payment.payment_status,
-      snap_token: payment.snap_token,
-      snap_redirect_url: payment.snap_redirect_url,
-    };
-  } catch (err) {
-    console.warn('fetchPaymentDetailsApi failed:', err);
-    return null;
-  }
-}
-
-/** Read the authoritative payment state for a backend order UUID. */
-export async function fetchPaymentStatusApi(orderId: string): Promise<BackendPaymentState> {
-  const payment = await fetchPaymentDetailsApi(orderId);
-  const rawStatus = String(
-    payment?.transaction_status || payment?.payment_status || payment?.status || ''
-  ).toUpperCase();
-
-  if (['PAID', 'SETTLEMENT', 'CAPTURE', 'PAYMENT_SUCCESS', 'SUCCESS'].includes(rawStatus)) return 'paid';
-  if (['PENDING', 'WAITING_PAYMENT', 'UNPAID', 'NEW', 'PENDING_PAYMENT'].includes(rawStatus)) return 'pending';
-  if (['DENY', 'FAILED', 'CANCEL', 'CANCELLED', 'EXPIRE', 'EXPIRED'].includes(rawStatus)) return 'failed';
-  return 'unknown';
-}
-
 function isBackendOrderId(id: string): boolean {
   return !id.startsWith('m-ord-') && !id.startsWith('ord-');
 }
@@ -585,164 +453,20 @@ async function updateMerchantOrderStatus(
 /**
  * Call backend checkout endpoint POST /api/v1/orders/checkout
  */
-export async function checkoutOrderApi(data: CheckoutApiPayload): Promise<CheckoutApiResponse> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token) {
-    throw new Error('Silakan masuk terlebih dahulu sebelum membuat pesanan.');
-  }
-
-  try {
-    const response = await api.post('/api/v1/orders/checkout', data);
-    const payload = response.data?.payload;
-    if (payload && payload.order) {
-      return payload as CheckoutApiResponse;
-    }
-    throw new Error('Server tidak mengembalikan data pesanan.');
-  } catch (err: any) {
-    const msg = extractApiErrorMessage(err, 'Gagal membuat pesanan di server.');
-    console.warn('checkoutOrderApi error:', msg);
-    throw new Error(msg);
-  }
-}
-
-/**
- * Fetch customer orders from GET /api/v1/orders
- */
-/**
- * Fetch single order detail from GET /api/v1/orders/{id}
- */
-export async function fetchOrderDetailApi(orderId: string): Promise<any | null> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token || !orderId) return null;
-
-  try {
-    const response = await api.get('/api/v1/orders/' + orderId);
-    const payload = response.data?.payload;
-    return payload?.order || payload || null;
-  } catch (err) {
-    console.warn('fetchOrderDetailApi failed:', err);
-    return null;
-  }
-}
-
-export async function fetchCustomerOrdersApi(params?: {
-  page?: number;
-  limit?: number;
-  tab?: string;
-  search?: string;
-}): Promise<CustomerOrderItem[] | null> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token) return null;
-
-  try {
-    const response = await api.get('/api/v1/orders', { params });
-    const payload = response.data?.payload;
-    if (payload && Array.isArray(payload.orders)) {
-      const mappedOrders: CustomerOrderItem[] = payload.orders
-        .filter((bo: any) => !PLACEHOLDER_ORDER_IDS.has(bo.id) && !PLACEHOLDER_ORDER_IDS.has(bo.order_number))
-        .map((bo: any) => {
-        const status = mapBackendStatusToCustomerStatus(bo.status);
-        const pickupScheduleParts = String(bo.pickup_schedule || '').split('|').map((part: string) => part.trim());
-        const pickupDate = bo.pickup_date || (pickupScheduleParts.length > 1 ? pickupScheduleParts[0] : bo.pickup_schedule) || '';
-        const pickupTime = bo.pickup_time || (pickupScheduleParts.length > 1 ? pickupScheduleParts[1] : '') || '';
-        return {
-          id: bo.id,
-          orderNumber: bo.order_number,
-          storeId: bo.store_id,
-          createdAt: bo.created_at,
-          status,
-          statusLabel: bo.status_label || getOrderStatusLabel(status),
-          storeName: bo.store_name,
-          storeAddress: bo.store_address,
-          productName: bo.summary_item_name || 'Mystery Box',
-          productBoxCount: bo.total_items || 1,
-          productDescription: bo.summary_item_name || 'Paket Mystery Box',
-          imageUrl: bo.summary_image_url,
-          pickupDate,
-          pickupTime,
-          finalPrice: bo.total_amount,
-          category: 'meal',
-          orderData: {
-            orderId: bo.order_number,
-            backendOrderId: bo.id,
-            items: [
-              {
-                id: bo.id,
-                name: bo.summary_item_name || 'Mystery Box',
-                storeName: bo.store_name,
-                storeAddress: bo.store_address,
-                rescuePrice: bo.total_amount,
-                quantity: bo.total_items || 1,
-                categoryTags: ['Penyelamatan Pangan'],
-                imageSrc: bo.summary_image_url || cardMonsieurSpoon,
-              },
-            ],
-            primaryStore: {
-              storeId: bo.store_id,
-              storeName: bo.store_name,
-              storeAddress: bo.store_address,
-            },
-            pickupDate,
-            pickupTimeSlot: pickupTime,
-            customerInfo: {
-              name: 'Tester',
-              phone: '081234567890',
-              email: 'customer@rescuebite.com',
-            },
-            totalBoxes: bo.total_items || 1,
-            subtotal: bo.total_amount,
-            grandTotal: bo.total_amount,
-            status,
-            snapRedirectUrl: bo.payment?.snap_redirect_url || (bo as any).snap_redirect_url,
-            snapToken: bo.payment?.snap_token || (bo as any).snap_token,
-            createdAt: bo.created_at,
-          },
-        };
-      });
-
-      // Merge backend orders with active customer orders
-      const existing = getCustomerOrders();
-      const existingMap = new Map(existing.map((o) => [o.orderNumber, o]));
-      mappedOrders.forEach((bo) => {
-        const local = existingMap.get(bo.orderNumber);
-        if (local && local.status === 'menunggu-konfirmasi' && bo.status === 'menunggu-pembayaran') {
-          bo.status = 'menunggu-konfirmasi';
-          bo.statusLabel = getOrderStatusLabel('menunggu-konfirmasi');
-          if (bo.orderData) {
-            bo.orderData.status = 'menunggu-konfirmasi';
-          }
-        }
-      });
-      const merged = [...mappedOrders];
-      existing.forEach((localOrder) => {
-        if (
-          !PLACEHOLDER_ORDER_IDS.has(localOrder.id) &&
-          !PLACEHOLDER_ORDER_IDS.has(localOrder.orderNumber) &&
-          !PLACEHOLDER_STORE_NAMES.has(localOrder.storeName) &&
-          !localOrder.orderNumber?.startsWith('RB25102') &&
-          !merged.some((m) => m.orderNumber === localOrder.orderNumber || m.id === localOrder.id)
-        ) {
-          merged.push(localOrder);
-        }
-      });
-      saveCustomerOrders(merged);
-      return merged;
-    }
-    return null;
-  } catch (err) {
-    console.warn('fetchCustomerOrdersApi failed:', err);
-    return null;
-  }
-}
-
-
 export interface MerchantOrderItem {
   id: string;
   orderNumber: string;
   status: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal';
+  storeId?: string;
   storeName: string;
+  storeAddress?: string;
+  storeCity?: string;
+  storeDistrict?: string;
+  customerId?: string;
   customerName: string;
   customerPhone?: string;
+  customerEmail?: string;
+  customerAvatar?: string;
   productName: string;
   productImage?: string;
   totalBoxes: number;
@@ -752,87 +476,21 @@ export interface MerchantOrderItem {
   grandTotal: number;
   pickupDate: string;
   pickupTime: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  notes?: string;
+  items?: Array<{
+    id?: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    originalPrice?: number;
+    imageUrl?: string;
+    variantName?: string;
+  }>;
   createdAt: string;
 }
-
 export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [];
-
-export async function fetchMerchantOrdersApi(
-  storeName?: string,
-  tab: 'all' | 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' = 'all'
-): Promise<MerchantOrderItem[] | null> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  if (!token) return null;
-
-  try {
-    const backendTabBySellerTab = {
-      all: 'all',
-      'perlu-konfirmasi': 'WAITING_CONFIRMATION',
-      diproses: 'IN_PROCESS',
-      'siap-diambil': 'READY_FOR_PICKUP',
-      selesai: 'COMPLETED',
-    } as const;
-    const response = await api.get('/api/v1/orders/seller', {
-      params: {
-        page: 1,
-        limit: 100,
-        tab: backendTabBySellerTab[tab],
-      },
-    });
-    const payload = response.data?.payload;
-    if (payload && Array.isArray(payload.orders)) {
-      const activeStoreName = storeName || (typeof window !== 'undefined' ? localStorage.getItem('rescuebyte_store_name') || '' : '');
-      const backendOrders: MerchantOrderItem[] = [];
-
-      payload.orders.forEach((bo: any) => {
-        if (PLACEHOLDER_ORDER_IDS.has(bo.id) || PLACEHOLDER_ORDER_IDS.has(bo.order_number)) return;
-
-        const customerStatus = mapBackendStatusToCustomerStatus(bo.status);
-        if (customerStatus === 'menunggu-pembayaran') return;
-
-        let merchantStatus: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal' = 'perlu-konfirmasi';
-        if (customerStatus === 'menunggu-konfirmasi') merchantStatus = 'perlu-konfirmasi';
-        else if (customerStatus === 'diproses') merchantStatus = 'diproses';
-        else if (customerStatus === 'siap-diambil') merchantStatus = 'siap-diambil';
-        else if (customerStatus === 'selesai') merchantStatus = 'selesai';
-        else if (customerStatus === 'dibatalkan') merchantStatus = 'batal';
-
-        backendOrders.push({
-          id: bo.id,
-          orderNumber: bo.order_number,
-          status: merchantStatus,
-          storeName: bo.store_name || activeStoreName || 'Toko Mitra',
-          customerName: bo.customer_name || 'Pelanggan RescueByte',
-          customerPhone: bo.customer_phone,
-          productName: bo.summary_item_name || 'Mystery Box',
-          productImage: bo.summary_image_url || cardMonsieurSpoon,
-          totalBoxes: bo.total_items || 1,
-          rescuePrice: bo.total_amount,
-          originalPrice: bo.total_original_price || bo.total_amount * 2,
-          discountPercent: bo.total_original_price
-            ? Math.max(0, Math.round(((bo.total_original_price - bo.total_amount) / bo.total_original_price) * 100))
-            : 50,
-          grandTotal: bo.total_amount,
-          pickupDate: bo.pickup_schedule || bo.created_at,
-          pickupTime: bo.pickup_schedule && bo.pickup_schedule.includes('|')
-            ? bo.pickup_schedule.split('|')[1]?.trim()
-            : '15.00 - 18.00 WIB',
-          createdAt: bo.created_at,
-        });
-      });
-
-      // Use the server response as the seller history source, including an empty list.
-      // This replaces stale browser-cached orders instead of silently retaining them.
-      // The seller endpoint is already scoped to the authenticated seller's store.
-      localStorage.setItem(MERCHANT_ORDERS_STORAGE_KEY, JSON.stringify(backendOrders));
-      return backendOrders;
-    }
-    return null;
-  } catch (err) {
-    console.warn('fetchMerchantOrdersApi failed:', err);
-    return null;
-  }
-}
 
 export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[] {
   if (typeof window === 'undefined') return [];
@@ -989,3 +647,14 @@ export function subscribeToMerchantOrders(
 export async function cancelMerchantOrder(orderId: string, reason?: string): Promise<boolean> {
   return updateMerchantOrderStatus(orderId, 'batal', 'CANCELLED', reason);
 }
+
+export async function cancelCustomerOrderApi(orderId: string, reason?: string): Promise<boolean> {
+  try {
+    await api.post(`/api/v1/orders/${orderId}/cancel`, { reason: reason || 'Dibatalkan oleh pelanggan' });
+    return true;
+  } catch (err) {
+    console.warn(`Failed to cancel order ${orderId} on backend:`, err);
+    return false;
+  }
+}
+

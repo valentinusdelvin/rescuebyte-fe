@@ -55,8 +55,20 @@ export async function getUserProfile(): Promise<UserPayload> {
 }
 
 /**
- * Update authenticated user's profile via PUT /api/v1/users/profile
- * Accepts: name, avatar_url, phone_number, date_of_birth, gender
+ * Catatan Arsitektur: Endpoint GET /api/v1/users/:id tidak ada pada Swagger 2.0 backend.
+ * Informasi pemesan sudah tersedia di dalam DTO pesanan, sehingga fungsi ini langsung
+ * mengembalikan null secara aman tanpa memicu request 404 ke network.
+ */
+export async function getUserById(userId: string): Promise<UserPayload | null> {
+  const auth = getAuth();
+  if (auth && auth.user && auth.user.id === userId) {
+    return auth.user;
+  }
+  return null;
+}
+
+/**
+ * Perbarui profil user yang sedang login via PUT /api/v1/users/profile.
  */
 export async function updateUserProfile(data: UpdateUserProfileRequest): Promise<UserPayload> {
   try {

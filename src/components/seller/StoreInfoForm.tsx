@@ -97,7 +97,7 @@ export function StoreInfoForm({
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  // 1. Alamat OSM Live Search
+  // Handler pencarian live alamat via OpenStreetMap
   const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     onAddressChange(query);
@@ -141,7 +141,7 @@ export function StoreInfoForm({
     setShowOsmDropdown(false);
   };
 
-  // 2. Kota Autocomplete
+  // Handler autocomplete daftar kota
   const handleKotaFocus = () => {
     const cities = searchCities(cityValue || '');
     setCitySuggestions(cities);

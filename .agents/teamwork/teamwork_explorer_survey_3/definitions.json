@@ -1,0 +1,1326 @@
+{
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.AddToCartRequest": {
+    "type": "object",
+    "required": [
+      "product_variant_id",
+      "quantity"
+    ],
+    "properties": {
+      "product_variant_id": {
+        "type": "string"
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.AuthResponse": {
+    "type": "object",
+    "properties": {
+      "access_token": {
+        "type": "string"
+      },
+      "refresh_token": {
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.UserResponse"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CancelOrderRequest": {
+    "type": "object",
+    "properties": {
+      "reason": {
+        "type": "string",
+        "maxLength": 255
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CartCountResponse": {
+    "type": "object",
+    "properties": {
+      "count": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CartItemResponse": {
+    "type": "object",
+    "properties": {
+      "current_stock": {
+        "type": "integer"
+      },
+      "discount_percentage": {
+        "type": "integer"
+      },
+      "id": {
+        "type": "string"
+      },
+      "is_available": {
+        "type": "boolean"
+      },
+      "normal_price": {
+        "type": "integer"
+      },
+      "product_id": {
+        "type": "string"
+      },
+      "product_image_url": {
+        "type": "string"
+      },
+      "product_name": {
+        "type": "string"
+      },
+      "product_variant_id": {
+        "type": "string"
+      },
+      "quantity": {
+        "type": "integer"
+      },
+      "rescue_price": {
+        "type": "integer"
+      },
+      "subtotal": {
+        "type": "integer"
+      },
+      "variant_name": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CartResponse": {
+    "type": "object",
+    "properties": {
+      "service_fee": {
+        "type": "integer"
+      },
+      "stores": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.StoreCartGroup"
+        }
+      },
+      "subtotal": {
+        "type": "integer"
+      },
+      "total_boxes": {
+        "type": "integer"
+      },
+      "total_discount": {
+        "type": "integer"
+      },
+      "total_items": {
+        "type": "integer"
+      },
+      "total_original_price": {
+        "type": "integer"
+      },
+      "total_payment": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CheckoutItemRequest": {
+    "type": "object",
+    "required": [
+      "product_variant_id",
+      "quantity"
+    ],
+    "properties": {
+      "product_variant_id": {
+        "type": "string"
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CheckoutRequest": {
+    "type": "object",
+    "required": [
+      "customer_email",
+      "customer_name",
+      "customer_phone",
+      "items",
+      "payment_method",
+      "pickup_date",
+      "pickup_time_end",
+      "pickup_time_start",
+      "store_id"
+    ],
+    "properties": {
+      "customer_email": {
+        "type": "string"
+      },
+      "customer_name": {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 2
+      },
+      "customer_phone": {
+        "type": "string",
+        "maxLength": 20,
+        "minLength": 8
+      },
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.CheckoutItemRequest"
+        }
+      },
+      "notes": {
+        "type": "string"
+      },
+      "payment_method": {
+        "type": "string",
+        "enum": [
+          "ONLINE",
+          "CASH_ON_PICKUP"
+        ]
+      },
+      "pickup_date": {
+        "description": "YYYY-MM-DD",
+        "type": "string"
+      },
+      "pickup_time_end": {
+        "type": "string"
+      },
+      "pickup_time_start": {
+        "type": "string"
+      },
+      "store_id": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CheckoutResponse": {
+    "type": "object",
+    "properties": {
+      "order": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.OrderDetailResponse"
+      },
+      "snap_redirect_url": {
+        "type": "string"
+      },
+      "snap_token": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CreateProductRequest": {
+    "type": "object",
+    "required": [
+      "name",
+      "variants"
+    ],
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "image_urls": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "main_image_url": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 2
+      },
+      "variants": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.CreateProductVariantRequest"
+        }
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CreateProductVariantRequest": {
+    "type": "object",
+    "required": [
+      "current_stock",
+      "initial_stock",
+      "name",
+      "normal_price",
+      "rescue_price",
+      "sequence"
+    ],
+    "properties": {
+      "current_stock": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "initial_stock": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "normal_price": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "rescue_price": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "sequence": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.CreateStoreRequest": {
+    "type": "object",
+    "required": [
+      "address",
+      "city",
+      "district",
+      "email",
+      "latitude",
+      "longitude",
+      "name",
+      "operational_days",
+      "operational_end",
+      "operational_start",
+      "whatsapp_number"
+    ],
+    "properties": {
+      "address": {
+        "type": "string"
+      },
+      "city": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "district": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "email": {
+        "type": "string"
+      },
+      "latitude": {
+        "type": "number"
+      },
+      "longitude": {
+        "type": "number"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 2
+      },
+      "operational_days": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "integer"
+        }
+      },
+      "operational_end": {
+        "description": "e.g. \"21:00\"",
+        "type": "string"
+      },
+      "operational_start": {
+        "description": "e.g. \"08:00\"",
+        "type": "string"
+      },
+      "profile_picture_url": {
+        "type": "string"
+      },
+      "whatsapp_number": {
+        "type": "string",
+        "maxLength": 20,
+        "minLength": 8
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.GetOrdersResponse": {
+    "type": "object",
+    "properties": {
+      "meta": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_helpers_pagination.Response"
+      },
+      "orders": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.OrderListItemResponse"
+        }
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.GetProductsResponse": {
+    "type": "object",
+    "properties": {
+      "meta": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_helpers_pagination.Response"
+      },
+      "products": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.ProductCardResponse"
+        }
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.GetStoresResponse": {
+    "type": "object",
+    "properties": {
+      "meta": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_helpers_pagination.Response"
+      },
+      "stores": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.StoreResponse"
+        }
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.GoogleAuthURLResponse": {
+    "type": "object",
+    "properties": {
+      "auth_url": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.LoginRequest": {
+    "type": "object",
+    "required": [
+      "email",
+      "password"
+    ],
+    "properties": {
+      "email": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.MidtransNotificationPayload": {
+    "type": "object",
+    "properties": {
+      "fraud_status": {
+        "type": "string"
+      },
+      "gross_amount": {
+        "type": "string"
+      },
+      "order_id": {
+        "type": "string"
+      },
+      "payment_type": {
+        "type": "string"
+      },
+      "signature_key": {
+        "type": "string"
+      },
+      "status_code": {
+        "type": "string"
+      },
+      "transaction_id": {
+        "type": "string"
+      },
+      "transaction_status": {
+        "type": "string"
+      },
+      "transaction_time": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.OrderDetailResponse": {
+    "type": "object",
+    "properties": {
+      "created_at": {
+        "type": "string"
+      },
+      "customer_email": {
+        "type": "string"
+      },
+      "customer_name": {
+        "type": "string"
+      },
+      "customer_phone": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.OrderItemResponse"
+        }
+      },
+      "notes": {
+        "type": "string"
+      },
+      "order_number": {
+        "type": "string"
+      },
+      "packaging_fee": {
+        "type": "integer"
+      },
+      "payment": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.PaymentResponse"
+      },
+      "payment_method": {
+        "type": "string"
+      },
+      "pickup_date": {
+        "type": "string"
+      },
+      "pickup_time": {
+        "type": "string"
+      },
+      "service_fee": {
+        "type": "integer"
+      },
+      "status": {
+        "type": "string"
+      },
+      "status_label": {
+        "type": "string"
+      },
+      "steps": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.OrderStepTrackingResponse"
+        }
+      },
+      "store_address": {
+        "type": "string"
+      },
+      "store_city": {
+        "type": "string"
+      },
+      "store_district": {
+        "type": "string"
+      },
+      "store_id": {
+        "type": "string"
+      },
+      "store_name": {
+        "type": "string"
+      },
+      "subtotal": {
+        "type": "integer"
+      },
+      "total_amount": {
+        "type": "integer"
+      },
+      "total_discount": {
+        "type": "integer"
+      },
+      "total_original_price": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.OrderItemResponse": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "normal_price": {
+        "type": "integer"
+      },
+      "product_id": {
+        "type": "string"
+      },
+      "product_image_url": {
+        "type": "string"
+      },
+      "product_name": {
+        "type": "string"
+      },
+      "product_variant_id": {
+        "type": "string"
+      },
+      "quantity": {
+        "type": "integer"
+      },
+      "rescue_price": {
+        "type": "integer"
+      },
+      "subtotal": {
+        "type": "integer"
+      },
+      "variant_name": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.OrderListItemResponse": {
+    "type": "object",
+    "properties": {
+      "created_at": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "order_number": {
+        "type": "string"
+      },
+      "payment_method": {
+        "type": "string"
+      },
+      "pickup_schedule": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "status_label": {
+        "type": "string"
+      },
+      "store_address": {
+        "type": "string"
+      },
+      "store_id": {
+        "type": "string"
+      },
+      "store_name": {
+        "type": "string"
+      },
+      "summary_image_url": {
+        "type": "string"
+      },
+      "summary_item_name": {
+        "type": "string"
+      },
+      "total_amount": {
+        "type": "integer"
+      },
+      "total_items": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.OrderStepTrackingResponse": {
+    "type": "object",
+    "properties": {
+      "completed_at": {
+        "type": "string"
+      },
+      "is_completed": {
+        "type": "boolean"
+      },
+      "step_description": {
+        "type": "string"
+      },
+      "step_name": {
+        "type": "string"
+      },
+      "step_number": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.PaymentResponse": {
+    "type": "object",
+    "properties": {
+      "amount": {
+        "type": "integer"
+      },
+      "id": {
+        "type": "string"
+      },
+      "order_id": {
+        "type": "string"
+      },
+      "paid_at": {
+        "type": "string"
+      },
+      "payment_channel": {
+        "type": "string"
+      },
+      "payment_type": {
+        "type": "string"
+      },
+      "snap_redirect_url": {
+        "type": "string"
+      },
+      "snap_token": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.ProductCardResponse": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "discount_percentage": {
+        "type": "integer"
+      },
+      "distance_km": {
+        "type": "number"
+      },
+      "id": {
+        "type": "string"
+      },
+      "main_image_url": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "normal_price": {
+        "type": "integer"
+      },
+      "operational_end": {
+        "type": "string"
+      },
+      "operational_start": {
+        "type": "string"
+      },
+      "pickup_time": {
+        "type": "string"
+      },
+      "rescue_price": {
+        "type": "integer"
+      },
+      "stock": {
+        "type": "integer"
+      },
+      "store_id": {
+        "type": "string"
+      },
+      "store_name": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.ProductImageResponse": {
+    "type": "object",
+    "properties": {
+      "display_order": {
+        "type": "integer"
+      },
+      "id": {
+        "type": "string"
+      },
+      "image_url": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.ProductResponse": {
+    "type": "object",
+    "properties": {
+      "created_at": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "images": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.ProductImageResponse"
+        }
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "main_image_url": {
+        "type": "string"
+      },
+      "min_normal_price": {
+        "type": "integer"
+      },
+      "min_rescue_price": {
+        "type": "integer"
+      },
+      "name": {
+        "type": "string"
+      },
+      "store_id": {
+        "type": "string"
+      },
+      "total_current_stock": {
+        "type": "integer"
+      },
+      "total_initial_stock": {
+        "type": "integer"
+      },
+      "updated_at": {
+        "type": "string"
+      },
+      "variants": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.ProductVariantResponse"
+        }
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.ProductVariantResponse": {
+    "type": "object",
+    "properties": {
+      "created_at": {
+        "type": "string"
+      },
+      "current_stock": {
+        "type": "integer"
+      },
+      "id": {
+        "type": "string"
+      },
+      "initial_stock": {
+        "type": "integer"
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "name": {
+        "type": "string"
+      },
+      "normal_price": {
+        "type": "integer"
+      },
+      "product_id": {
+        "type": "string"
+      },
+      "rescue_price": {
+        "type": "integer"
+      },
+      "sequence": {
+        "type": "integer"
+      },
+      "updated_at": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.RefreshTokenRequest": {
+    "type": "object",
+    "required": [
+      "refresh_token"
+    ],
+    "properties": {
+      "refresh_token": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.RegisterRequest": {
+    "type": "object",
+    "required": [
+      "email",
+      "name",
+      "password"
+    ],
+    "properties": {
+      "email": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 2
+      },
+      "password": {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 8
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.StoreCartGroup": {
+    "type": "object",
+    "properties": {
+      "distance_km": {
+        "type": "number"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_dto.CartItemResponse"
+        }
+      },
+      "operational_end": {
+        "type": "string"
+      },
+      "operational_start": {
+        "type": "string"
+      },
+      "pickup_time": {
+        "type": "string"
+      },
+      "store_address": {
+        "type": "string"
+      },
+      "store_city": {
+        "type": "string"
+      },
+      "store_district": {
+        "type": "string"
+      },
+      "store_id": {
+        "type": "string"
+      },
+      "store_name": {
+        "type": "string"
+      },
+      "store_subtotal": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.StoreResponse": {
+    "type": "object",
+    "properties": {
+      "address": {
+        "type": "string"
+      },
+      "city": {
+        "type": "string"
+      },
+      "created_at": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "district": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "latitude": {
+        "type": "number"
+      },
+      "longitude": {
+        "type": "number"
+      },
+      "name": {
+        "type": "string"
+      },
+      "operational_days": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "operational_end": {
+        "type": "string"
+      },
+      "operational_start": {
+        "type": "string"
+      },
+      "profile_picture_url": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "updated_at": {
+        "type": "string"
+      },
+      "user_id": {
+        "type": "string"
+      },
+      "whatsapp_number": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.ToggleProductStatusRequest": {
+    "type": "object",
+    "properties": {
+      "is_active": {
+        "type": "boolean"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateCartItemRequest": {
+    "type": "object",
+    "required": [
+      "quantity"
+    ],
+    "properties": {
+      "quantity": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateOrderStatusRequest": {
+    "type": "object",
+    "required": [
+      "status"
+    ],
+    "properties": {
+      "cancellation_reason": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "IN_PROCESS",
+          "READY_FOR_PICKUP",
+          "COMPLETED",
+          "CANCELLED"
+        ]
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateProductRequest": {
+    "type": "object",
+    "required": [
+      "name"
+    ],
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "main_image_url": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 2
+      },
+      "stock": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateProfileRequest": {
+    "type": "object",
+    "required": [
+      "name"
+    ],
+    "properties": {
+      "avatar_url": {
+        "type": "string"
+      },
+      "date_of_birth": {
+        "type": "string"
+      },
+      "gender": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_enums.GenderIdx"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100,
+        "minLength": 2
+      },
+      "phone_number": {
+        "type": "string",
+        "maxLength": 20,
+        "minLength": 8
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateStoreOperationalRequest": {
+    "type": "object",
+    "required": [
+      "operational_days",
+      "operational_end",
+      "operational_start",
+      "status"
+    ],
+    "properties": {
+      "operational_days": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "integer"
+        }
+      },
+      "operational_end": {
+        "type": "string"
+      },
+      "operational_start": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "INACTIVE"
+        ]
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateStoreProfileRequest": {
+    "type": "object",
+    "required": [
+      "address",
+      "city",
+      "district",
+      "email",
+      "latitude",
+      "longitude",
+      "name",
+      "whatsapp_number"
+    ],
+    "properties": {
+      "address": {
+        "type": "string"
+      },
+      "city": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "district": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "email": {
+        "type": "string"
+      },
+      "latitude": {
+        "type": "number"
+      },
+      "longitude": {
+        "type": "number"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 2
+      },
+      "profile_picture_url": {
+        "type": "string"
+      },
+      "whatsapp_number": {
+        "type": "string",
+        "maxLength": 20,
+        "minLength": 8
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateUserRoleRequest": {
+    "type": "object",
+    "required": [
+      "role_id",
+      "user_id"
+    ],
+    "properties": {
+      "role_id": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_enums.UserRoleIdx"
+      },
+      "user_id": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UploadResponse": {
+    "type": "object",
+    "properties": {
+      "content_type": {
+        "type": "string"
+      },
+      "filename": {
+        "type": "string"
+      },
+      "size": {
+        "type": "integer"
+      },
+      "url": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_dto.UserResponse": {
+    "type": "object",
+    "properties": {
+      "avatar_url": {
+        "type": "string"
+      },
+      "created_at": {
+        "type": "string"
+      },
+      "date_of_birth": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "gender": {
+        "type": "integer"
+      },
+      "gender_name": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "phone_number": {
+        "type": "string"
+      },
+      "provider": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_domain_enums.AuthProvider"
+      },
+      "role": {
+        "type": "string"
+      },
+      "role_id": {
+        "type": "integer"
+      },
+      "updated_at": {
+        "type": "string"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_enums.AuthProvider": {
+    "type": "string",
+    "enum": [
+      "LOCAL",
+      "GOOGLE"
+    ],
+    "x-enum-varnames": [
+      "ProviderLocal",
+      "ProviderGoogle"
+    ]
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_enums.GenderIdx": {
+    "type": "integer",
+    "format": "int32",
+    "enum": [
+      0,
+      1,
+      2
+    ],
+    "x-enum-varnames": [
+      "GenderUnknownIdx",
+      "GenderMaleIdx",
+      "GenderFemaleIdx"
+    ]
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_enums.UserRoleIdx": {
+    "type": "integer",
+    "format": "int32",
+    "enum": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "x-enum-varnames": [
+      "RoleUnknownIdx",
+      "RoleUserIdx",
+      "RoleAdminIdx",
+      "RoleSellerIdx"
+    ]
+  },
+  "github_com_rescuebyte_rescuebyte-be_domain_helpers_pagination.Response": {
+    "type": "object",
+    "properties": {
+      "limit": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "total_data": {
+        "type": "integer"
+      },
+      "total_page": {
+        "type": "integer"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorDetail": {
+    "type": "object",
+    "properties": {
+      "details": {},
+      "error": {
+        "type": "string",
+        "example": "validation failed"
+      },
+      "error_code": {
+        "type": "string",
+        "example": "bad_request"
+      },
+      "location": {
+        "type": "string",
+        "example": "body.email"
+      },
+      "message": {
+        "type": "string",
+        "example": "The request payload or parameter is not valid."
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorPayload": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorDetail"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse": {
+    "type": "object",
+    "properties": {
+      "payload": {
+        "$ref": "#/definitions/github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorPayload"
+      },
+      "request_id": {
+        "type": "string",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  },
+  "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.Response": {
+    "type": "object",
+    "properties": {
+      "payload": {},
+      "request_id": {
+        "type": "string",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  }
+}

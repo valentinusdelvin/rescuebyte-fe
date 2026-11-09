@@ -52,7 +52,7 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
       }
     })();
 
-    // 1. Explicit Customer check: role_id 1/2, 'customer'/'user', stored 'customer'
+    // Validasi role Customer berdasarkan role_id (1/2), keyword role, atau stored role
     if (
       roleId === 1 ||
       roleId === 2 ||
@@ -63,7 +63,7 @@ export const CustomerProfileDropdown: React.FC<CustomerProfileDropdownProps> = (
       return false;
     }
 
-    // 2. Explicit Seller / Mitra Toko check: role_id 3, seller keywords, stored 'seller'
+    // Validasi role Seller / Mitra Toko berdasarkan role_id 3, keyword seller, atau stored role
     if (
       roleId === 3 ||
       ['seller', 'merchant', 'mitra', 'restaurant', 'restoran', 'store', 'toko'].some((r) =>

@@ -1,0 +1,590 @@
+{
+  "totalFilesWithComments": 102,
+  "totalCommentLines": 1232,
+  "breakdownByFolder": {
+    "services": {
+      "files": 17,
+      "totalComments": 306,
+      "fileList": [
+        {
+          "file": "src/services/authService.ts",
+          "commentCount": 54,
+          "totalLines": 391
+        },
+        {
+          "file": "src/services/cartService.ts",
+          "commentCount": 51,
+          "totalLines": 479
+        },
+        {
+          "file": "src/services/productService.ts",
+          "commentCount": 44,
+          "totalLines": 504
+        },
+        {
+          "file": "src/services/locationService.ts",
+          "commentCount": 31,
+          "totalLines": 318
+        },
+        {
+          "file": "src/services/orderService.ts",
+          "commentCount": 29,
+          "totalLines": 664
+        },
+        {
+          "file": "src/services/storeService.ts",
+          "commentCount": 21,
+          "totalLines": 209
+        },
+        {
+          "file": "src/services/sellerAnalyticsService.ts",
+          "commentCount": 20,
+          "totalLines": 246
+        },
+        {
+          "file": "src/services/userService.ts",
+          "commentCount": 19,
+          "totalLines": 144
+        },
+        {
+          "file": "src/services/productRatingService.ts",
+          "commentCount": 10,
+          "totalLines": 66
+        },
+        {
+          "file": "src/services/storageService.ts",
+          "commentCount": 7,
+          "totalLines": 73
+        },
+        {
+          "file": "src/services/orders/checkoutService.ts",
+          "commentCount": 6,
+          "totalLines": 88
+        },
+        {
+          "file": "src/services/api.ts",
+          "commentCount": 5,
+          "totalLines": 11
+        },
+        {
+          "file": "src/services/orders/sellerOrders.ts",
+          "commentCount": 3,
+          "totalLines": 124
+        },
+        {
+          "file": "src/services/locationData.ts",
+          "commentCount": 2,
+          "totalLines": 395
+        },
+        {
+          "file": "src/services/orders/paymentService.ts",
+          "commentCount": 2,
+          "totalLines": 49
+        },
+        {
+          "file": "src/services/midtransService.ts",
+          "commentCount": 1,
+          "totalLines": 63
+        },
+        {
+          "file": "src/services/orders/customerOrders.ts",
+          "commentCount": 1,
+          "totalLines": 132
+        }
+      ]
+    },
+    "api": {
+      "files": 11,
+      "totalComments": 259,
+      "fileList": [
+        {
+          "file": "src/api/types.ts",
+          "commentCount": 38,
+          "totalLines": 571
+        },
+        {
+          "file": "src/api/services/authApi.ts",
+          "commentCount": 28,
+          "totalLines": 84
+        },
+        {
+          "file": "src/api/services/cartApi.ts",
+          "commentCount": 28,
+          "totalLines": 76
+        },
+        {
+          "file": "src/api/services/orderApi.ts",
+          "commentCount": 28,
+          "totalLines": 95
+        },
+        {
+          "file": "src/api/services/productApi.ts",
+          "commentCount": 28,
+          "totalLines": 100
+        },
+        {
+          "file": "src/api/services/reviewApi.ts",
+          "commentCount": 28,
+          "totalLines": 126
+        },
+        {
+          "file": "src/api/services/storeApi.ts",
+          "commentCount": 28,
+          "totalLines": 83
+        },
+        {
+          "file": "src/api/client.ts",
+          "commentCount": 25,
+          "totalLines": 309
+        },
+        {
+          "file": "src/api/services/userApi.ts",
+          "commentCount": 12,
+          "totalLines": 38
+        },
+        {
+          "file": "src/api/services/enumApi.ts",
+          "commentCount": 8,
+          "totalLines": 27
+        },
+        {
+          "file": "src/api/services/storageApi.ts",
+          "commentCount": 8,
+          "totalLines": 53
+        }
+      ]
+    },
+    "utils": {
+      "files": 3,
+      "totalComments": 52,
+      "fileList": [
+        {
+          "file": "src/utils/currency.ts",
+          "commentCount": 30,
+          "totalLines": 55
+        },
+        {
+          "file": "src/utils/time.ts",
+          "commentCount": 16,
+          "totalLines": 51
+        },
+        {
+          "file": "src/utils/markdown.ts",
+          "commentCount": 6,
+          "totalLines": 57
+        }
+      ]
+    },
+    "pages": {
+      "files": 18,
+      "totalComments": 229,
+      "fileList": [
+        {
+          "file": "src/pages/customer/CustomerHome.tsx",
+          "commentCount": 26,
+          "totalLines": 725
+        },
+        {
+          "file": "src/pages/customer/CustomerStoreDetail.tsx",
+          "commentCount": 22,
+          "totalLines": 514
+        },
+        {
+          "file": "src/pages/auth/CustomerAuth.tsx",
+          "commentCount": 21,
+          "totalLines": 503
+        },
+        {
+          "file": "src/pages/seller/BuatDagangan.tsx",
+          "commentCount": 21,
+          "totalLines": 488
+        },
+        {
+          "file": "src/pages/seller/SellerReviews.tsx",
+          "commentCount": 20,
+          "totalLines": 334
+        },
+        {
+          "file": "src/pages/customer/CustomerMarketplace.tsx",
+          "commentCount": 18,
+          "totalLines": 804
+        },
+        {
+          "file": "src/pages/customer/CustomerProductDetail.tsx",
+          "commentCount": 18,
+          "totalLines": 891
+        },
+        {
+          "file": "src/pages/seller/StoreProfile.tsx",
+          "commentCount": 15,
+          "totalLines": 458
+        },
+        {
+          "file": "src/pages/seller/Daganganku.tsx",
+          "commentCount": 14,
+          "totalLines": 529
+        },
+        {
+          "file": "src/pages/seller/OrderHistory.tsx",
+          "commentCount": 14,
+          "totalLines": 548
+        },
+        {
+          "file": "src/pages/customer/CustomerCheckout.tsx",
+          "commentCount": 11,
+          "totalLines": 641
+        },
+        {
+          "file": "src/pages/customer/CustomerContact.tsx",
+          "commentCount": 7,
+          "totalLines": 272
+        },
+        {
+          "file": "src/pages/auth/AuthRoleSelection.tsx",
+          "commentCount": 5,
+          "totalLines": 239
+        },
+        {
+          "file": "src/pages/seller/Dashboard.tsx",
+          "commentCount": 5,
+          "totalLines": 33
+        },
+        {
+          "file": "src/pages/shared/PlaceholderPage.tsx",
+          "commentCount": 5,
+          "totalLines": 41
+        },
+        {
+          "file": "src/pages/customer/CustomerOrderDetail.tsx",
+          "commentCount": 4,
+          "totalLines": 906
+        },
+        {
+          "file": "src/pages/customer/CustomerOrderHistory.tsx",
+          "commentCount": 2,
+          "totalLines": 699
+        },
+        {
+          "file": "src/pages/customer/CustomerCart.tsx",
+          "commentCount": 1,
+          "totalLines": 204
+        }
+      ]
+    },
+    "hooks": {
+      "files": 6,
+      "totalComments": 49,
+      "fileList": [
+        {
+          "file": "src/hooks/useReviews.ts",
+          "commentCount": 24,
+          "totalLines": 536
+        },
+        {
+          "file": "src/hooks/useCustomerCart.ts",
+          "commentCount": 10,
+          "totalLines": 393
+        },
+        {
+          "file": "src/hooks/useGeolocation.ts",
+          "commentCount": 5,
+          "totalLines": 23
+        },
+        {
+          "file": "src/hooks/useBrandLoading.ts",
+          "commentCount": 4,
+          "totalLines": 60
+        },
+        {
+          "file": "src/hooks/useAuth.ts",
+          "commentCount": 3,
+          "totalLines": 11
+        },
+        {
+          "file": "src/hooks/useCart.ts",
+          "commentCount": 3,
+          "totalLines": 11
+        }
+      ]
+    },
+    "context": {
+      "files": 3,
+      "totalComments": 32,
+      "fileList": [
+        {
+          "file": "src/context/AuthContext.tsx",
+          "commentCount": 21,
+          "totalLines": 403
+        },
+        {
+          "file": "src/context/LocationContext.tsx",
+          "commentCount": 9,
+          "totalLines": 229
+        },
+        {
+          "file": "src/context/CartContext.tsx",
+          "commentCount": 2,
+          "totalLines": 200
+        }
+      ]
+    },
+    "components": {
+      "files": 37,
+      "totalComments": 276,
+      "fileList": [
+        {
+          "file": "src/components/customer/CustomerHeader.tsx",
+          "commentCount": 20,
+          "totalLines": 468
+        },
+        {
+          "file": "src/components/dashboard/PerformanceChart.tsx",
+          "commentCount": 16,
+          "totalLines": 529
+        },
+        {
+          "file": "src/components/seller/StoreLocationMap.tsx",
+          "commentCount": 16,
+          "totalLines": 420
+        },
+        {
+          "file": "src/components/customer/MysteryBoxCard.tsx",
+          "commentCount": 14,
+          "totalLines": 268
+        },
+        {
+          "file": "src/components/reviews/ReviewCard.tsx",
+          "commentCount": 14,
+          "totalLines": 199
+        },
+        {
+          "file": "src/components/seller/SellerOrderDetailModal.tsx",
+          "commentCount": 13,
+          "totalLines": 570
+        },
+        {
+          "file": "src/components/common/BrandLoadingOverlay.tsx",
+          "commentCount": 10,
+          "totalLines": 133
+        },
+        {
+          "file": "src/components/customer/product/ProductReviewsSection.tsx",
+          "commentCount": 10,
+          "totalLines": 326
+        },
+        {
+          "file": "src/components/layout/Sidebar.tsx",
+          "commentCount": 10,
+          "totalLines": 223
+        },
+        {
+          "file": "src/components/seller/StoreInfoForm.tsx",
+          "commentCount": 10,
+          "totalLines": 467
+        },
+        {
+          "file": "src/components/dashboard/FinanceCard.tsx",
+          "commentCount": 9,
+          "totalLines": 68
+        },
+        {
+          "file": "src/components/layout/Header.tsx",
+          "commentCount": 9,
+          "totalLines": 271
+        },
+        {
+          "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+          "commentCount": 9,
+          "totalLines": 196
+        },
+        {
+          "file": "src/components/reviews/StarRating.tsx",
+          "commentCount": 9,
+          "totalLines": 149
+        },
+        {
+          "file": "src/components/common/FormattedDescription.tsx",
+          "commentCount": 8,
+          "totalLines": 88
+        },
+        {
+          "file": "src/components/reviews/ReviewFilterBar.tsx",
+          "commentCount": 8,
+          "totalLines": 242
+        },
+        {
+          "file": "src/components/customer/CustomerOrderModal.tsx",
+          "commentCount": 7,
+          "totalLines": 255
+        },
+        {
+          "file": "src/components/customer/CustomerProfileDropdown.tsx",
+          "commentCount": 7,
+          "totalLines": 340
+        },
+        {
+          "file": "src/components/dashboard/ActivityCards.tsx",
+          "commentCount": 7,
+          "totalLines": 107
+        },
+        {
+          "file": "src/components/customer/store/StoreReviewsList.tsx",
+          "commentCount": 6,
+          "totalLines": 377
+        },
+        {
+          "file": "src/components/products/ProductDescriptionModal.tsx",
+          "commentCount": 6,
+          "totalLines": 243
+        },
+        {
+          "file": "src/components/ui/Badge.tsx",
+          "commentCount": 6,
+          "totalLines": 50
+        },
+        {
+          "file": "src/components/common/ConfirmDeleteModal.tsx",
+          "commentCount": 5,
+          "totalLines": 112
+        },
+        {
+          "file": "src/components/customer/order/OrderReviewModal.tsx",
+          "commentCount": 5,
+          "totalLines": 435
+        },
+        {
+          "file": "src/components/reviews/ReviewPagination.tsx",
+          "commentCount": 5,
+          "totalLines": 116
+        },
+        {
+          "file": "src/components/reviews/ReviewSummaryCards.tsx",
+          "commentCount": 5,
+          "totalLines": 110
+        },
+        {
+          "file": "src/components/seller/OperationalCard.tsx",
+          "commentCount": 5,
+          "totalLines": 245
+        },
+        {
+          "file": "src/components/ui/Modal.tsx",
+          "commentCount": 5,
+          "totalLines": 158
+        },
+        {
+          "file": "src/components/common/Toast.tsx",
+          "commentCount": 4,
+          "totalLines": 17
+        },
+        {
+          "file": "src/components/ui/index.ts",
+          "commentCount": 4,
+          "totalLines": 13
+        },
+        {
+          "file": "src/components/customer/CustomerFooter.tsx",
+          "commentCount": 3,
+          "totalLines": 446
+        },
+        {
+          "file": "src/components/reviews/RatingDistribution.tsx",
+          "commentCount": 3,
+          "totalLines": 64
+        },
+        {
+          "file": "src/components/ui/Button.tsx",
+          "commentCount": 3,
+          "totalLines": 105
+        },
+        {
+          "file": "src/components/common/DatePicker.tsx",
+          "commentCount": 2,
+          "totalLines": 165
+        },
+        {
+          "file": "src/components/common/ProfileAvatar.tsx",
+          "commentCount": 1,
+          "totalLines": 281
+        },
+        {
+          "file": "src/components/customer/store/StoreDaganganGrid.tsx",
+          "commentCount": 1,
+          "totalLines": 298
+        },
+        {
+          "file": "src/components/payment/MidtransPaymentModal.tsx",
+          "commentCount": 1,
+          "totalLines": 249
+        }
+      ]
+    },
+    "App.tsx": {
+      "files": 1,
+      "totalComments": 15,
+      "fileList": [
+        {
+          "file": "src/App.tsx",
+          "commentCount": 15,
+          "totalLines": 591
+        }
+      ]
+    },
+    "features": {
+      "files": 1,
+      "totalComments": 4,
+      "fileList": [
+        {
+          "file": "src/features/customer/marketplace/model.ts",
+          "commentCount": 4,
+          "totalLines": 155
+        }
+      ]
+    },
+    "types": {
+      "files": 1,
+      "totalComments": 4,
+      "fileList": [
+        {
+          "file": "src/types/index.ts",
+          "commentCount": 4,
+          "totalLines": 262
+        }
+      ]
+    },
+    "app": {
+      "files": 3,
+      "totalComments": 5,
+      "fileList": [
+        {
+          "file": "src/app/AppRoutes.tsx",
+          "commentCount": 2,
+          "totalLines": 364
+        },
+        {
+          "file": "src/app/hashRouting.ts",
+          "commentCount": 2,
+          "totalLines": 48
+        },
+        {
+          "file": "src/app/useHashNavigation.ts",
+          "commentCount": 1,
+          "totalLines": 264
+        }
+      ]
+    },
+    "vite-env.d.ts": {
+      "files": 1,
+      "totalComments": 1,
+      "fileList": [
+        {
+          "file": "src/vite-env.d.ts",
+          "commentCount": 1,
+          "totalLines": 13
+        }
+      ]
+    }
+  },
+  "slopCandidates": [],
+  "valuableToLocalize": []
+}

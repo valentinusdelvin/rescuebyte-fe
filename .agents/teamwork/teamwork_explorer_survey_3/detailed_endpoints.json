@@ -1,0 +1,1996 @@
+[
+  {
+    "route": "/api/v1/auth/google",
+    "method": "GET",
+    "summary": "Get Google OAuth2 URL",
+    "description": "Retrieve Google OAuth2 consent URL and CSRF state token",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Google OAuth URL generated",
+        "schemaRef": null
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/google/callback",
+    "method": "GET",
+    "summary": "Handle Google OAuth2 callback",
+    "description": "Authenticate or register a user through Google OAuth2 callback query parameters",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "code",
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "OAuth Authorization Code",
+        "schemaRef": null
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "OAuth State",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Authentication successful",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or state mismatch",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/login",
+    "method": "POST",
+    "summary": "Login user",
+    "description": "Authenticate user credentials and return JWT tokens",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Login Credentials",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.LoginRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Login successful",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Invalid email or password",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/logout",
+    "method": "POST",
+    "summary": "Logout user",
+    "description": "Revoke the refresh token and invalidate the user session",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Refresh Token Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.RefreshTokenRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Successfully logged out",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/me",
+    "method": "GET",
+    "summary": "Get current authenticated user",
+    "description": "Retrieve the profile of currently logged-in user from token claims",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Current user profile",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "User not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/refresh",
+    "method": "POST",
+    "summary": "Refresh access token",
+    "description": "Generate a new access and refresh token pair using an existing valid refresh token",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Refresh Token Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.RefreshTokenRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Token successfully refreshed",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Invalid or expired refresh token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/auth/register",
+    "method": "POST",
+    "summary": "Register new user account",
+    "description": "Register a new user with name, email, and password",
+    "operationId": "",
+    "tag": "Auth",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "User Registration Details",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.RegisterRequest"
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "User successfully registered",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "409": {
+        "description": "Email already exists",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart",
+    "method": "GET",
+    "summary": "Get customer cart",
+    "description": "Retrieve cart items grouped by store with financial calculations",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "latitude",
+        "in": "query",
+        "required": false,
+        "type": "number",
+        "description": "User latitude",
+        "schemaRef": null
+      },
+      {
+        "name": "longitude",
+        "in": "query",
+        "required": false,
+        "type": "number",
+        "description": "User longitude",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Cart details",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart",
+    "method": "DELETE",
+    "summary": "Clear cart",
+    "description": "Remove all items from the customer's cart",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Cart cleared successfully",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart/count",
+    "method": "GET",
+    "summary": "Get cart items count",
+    "description": "Get total count of items/boxes in cart for the floating cart badge",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Cart count",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart/items",
+    "method": "POST",
+    "summary": "Add item to cart",
+    "description": "Add a product variant to the customer's cart",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Add to Cart Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.AddToCartRequest"
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "Item added successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or insufficient stock",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Variant not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart/items/{id}",
+    "method": "DELETE",
+    "summary": "Remove item from cart",
+    "description": "Delete a specific item from the cart",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Cart Item UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Item removed successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Cart item not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart/items/{id}",
+    "method": "PATCH",
+    "summary": "Update cart item quantity",
+    "description": "Change the quantity of an item in the cart",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Cart Item UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Update Quantity Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateCartItemRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Item updated successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or insufficient stock",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Cart item not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/cart/stores/{store_id}",
+    "method": "DELETE",
+    "summary": "Remove all items from a store",
+    "description": "Delete all cart items belonging to a specific store",
+    "operationId": "",
+    "tag": "Cart",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "store_id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Store UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Store items removed successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/enums",
+    "method": "GET",
+    "summary": "Get system enums",
+    "description": "Retrieve system enums and lookup values (optional filter by comma-separated types)",
+    "operationId": "",
+    "tag": "Enums",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "types",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Comma-separated enum types filter (e.g. user_role,auth_provider)",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Enums retrieved successfully",
+        "schemaRef": null
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders",
+    "method": "GET",
+    "summary": "List customer orders",
+    "description": "Retrieve a list of orders for the customer with tab status filtering and search",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Page number",
+        "schemaRef": null
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Items per page",
+        "schemaRef": null
+      },
+      {
+        "name": "tab",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Status tab filter: all, waiting_payment, waiting_confirmation, ready_for_pickup, completed, cancelled",
+        "schemaRef": null
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Search by order number, store name, or product name",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "List of orders with pagination metadata",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders/checkout",
+    "method": "POST",
+    "summary": "Checkout order",
+    "description": "Create an order for a store with online payment (Midtrans Snap) or cash on pickup",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Checkout Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.CheckoutRequest"
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "Order created with optional snap token",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or insufficient stock",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store or variant not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders/seller",
+    "method": "GET",
+    "summary": "List seller orders",
+    "description": "Retrieve orders for the authenticated seller's store with status filtering and search",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Page number",
+        "schemaRef": null
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Items per page",
+        "schemaRef": null
+      },
+      {
+        "name": "tab",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Status filter: all, WAITING_PAYMENT, WAITING_CONFIRMATION, IN_PROCESS, READY_FOR_PICKUP, COMPLETED, CANCELLED",
+        "schemaRef": null
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Search by order number, customer name, or product name",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Seller order list",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Seller store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders/{id}",
+    "method": "GET",
+    "summary": "Get order detail",
+    "description": "Retrieve complete order details including items, payment info, and 5-step status tracking",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Order UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Order detail",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Order not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders/{id}/cancel",
+    "method": "POST",
+    "summary": "Cancel order",
+    "description": "Cancel an order before it is processed and automatically restore variant stocks",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Order UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "request",
+        "in": "body",
+        "required": false,
+        "description": "Cancel Order Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.CancelOrderRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Order cancelled successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Order cannot be cancelled in its current state",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Order not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/orders/{id}/status",
+    "method": "PATCH",
+    "summary": "Update order status by merchant",
+    "description": "Transition order status (IN_PROCESS, READY_FOR_PICKUP, COMPLETED, CANCELLED)",
+    "operationId": "",
+    "tag": "Order",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Order UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Update Status Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateOrderStatusRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated order detail",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or invalid status",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden - Store access unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Order not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/payments/midtrans/webhook",
+    "method": "POST",
+    "summary": "Midtrans payment webhook",
+    "description": "Handle Midtrans payment notification with SHA-512 signature validation and automatic status transition",
+    "operationId": "",
+    "tag": "Payment",
+    "isAuth": false,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "payload",
+        "in": "body",
+        "required": true,
+        "description": "Midtrans Notification Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.MidtransNotificationPayload"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Payment notification processed successfully",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Invalid signature",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Order not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/payments/order/{order_id}",
+    "method": "GET",
+    "summary": "Check payment status",
+    "description": "Check payment status for a specific order",
+    "operationId": "",
+    "tag": "Payment",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Order UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Payment status details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Payment not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products",
+    "method": "GET",
+    "summary": "Get all products",
+    "description": "Retrieve a list of active products for marketplace card display with optional filtering",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Page number",
+        "schemaRef": null
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Items per page",
+        "schemaRef": null
+      },
+      {
+        "name": "store_id",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Filter by store UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "nama",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Filter by product name",
+        "schemaRef": null
+      },
+      {
+        "name": "name",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Alias filter by product name",
+        "schemaRef": null
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Search by product or store name",
+        "schemaRef": null
+      },
+      {
+        "name": "city",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Filter by store city",
+        "schemaRef": null
+      },
+      {
+        "name": "latitude",
+        "in": "query",
+        "required": false,
+        "type": "number",
+        "description": "User latitude for distance calculation",
+        "schemaRef": null
+      },
+      {
+        "name": "longitude",
+        "in": "query",
+        "required": false,
+        "type": "number",
+        "description": "User longitude for distance calculation",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "List of products with pagination metadata",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products",
+    "method": "POST",
+    "summary": "Create a new product",
+    "description": "Create a new food rescue product with variants and optional gallery images",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Create Product Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.CreateProductRequest"
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "Created product details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products/me/list",
+    "method": "GET",
+    "summary": "List merchant products",
+    "description": "Retrieve a list of products belonging to the merchant's store with filtering and search",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Page number",
+        "schemaRef": null
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Items per page",
+        "schemaRef": null
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Search by product name",
+        "schemaRef": null
+      },
+      {
+        "name": "tab",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Filter tab: all, active, low_stock, out_of_stock",
+        "schemaRef": null
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Sort order: newest, oldest",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "List of products",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products/{id}",
+    "method": "GET",
+    "summary": "Get product detail",
+    "description": "Retrieve product detail by its UUID",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Product UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Product details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Product not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products/{id}",
+    "method": "PUT",
+    "summary": "Update product",
+    "description": "Update product information",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Product UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Update Product Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateProductRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated product details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden - Store access unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Product not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products/{id}",
+    "method": "DELETE",
+    "summary": "Delete product",
+    "description": "Delete a product and its associated variants and images",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Product UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Product successfully deleted",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden - Store access unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Product not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/products/{id}/status",
+    "method": "PATCH",
+    "summary": "Toggle product status",
+    "description": "Toggle product active/inactive state",
+    "operationId": "",
+    "tag": "Product",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Product UUID",
+        "schemaRef": null
+      },
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Toggle Status Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.ToggleProductStatusRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated product details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden - Store access unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Product not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/storage/upload",
+    "method": "POST",
+    "summary": "Upload an image",
+    "description": "Upload a single image file (JPEG, PNG, WebP) to Supabase Storage",
+    "operationId": "",
+    "tag": "Storage",
+    "isAuth": true,
+    "consumes": [
+      "multipart/form-data"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "folder",
+        "in": "formData",
+        "required": false,
+        "type": "string",
+        "description": "Target folder: products, stores, avatars (default: products)",
+        "schemaRef": null
+      },
+      {
+        "name": "file",
+        "in": "formData",
+        "required": true,
+        "type": "file",
+        "description": "Image file to upload (max 5MB for products, 2MB for stores/avatars)",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "Uploaded image details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Storage upload failed",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/storage/upload-multiple",
+    "method": "POST",
+    "summary": "Upload multiple images",
+    "description": "Upload multiple image files (JPEG, PNG, WebP) to Supabase Storage (max 5 files)",
+    "operationId": "",
+    "tag": "Storage",
+    "isAuth": true,
+    "consumes": [
+      "multipart/form-data"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "folder",
+        "in": "formData",
+        "required": false,
+        "type": "string",
+        "description": "Target folder: products, stores, avatars (default: products)",
+        "schemaRef": null
+      },
+      {
+        "name": "files",
+        "in": "formData",
+        "required": true,
+        "type": "array",
+        "description": "Image files to upload",
+        "schemaRef": null,
+        "items": {
+          "type": "file"
+        }
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "List of uploaded images details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Storage upload failed",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores",
+    "method": "GET",
+    "summary": "Get all stores",
+    "description": "Retrieve a list of active stores with optional filtering by name",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Page number",
+        "schemaRef": null
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "description": "Items per page",
+        "schemaRef": null
+      },
+      {
+        "name": "name",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Filter by store name",
+        "schemaRef": null
+      },
+      {
+        "name": "nama",
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "Alias filter by store name",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "List of stores with pagination metadata",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores",
+    "method": "POST",
+    "summary": "Create a new store",
+    "description": "Register a new store for the authenticated user",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Create Store Request Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.CreateStoreRequest"
+      }
+    ],
+    "responses": {
+      "201": {
+        "description": "Created Store details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "409": {
+        "description": "User already has a store",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores/me/operational",
+    "method": "PUT",
+    "summary": "Update store operational info",
+    "description": "Update operational hours, operating days, and status",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Update Operational Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateStoreOperationalRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated store details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores/me/profile",
+    "method": "GET",
+    "summary": "Get authenticated user's store",
+    "description": "Retrieve the store profile of the currently logged-in user",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Store profile details",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores/me/profile",
+    "method": "PUT",
+    "summary": "Update store profile",
+    "description": "Update basic store details (name, description, contact, location)",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Update Store Profile Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateStoreProfileRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated store details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores/me/status",
+    "method": "PATCH",
+    "summary": "Toggle store active status",
+    "description": "Switch store status between ACTIVE and INACTIVE",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "Updated store with toggled status",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/stores/{id}",
+    "method": "GET",
+    "summary": "Get store by ID",
+    "description": "Retrieve public store profile by its UUID",
+    "operationId": "",
+    "tag": "Store",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Store UUID",
+        "schemaRef": null
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Store profile details",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Invalid UUID format",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "Store not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/users/profile",
+    "method": "GET",
+    "summary": "Get user profile",
+    "description": "Retrieve the profile of the currently authenticated user",
+    "operationId": "",
+    "tag": "User",
+    "isAuth": true,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "User profile details",
+        "schemaRef": null
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "User not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/users/profile",
+    "method": "PUT",
+    "summary": "Update user profile",
+    "description": "Update the authenticated user's name and/or avatar URL",
+    "operationId": "",
+    "tag": "User",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "Profile Update Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateProfileRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated user profile",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/api/v1/users/role",
+    "method": "PATCH",
+    "summary": "Update user role",
+    "description": "Modify a target user's role (Admin role required)",
+    "operationId": "",
+    "tag": "User",
+    "isAuth": true,
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [
+      {
+        "name": "request",
+        "in": "body",
+        "required": true,
+        "description": "User Role Update Payload",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_domain_dto.UpdateUserRoleRequest"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Updated user with new role",
+        "schemaRef": null
+      },
+      "400": {
+        "description": "Bad request or validation error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "401": {
+        "description": "Unauthorized or missing token",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "403": {
+        "description": "Forbidden - Admin access required",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "404": {
+        "description": "User not found",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      },
+      "500": {
+        "description": "Internal server error",
+        "schemaRef": "github_com_rescuebyte_rescuebyte-be_pkg_helpers_http_response.ErrorResponse"
+      }
+    }
+  },
+  {
+    "route": "/health",
+    "method": "GET",
+    "summary": "Health check endpoint",
+    "description": "Check API server status and liveness",
+    "operationId": "",
+    "tag": "Health Check",
+    "isAuth": false,
+    "consumes": [],
+    "produces": [
+      "application/json"
+    ],
+    "parameters": [],
+    "responses": {
+      "200": {
+        "description": "API is healthy",
+        "schemaRef": null
+      }
+    }
+  }
+]
