@@ -68,6 +68,9 @@ Every feature discovered in Phase 1 Survey is inventoried and assigned to an aut
 | 23 | Comprehensive QA & Static Verification | Run and verify `npm run build` (0 errors), `tsc -b` (0 errors), and `oxlint` (0 errors/blocking warnings) | M4 | R5 Acceptance |
 | 24 | Bug Remediation & Verification Cycle | Resolve any functional, behavioral, or typing regressions identified during testing | M4 | R5 Acceptance |
 | 25 | 10 Final Deliverables Documentation | Author the complete 10-part final deliverables report covering all technical and operational facets | M4 | R5 Acceptance |
+| 26 | Homepage Mystery Box di Sekitar Adjustment | Limit to 3 cards, dynamic location-based query, no duplication, add "Lihat Selengkapnya" link to Marketplace | M5 | R1 |
+| 27 | Homepage Mystery Box Terlaris Adjustment | Limit to 3 cards, dynamic popularity query, no duplication, add "Lihat Selengkapnya" link to Marketplace | M5 | R2 |
+| 28 | Code Comments & Documentation Natural Indonesian | Localize code comments and docs to natural, clean Indonesian following antislop-code hygiene (keep English tech terms) | M5 | R3 (Clarified) |
 
 ---
 
@@ -79,6 +82,7 @@ Every feature discovered in Phase 1 Survey is inventoried and assigned to an aut
 | M2 | Centralized API Client, Swagger Types, & Custom Hooks | Build centralized Axios client with auto-refresh, 49 Swagger schemas in `types.ts`, domain API callers, `AuthContext`, `CartContext`, and custom data hooks | M1 | DONE |
 | M3 | Component Decomposition, UI Slicing, & State Decoupling | Decouple 26 presentational components; decompose 4 giant pages (>1,000 lines); implement mobile sticky bars, header fix, and a11y keyboard controls | M1, M2 | DONE |
 | M4 | Independent QA Review, Bug Remediation, Validation, & Final Deliverables | Execute static checks (`tsc -b`, `npm run build`), contract verification, responsive/a11y validation, bug fixes, and compile 10-part final deliverable report | M3 | DONE |
+| M5 | Final Homepage Adjustments & Code Comments Localization | Adjust homepage sections (Sekitar & Terlaris max 3 cards + Lihat Selengkapnya links to Marketplace); localize code comments & docs to natural Indonesian per antislop-code | M4 | IN_PROGRESS |
 
 ---
 

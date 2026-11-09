@@ -26,10 +26,34 @@ export function useHashNavigation({
   showToast, isAuthenticated, paymentOrderData, setPaymentOrderData, selectedProduct, setSelectedProduct,
   setSelectedStoreName, setSelectedStoreId, setActiveView, setActiveLabel, setOrderTab,
 }: UseHashNavigationOptions) {
-  // Sync with browser back/forward hash changes with deep linking
+  // Sinkronkan state navigasi dengan tombol back/forward browser serta deep linking
   useEffect(() => {
     const handleHashChange = () => {
       const { path, params } = parseHash();
+      const isSellerPath =
+        path.startsWith('beranda-seller') ||
+        path === 'beranda' ||
+        path.startsWith('profil-seller') ||
+        path === 'profil' ||
+        path.startsWith('riwayat-seller') ||
+        path.startsWith('riwayat') ||
+        path.startsWith('buat-dagangan-seller') ||
+        path.startsWith('buat-dagangan') ||
+        path.startsWith('daganganku-seller') ||
+        path.startsWith('daganganku') ||
+        path.startsWith('ulasan-seller') ||
+        path === 'ulasan';
+
+      if (isSellerPath) {
+        if (!getCurrentUser() && !isAuthenticated) {
+          showToast('Silakan masuk terlebih dahulu untuk mengakses portal Mitra Toko.', 'warning');
+          setActiveView('view-auth-role-selection');
+          setActiveLabel('Pilih Peran Akun');
+          window.history.replaceState(null, '', '#auth');
+          return;
+        }
+      }
+
       if (path.startsWith('beranda-seller') || path === 'beranda') {
         setActiveView('view-beranda');
         setActiveLabel('Beranda Toko');
@@ -49,6 +73,9 @@ export function useHashNavigation({
       } else if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) {
         setActiveView('view-daganganku');
         setActiveLabel('Daganganku');
+      } else if (path.startsWith('ulasan-seller') || path === 'ulasan') {
+        setActiveView('view-ulasan');
+        setActiveLabel('Ulasan Pembeli');
       } else if (isCustomerOrderDetailPath(path)) {
         if (!getCurrentUser() && !isAuthenticated) {
           showToast('Silakan masuk terlebih dahulu untuk mengakses detail pesanan.', 'warning');
@@ -70,6 +97,7 @@ export function useHashNavigation({
                   status: apiDetail.status,
                   items: (apiDetail.items || []).map((it: any) => ({
                     id: it.id,
+                    productId: it.product_id || it.productId || it.id,
                     name: it.product_name || 'Paket Surplus',
                     storeName: apiDetail.store_name || 'Toko Mitra',
                     categoryTags: ['Surplus Makanan'],
@@ -79,6 +107,7 @@ export function useHashNavigation({
                     quantity: it.quantity || 1,
                   })),
                   primaryStore: {
+                    storeId: apiDetail.store_id || '',
                     storeName: apiDetail.store_name || 'Toko Mitra',
                     storeAddress: apiDetail.store_address || '',
                   },

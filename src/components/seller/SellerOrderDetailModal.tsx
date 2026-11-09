@@ -95,7 +95,7 @@ export function SellerOrderDetailModal({
         if (detail) {
           setDetailData(detail);
 
-          // 1. Resolve Store details if available
+          // Lengkapi detail toko jika data alamat, kota, atau kecamatan belum tersedia
           const storeId = detail.store_id || order?.storeId;
           const needsStoreInfo = !detail.store_address || !detail.store_city || !detail.store_district;
           if (storeId && needsStoreInfo) {
@@ -109,7 +109,7 @@ export function SellerOrderDetailModal({
             }
           }
 
-          // 2. Resolve Customer details if customer ID is available but phone/name is incomplete
+          // Lengkapi informasi pelanggan jika ID tersedia namun nama atau nomor telepon belum lengkap
           const customerId = detail.customer_id || order?.customerId;
           const hasPhone = Boolean(
             detail.customer_phone ||

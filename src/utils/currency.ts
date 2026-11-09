@@ -1,14 +1,9 @@
 /**
- * Centralized Indonesian Rupiah Currency Utilities
- * Formats, cleans, and parses currency numbers and inputs according to Indonesian localization standards (id-ID).
+ * Utilitas pemformatan mata uang Rupiah terpusat (standar id-ID).
  */
 
 /**
- * Format numeric amount to Indonesian Rupiah thousands dot-separated string.
- * Examples:
- * - 35000 -> "35.000"
- * - 0 -> "0"
- * - 1250000 -> "1.250.000"
+ * Format nominal angka menjadi string ribuan bertitik (contoh: 35000 -> "35.000").
  */
 export function formatRupiah(amount: number): string {
   if (amount === null || amount === undefined || isNaN(amount)) {
@@ -18,21 +13,14 @@ export function formatRupiah(amount: number): string {
 }
 
 /**
- * Format numeric amount with standardized Indonesian Rupiah prefix "Rp".
- * Follows RescueByte design guide: strictly cohesive weight, no space or dot after Rp.
- * Examples:
- * - 35000 -> "Rp35.000"
+ * Format nominal dengan awalan "Rp" tanpa spasi sesuai panduan desain RescueByte (contoh: "Rp35.000").
  */
 export function formatRupiahWithPrefix(amount: number): string {
   return `Rp${formatRupiah(amount)}`;
 }
 
 /**
- * Format raw input string into thousands dot separated string while user types.
- * Strips any non-digit characters.
- * Examples:
- * - "10000" -> "10.000"
- * - "" -> ""
+ * Format input teks mentah menjadi format ribuan bertitik secara realtime saat user mengetik.
  */
 export function formatPriceInput(raw: string): string {
   if (!raw) return '';
@@ -42,10 +30,7 @@ export function formatPriceInput(raw: string): string {
 }
 
 /**
- * Parse thousands dot separated string back into a numeric value.
- * Examples:
- * - "10.000" -> 10000
- * - "" -> null
+ * Parse kembali string angka bertitik menjadi nilai integer (contoh: "10.000" -> 10000).
  */
 export function parsePriceInput(val: string): number | null {
   if (!val) return null;

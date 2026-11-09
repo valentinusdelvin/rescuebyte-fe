@@ -1,10 +1,13 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { CustomerMysteryBox } from '../../types';
+import { parseHash } from '../../app/hashRouting';
 import { getAllStores } from '../../services/storeService';
 import { getPublicProducts, getStoredProducts } from '../../services/productService';
 import { calculateDistanceKm, formatDistanceKm, getUserCoordinates } from '../../services/locationService';
+import { useStoreReviews, useStoreProductReviews } from '../../hooks/useReviews';
+import { reviewApi } from '../../api/services/reviewApi';
 import {
   StoreHero,
   StoreTabs,
@@ -17,6 +20,22 @@ import {
   StoreDetailInfo,
 } from '../../components/customer/store';
 import cardPastry from '../../assets/customer/card-monsieur-spoon.jpg';
+
+function formatReviewDate(dateStr?: string): string {
+  if (!dateStr) return 'Baru saja';
+  if (/[a-zA-Z]/.test(dateStr) && !dateStr.includes('T')) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(d);
+  } catch {
+    return dateStr;
+  }
+}
 
 export interface CustomerStoreDetailProps {
   storeName?: string;
@@ -43,6 +62,47 @@ export function CustomerStoreDetail({
 }: CustomerStoreDetailProps) {
   const [activeTab, setActiveTab] = useState<StoreDetailTab>('tentang');
 
+  // Resilient smooth scrolling to #ulasan-pelanggan
+  const scrollToReviews = useCallback(() => {
+    setActiveTab('ulasan');
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    const tryScroll = () => {
+      const el = document.getElementById('ulasan-pelanggan');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        requestAnimationFrame(tryScroll);
+      }
+    };
+
+    requestAnimationFrame(tryScroll);
+  }, []);
+
+  // Detect section=ulasan-pelanggan or #ulasan-pelanggan on mount
+  useEffect(() => {
+    const { params, anchor } = parseHash();
+    const section = params.get('section') || anchor;
+    if (section === 'ulasan-pelanggan' || window.location.hash.includes('ulasan-pelanggan')) {
+      scrollToReviews();
+    }
+  }, [scrollToReviews]);
+
+  // Listen to hash changes while mounted
+  useEffect(() => {
+    const handleHash = () => {
+      const { params, anchor } = parseHash();
+      const section = params.get('section') || anchor;
+      if (section === 'ulasan-pelanggan' || window.location.hash.includes('ulasan-pelanggan')) {
+        scrollToReviews();
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [scrollToReviews]);
+
   // Resolve store name from prop, localStorage, or fallback to Toko Rejak
   const effectiveStoreName = useMemo(() => {
     if (storeName && storeName.trim() && storeName.trim() !== 'TerasRasa Bakery') return storeName.trim();
@@ -64,12 +124,12 @@ export function CustomerStoreDetail({
     } catch { }
   }, []);
 
-  // Dynamic store data initialized cleanly
+  // Dynamic store data initialized cleanly with honest zero defaults
   const [storeData, setStoreData] = useState<StoreDetailInfo>(() => ({
     name: effectiveStoreName,
     category: 'Kuliner & Pangan Surplus',
     status: 'Buka',
-    rating: 5.0,
+    rating: 0,
     reviewCount: 0,
     distance: '',
     area: '',
@@ -83,8 +143,39 @@ export function CustomerStoreDetail({
     avatarUrl: '',
   }));
 
+  // Track resolved store backend UUID
+  const [resolvedStoreId, setResolvedStoreId] = useState<string | undefined>(storeId);
+
+  useEffect(() => {
+    if (storeId) {
+      setResolvedStoreId(storeId);
+    }
+  }, [storeId]);
+
+  // Live reviews & rating summary from backend API
+  const {
+    reviews: rawReviews,
+    averageRating,
+    totalReviews,
+  } = useStoreReviews(resolvedStoreId, undefined, { autoFetch: Boolean(resolvedStoreId) });
+
+  // Sync storeData rating & reviewCount reactively whenever backend summary changes
+  useEffect(() => {
+    setStoreData((prev) => ({
+      ...prev,
+      rating: averageRating,
+      reviewCount: totalReviews,
+    }));
+  }, [averageRating, totalReviews]);
+
   // Initial store products
   const [storeProducts, setStoreProducts] = useState<StoreProductItem[]>([]);
+
+  // Fetch product reviews for products belonging to this store
+  const {
+    productReviews: storeProductReviews,
+    isLoading: isProductReviewsLoading,
+  } = useStoreProductReviews(storeProducts);
 
   // Sync store profile & products dynamically from backend API & local storage
   useEffect(() => {
@@ -108,6 +199,10 @@ export function CustomerStoreDetail({
           (currentTarget.includes('rejak') ? stores.find((s) => (s.name || '').toLowerCase().includes('rejak')) : undefined);
 
         if (matchedBackendStore) {
+          if (matchedBackendStore.id && matchedBackendStore.id !== resolvedStoreId) {
+            setResolvedStoreId(matchedBackendStore.id);
+          }
+
           const fullAddress = [
             matchedBackendStore.address,
             matchedBackendStore.district,
@@ -156,13 +251,12 @@ export function CustomerStoreDetail({
               ? formatDistanceKm(calculateDistanceKm(userCoords.lat, userCoords.lng, storeLat, storeLng))
               : '0.0 km';
 
-          setStoreData({
+          setStoreData((prev) => ({
+            ...prev,
             id: matchedBackendStore.id,
             name: matchedBackendStore.name,
             category: 'Aneka Makanan Berat & Kuliner',
             status: displayStatus,
-            rating: 4.9,
-            reviewCount: 48,
             distance: dynamicDistance,
             area: matchedBackendStore.district
               ? `${matchedBackendStore.district}, ${matchedBackendStore.city || 'Malang'}`
@@ -175,10 +269,26 @@ export function CustomerStoreDetail({
             socialMedia: `@${matchedBackendStore.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
             description: matchedBackendStore.description || '',
             avatarUrl: matchedBackendStore.profile_picture_url || cardPastry,
-          });
+          }));
         }
 
         const targetStoreId = matchedBackendStore?.id || storeId;
+
+        // Fetch real store summary statistics from dedicated backend endpoint
+        if (targetStoreId) {
+          try {
+            const summary = await reviewApi.getStoreSummary(targetStoreId);
+            if (!isCancelled && summary) {
+              setStoreData((prev) => ({
+                ...prev,
+                rating: summary.average_rating > 0 ? Math.round(summary.average_rating * 10) / 10 : 0,
+                reviewCount: summary.total_reviews ?? 0,
+              }));
+            }
+          } catch {
+            // Silently fall back to useStoreReviews hook calculation
+          }
+        }
         const userCoords = getUserCoordinates();
 
         // 2. Fetch live products from backend GET /api/v1/products?store_id=... with coordinates & localStorage
@@ -270,8 +380,23 @@ export function CustomerStoreDetail({
     };
   }, [effectiveStoreName, storeId]);
 
-  // Reviews list (can be extended with live backend reviews)
-  const storeReviews: StoreReviewItem[] = useMemo(() => [], []);
+  // Reviews list mapped from live backend reviews
+  const storeReviews: StoreReviewItem[] = useMemo(() => {
+    return (rawReviews || []).map((r) => ({
+      id: r.id,
+      name: r.author?.name || 'Pelanggan',
+      avatar: r.author?.avatar_url || '',
+      rating: r.rating,
+      date: formatReviewDate(r.created_at),
+      comment: r.content,
+      type: 'store' as const,
+    }));
+  }, [rawReviews]);
+
+  const combinedTotalReviews = useMemo(() => {
+    const storeCount = storeData.reviewCount || storeReviews.length;
+    return storeCount + storeProductReviews.length;
+  }, [storeData.reviewCount, storeReviews.length, storeProductReviews.length]);
 
   const handleSelectProduct = (prod: StoreProductItem) => {
     if (onNavigateProductDetail) {
@@ -334,13 +459,17 @@ export function CustomerStoreDetail({
         />
 
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-16 flex-1">
-          <StoreHero storeData={storeData} onOpenGoogleMaps={handleOpenGoogleMaps} />
+          <StoreHero
+            storeData={storeData}
+            onOpenGoogleMaps={handleOpenGoogleMaps}
+            onScrollToReviews={scrollToReviews}
+          />
 
           <StoreTabs
             activeTab={activeTab}
             onTabChange={setActiveTab}
             productCount={storeProducts.length}
-            reviewCount={storeData.reviewCount}
+            reviewCount={combinedTotalReviews}
           />
 
           {activeTab === 'tentang' && (
@@ -348,7 +477,7 @@ export function CustomerStoreDetail({
               storeData={storeData}
               storeProducts={storeProducts}
               onNavigateToProducts={() => setActiveTab('produk')}
-              onNavigateToReviews={() => setActiveTab('ulasan')}
+              onNavigateToReviews={scrollToReviews}
               onSelectProduct={handleSelectProduct}
             />
           )}
@@ -364,7 +493,13 @@ export function CustomerStoreDetail({
           {(activeTab === 'tentang' || activeTab === 'ulasan') && (
             <StoreReviewsList
               reviews={storeReviews}
-              reviewCount={storeData.reviewCount}
+              storeReviews={storeReviews}
+              productReviews={storeProductReviews}
+              storeProducts={storeProducts}
+              reviewCount={combinedTotalReviews}
+              storeId={resolvedStoreId || storeId}
+              onSelectProduct={handleSelectProduct}
+              isLoadingProductReviews={isProductReviewsLoading}
             />
           )}
         </main>

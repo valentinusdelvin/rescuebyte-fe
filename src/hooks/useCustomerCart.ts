@@ -73,7 +73,7 @@ export function useCustomerCart({
     }
   };
 
-  // Track checked/selected items in cart (default: all checked)
+  // Catat item yang dicentang/dipilih di keranjang (default: semua terpilih)
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(() => {
     const initial = getStoredCart();
     const set = new Set<string>();
@@ -81,7 +81,7 @@ export function useCustomerCart({
     return set;
   });
 
-  // Synchronize cart from backend database if user is authenticated
+  // Sinkronkan isi keranjang dari database backend jika user sudah login
   useEffect(() => {
     let isCancelled = false;
     fetchBackendCart().then((remoteStores) => {
@@ -127,7 +127,7 @@ export function useCustomerCart({
     return unsubscribe;
   }, []);
 
-  // Enrich cartStores with real backend store profile pictures and operational times
+  // Perkaya data cartStores dengan foto profil toko dan jam operasional langsung dari backend
   useEffect(() => {
     let isCancelled = false;
     getAllStores()
@@ -200,7 +200,7 @@ export function useCustomerCart({
     });
   };
 
-  // Calculate totals matching the design based on SELECTED items
+  // Hitung subtotal dan ringkasan pembayaran hanya dari item yang dipilih/dicentang
   const { totalBoxes, subtotal, discountTotal, serviceFee, grandTotal, selectedCount } = useMemo(() => {
     let boxes = 0;
     let sub = 0;
@@ -254,7 +254,7 @@ export function useCustomerCart({
     }
   };
 
-  // Decreasing when quantity is 1 triggers confirmation popup
+  // Mengurangi kuantitas saat bernilai 1 akan memicu modal konfirmasi hapus
   const handleDecrease = (storeId: string, storeName: string, item: CartItem) => {
     if (item.quantity <= 1) {
       setDeleteTarget({

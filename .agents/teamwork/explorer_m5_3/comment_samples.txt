@@ -1,0 +1,627 @@
+
+================ FILE: src/api/client.ts ================
+Line 37:
+  /**
+  * Queue item for requests stalled while an access token refresh is in flight.
+  */
+Line 59:
+  /**
+  * Extracts a normalized, human-friendly error message from any backend API or network error.
+  */
+Line 91:
+  // Keep actionable business messages from the API, but never expose transport/server internals.
+Line 129:
+  /* ==========================================================================
+  * Request Interceptor: Injects Authorization Header from localStorage
+  * ========================================================================== */
+Line 145:
+  /* ==========================================================================
+  * Response Interceptor: Unwraps Payload + Transparent 401 Refresh Queue
+  * ========================================================================== */
+Line 154:
+  // Unwraps { request_id, payload } envelope while keeping backward-compatibility
+Line 159:
+  // Expose self-referencing .payload and .request_id property non-enumerably
+Line 160:
+  // This satisfies callers doing `response.data.payload` AND callers doing `response.data`
+Line 179:
+  // If sealed/frozen, skip definition
+Line 191:
+  // Attach normalized message on error for easy UI consumption
+Line 206:
+  // Handle 401 Unauthorized on protected routes with automatic token refresh
+Line 211:
+  // No refresh token available, session is completely expired
+Line 236:
+  // Perform direct token refresh using an isolated axios call to avoid interceptor recursion
+Line 257:
+  // Update localStorage
+Line 271:
+  // Ignore parse errors on cached user
+Line 274:
+  // Broadcast auth refreshed event
+Line 292:
+  // Wipe credentials on hard refresh failure
+
+================ FILE: src/api/types.ts ================
+Line 1:
+  /**
+  * Comprehensive Backend API TypeScript Definitions matching Swagger 2.0 contract.
+  * Source Swagger: https://dolpin-fourthree.bccdev.id/swagger/doc.json
+  * Base URL: https://dolpin-fourthree.bccdev.id/
+  */
+Line 7:
+  /* ==========================================================================
+  * Universal Envelope & Error Contracts
+  * ========================================================================== */
+Line 49:
+  /* ==========================================================================
+  * System Enums
+  * ========================================================================== */
+Line 95:
+  /* ==========================================================================
+  * Auth DTOs
+  * ========================================================================== */
+Line 142:
+  /* ==========================================================================
+  * User DTOs
+  * ========================================================================== */
+Line 159:
+  /* ==========================================================================
+  * Cart DTOs
+  * ========================================================================== */
+Line 219:
+  /* ==========================================================================
+  * Product DTOs
+  * ========================================================================== */
+Line 311:
+  /* ==========================================================================
+  * Store DTOs
+  * ========================================================================== */
+Line 377:
+  /* ==========================================================================
+  * Order DTOs
+  * ========================================================================== */
+Line 510:
+  /* ==========================================================================
+  * Storage DTOs
+  * ========================================================================== */
+Line 521:
+  /* ==========================================================================
+  * Review DTOs & Store Summary
+  * ========================================================================== */
+Line 564:
+  /* ==========================================================================
+  * Compatibility Aliases for Swagger Raw Models
+  * ========================================================================== */
+
+================ FILE: src/api/services/authApi.ts ================
+Line 13:
+  /**
+  * Get Google OAuth2 authorization URL
+  * GET /api/v1/auth/google
+  */
+Line 22:
+  /**
+  * Exchange Google OAuth2 callback authorization code
+  * GET /api/v1/auth/google/callback
+  */
+Line 33:
+  /**
+  * Authenticate user with email and password
+  * POST /api/v1/auth/login
+  */
+Line 42:
+  /**
+  * Revoke session and invalidate refresh token
+  * POST /api/v1/auth/logout
+  */
+Line 53:
+  /**
+  * Fetch current authenticated user profile
+  * GET /api/v1/auth/me
+  */
+Line 62:
+  /**
+  * Renew expired access token using refresh token
+  * POST /api/v1/auth/refresh
+  */
+Line 73:
+  /**
+  * Register a new customer or merchant user account
+  * POST /api/v1/auth/register
+  */
+
+================ FILE: src/api/services/cartApi.ts ================
+Line 11:
+  /**
+  * Fetch customer cart details and calculate store groups
+  * GET /api/v1/cart
+  */
+Line 20:
+  /**
+  * Clear all items across all stores from the cart
+  * DELETE /api/v1/cart
+  */
+Line 29:
+  /**
+  * Get total cart item count
+  * GET /api/v1/cart/count
+  */
+Line 38:
+  /**
+  * Add a product variant to the cart
+  * POST /api/v1/cart/items
+  */
+Line 47:
+  /**
+  * Remove a single item from the cart
+  * DELETE /api/v1/cart/items/{id}
+  */
+Line 56:
+  /**
+  * Update the quantity of a specific cart item
+  * PATCH /api/v1/cart/items/{id}
+  */
+Line 65:
+  /**
+  * Remove all items belonging to a particular store
+  * DELETE /api/v1/cart/stores/{store_id}
+  */
+
+================ FILE: src/api/services/productApi.ts ================
+Line 32:
+  /**
+  * Query marketplace products with spatial distance and filters
+  * GET /api/v1/products
+  */
+Line 41:
+  /**
+  * Merchant creates a new product and initial variants
+  * POST /api/v1/products
+  */
+Line 50:
+  /**
+  * Merchant retrieves their own product catalog
+  * GET /api/v1/products/me/list
+  */
+Line 59:
+  /**
+  * Get public product detail with variants and image gallery
+  * GET /api/v1/products/{id}
+  */
+Line 68:
+  /**
+  * Merchant updates product info and stock
+  * PUT /api/v1/products/{id}
+  */
+Line 77:
+  /**
+  * Merchant deletes a product
+  * DELETE /api/v1/products/{id}
+  */
+Line 86:
+  /**
+  * Merchant toggles product active status
+  * PATCH /api/v1/products/{id}/status
+  */
+
+================ FILE: src/context/AuthContext.tsx ================
+Line 20:
+  /**
+  * Parses the JWT expiration timestamp (exp claim in milliseconds).
+  */
+Line 35:
+  /**
+  * Calculates effective session expiration timestamp based on JWT exp and 24h absolute cap.
+  */
+Line 50:
+  /**
+  * Completely wipes all sensitive authentication and customer/store session items.
+  */
+Line 121:
+  // Ignore parse error
+Line 147:
+  // Record login timestamp if not present
+Line 155:
+  // Track role for email heuristic
+Line 164:
+  // Ignore storage error
+Line 202:
+  // Ignore parse error
+Line 215:
+  // Initialize session on mount
+Line 222:
+  // Instant expiration check on startup
+Line 232:
+  // Schedule single timer
+Line 235:
+  // Visibility and focus listeners for active tab restoration
+Line 247:
+  // Cross-tab synchronization via storage event
+Line 346:
+  // Ignore parse error
+Line 358:
+  // Ignore parse error
+
+================ FILE: src/context/CartContext.tsx ================
+Line 59:
+  // Sync cart when authentication state changes
+Line 158:
+  // Compute total count and subtotal
+
+================ FILE: src/hooks/useAuth.ts ================
+Line 3:
+  /**
+  * Custom hook providing authentication state and operations.
+  */
+
+================ FILE: src/hooks/useCart.ts ================
+Line 3:
+  /**
+  * Custom hook providing shopping cart state and backend-synchronized mutation actions.
+  */
+
+================ FILE: src/hooks/useReviews.ts ================
+Line 24:
+  /**
+  * Calculates average rating rounded to 1 decimal place from a list of reviews.
+  * Returns 0 if there are no reviews.
+  */
+Line 36:
+  /**
+  * Calculates distribution of 1 to 5 stars counts from a list of reviews.
+  */
+Line 54:
+  /**
+  * Custom hook to fetch and manage product reviews.
+  */
+Line 139:
+  /**
+  * Custom hook to fetch and manage store reviews and store rating summary.
+  */
+Line 254:
+  /**
+  * Custom hook to fetch store rating summary (average_rating, total_reviews).
+  */
+Line 315:
+  /**
+  * Custom hook to manage review mutations (create product/store review, update, delete).
+  * Includes automatic toast feedback and clean error handling.
+  */
+Line 439:
+  /**
+  * Custom hook to fetch and aggregate product reviews for all products belonging to a store.
+  * Uses Promise.allSettled to fetch in parallel without failing if one product has no reviews.
+  */
+
+================ FILE: src/utils/currency.ts ================
+Line 1:
+  /**
+  * Centralized Indonesian Rupiah Currency Utilities
+  * Formats, cleans, and parses currency numbers and inputs according to Indonesian localization standards (id-ID).
+  */
+Line 6:
+  /**
+  * Format numeric amount to Indonesian Rupiah thousands dot-separated string.
+  * Examples:
+  * - 35000 -> "35.000"
+  * - 0 -> "0"
+  * - 1250000 -> "1.250.000"
+  */
+Line 20:
+  /**
+  * Format numeric amount with standardized Indonesian Rupiah prefix "Rp".
+  * Follows RescueByte design guide: strictly cohesive weight, no space or dot after Rp.
+  * Examples:
+  * - 35000 -> "Rp35.000"
+  */
+Line 30:
+  /**
+  * Format raw input string into thousands dot separated string while user types.
+  * Strips any non-digit characters.
+  * Examples:
+  * - "10000" -> "10.000"
+  * - "" -> ""
+  */
+Line 44:
+  /**
+  * Parse thousands dot separated string back into a numeric value.
+  * Examples:
+  * - "10.000" -> 10000
+  * - "" -> null
+  */
+
+================ FILE: src/utils/time.ts ================
+Line 1:
+  /**
+  * Utility functions for operational time handling and formatting.
+  * Complies with RescueByte design tokens and backend API specifications.
+  */
+Line 6:
+  /**
+  * Validates if time string conforms to 24-hour clock (00.00 - 23.59 or 00:00 - 23:59).
+  */
+Line 19:
+  /**
+  * Converts backend time format (e.g. "07:00:00", "07:00", "07.00") to Indonesian dot format ("07.00").
+  * Preserves raw value if parsing is not applicable, without silently rewriting hour values.
+  */
+Line 35:
+  /**
+  * Converts Indonesian time format (e.g. "22.00", "22:00") to API format ("22:00" or "08:00").
+  * Backend expects HH:mm or HH.mm format (rejects HH:mm:ss with seconds).
+  * Does not overwrite invalid hours (validation must occur before calling this).
+  */
+
+================ FILE: src/components/ui/Button.tsx ================
+Line 27:
+  // Base interactive styles with accessible focus indicator
+Line 33:
+  // Botanical Rescue variants
+Line 47:
+  // Standard touch and responsive sizes
+
+================ FILE: src/components/ui/Modal.tsx ================
+Line 36:
+  // Keyboard trap and Escape listener
+Line 73:
+  // Save previous active element to restore focus on close
+Line 76:
+  // Lock body scrolling
+Line 80:
+  // Attach key listener
+Line 83:
+  // Initial focus on dialog
+
+================ FILE: src/services/authService.ts ================
+Line 10:
+  /**
+  * Retrieve registered role associated with a specific email
+  */
+Line 23:
+  // ignore parse error
+Line 26:
+  // Fallback heuristic based on store email keywords
+Line 52:
+  /**
+  * Register or update the role associated with an email
+  */
+Line 64:
+  // ignore storage error
+Line 86:
+  /**
+  * Extracts descriptive user-friendly message from backend error response
+  */
+Line 93:
+  /**
+  * Save auth payload into localStorage and notify listeners
+  */
+Line 138:
+  /**
+  * Retrieve saved auth payload from localStorage
+  */
+Line 151:
+  /**
+  * Retrieve currently logged in user
+  */
+Line 163:
+  /**
+  * Retrieve active access token
+  */
+Line 170:
+  /**
+  * Retrieve active refresh token
+  */
+Line 177:
+  /**
+  * Clear authentication session and notify listeners
+  */
+Line 201:
+  /**
+  * Register user using Axios client with real endpoint /api/v1/auth/register
+  */
+Line 233:
+  /**
+  * Login user using Axios client with real endpoint /api/v1/auth/login
+  */
+Line 260:
+  /**
+  * Logout user calling /api/v1/auth/logout with refresh_token
+  */
+Line 276:
+  /**
+  * Fetch current authenticated user via /api/v1/auth/me
+  */
+Line 301:
+  /**
+  * Refresh access token calling /api/v1/auth/refresh
+  */
+Line 331:
+  /**
+  * Fetch Google OAuth2 URL from /api/v1/auth/google
+  */
+Line 347:
+  /**
+  * Handle Google OAuth2 callback code & state exchange via /api/v1/auth/google/callback
+  */
+Line 366:
+  /**
+  * Google OAuth handler fallback (for offline or local simulated login)
+  */
+
+================ FILE: src/services/cartService.ts ================
+Line 14:
+  /**
+  * Calculates total box count across all stores in the cart.
+  */
+Line 24:
+  /**
+  * Retrieve cart stores from localStorage, filtering out legacy placeholder stores.
+  */
+Line 67:
+  /**
+  * Save cart stores to localStorage and broadcast change event.
+  */
+Line 85:
+  /**
+  * Get current total count of items in the cart.
+  */
+Line 92:
+  /**
+  * Fetch total cart item count from backend API if authenticated, fallback to local cart.
+  */
+Line 110:
+  /**
+  * Helper to get 2-letter uppercase initials for a store name.
+  */
+Line 123:
+  /**
+  * Fetch a product's first variant ID from the backend.
+  */
+Line 143:
+  /**
+  * Fetch cart from backend API (/api/v1/cart) when authenticated.
+  * Seamlessly maps backend StoreCartGroup and CartItemResponse to frontend models.
+  */
+Line 212:
+  /**
+  * Add a mystery box product to the cart with specified quantity.
+  * If the item already exists in the store group, its quantity is increased (max 5).
+  * Returns the updated total cart item count.
+  */
+Line 226:
+  // Match by storeId or storeName
+Line 251:
+  // Add new item to existing store
+Line 275:
+  // If store doesn't exist yet, create a new StoreCartGroup
+Line 309:
+  /**
+  * Add item to cart with backend API synchronization if authenticated.
+  */
+Line 346:
+  /**
+  * Update cart item quantity with backend API synchronization.
+  */
+Line 365:
+  /**
+  * Remove an item from a store group with backend API synchronization.
+  */
+Line 402:
+  /**
+  * Remove an entire store group.
+  */
+Line 427:
+  /**
+  * Clear all items from the cart.
+  */
+Line 446:
+  /**
+  * Subscribe to cart updates across components and window storage events.
+  */
+
+================ FILE: src/services/productService.ts ================
+Line 71:
+  /**
+  * Get all merchant products from localStorage.
+  * Automatically filters out legacy mock placeholder products and ensures fallback to real initial products.
+  */
+Line 101:
+  /**
+  * Save all products to localStorage.
+  */
+Line 112:
+  /**
+  * Add a new product to the list.
+  */
+Line 139:
+  /**
+  * Update an existing product.
+  */
+Line 149:
+  /**
+  * Delete a product.
+  */
+Line 183:
+  /**
+  * Maps a backend ProductResponse or PublicProductItem to frontend ProductItem model.
+  */
+Line 250:
+  /**
+  * Create a new product in the backend via POST /api/v1/products.
+  * Automatically synchronizes with local storage cache upon creation.
+  */
+Line 263:
+  // Sync into local cache
+Line 275:
+  /**
+  * Fetch the merchant's product list from GET /api/v1/products/me/list.
+  * A successful empty response is authoritative; cached data is used only when the request fails.
+  */
+Line 306:
+  /**
+  * Toggle product active status via PATCH /api/v1/products/:id/status
+  */
+Line 330:
+  /**
+  * Delete product via DELETE /api/v1/products/:id
+  */
+Line 359:
+  /**
+  * Synchronize product updates to the marketplace cached items in localStorage
+  */
+Line 397:
+  /**
+  * Update product stock both in local cache and backend database.
+  */
+Line 486:
+  /**
+  * Fetch marketplace public products via GET /api/v1/products.
+  * Supports location coordinates (latitude, longitude) for dynamic distance calculation.
+  */
+
+================ FILE: src/services/orderService.ts ================
+Line 117:
+  /**
+  * Retrieve all customer orders from localStorage, filtering out legacy placeholder dummy orders.
+  */
+Line 163:
+  /**
+  * Save customer orders to localStorage and notify listeners.
+  */
+Line 182:
+  /**
+  * Create a new customer order from checkout payment data.
+  * - Saves order to customer order history
+  * - Clears cart if order originated from cart
+  * - Syncs to merchant order queue
+  */
+Line 237:
+  // 1. Prepend new order to customer list
+Line 242:
+  // 2. Also register in merchant order queue if already paid / waiting confirmation
+Line 290:
+  // 3. Clear cart if order originated from cart
+Line 302:
+  /**
+  * Subscribe to customer orders updates.
+  */
+Line 332:
+  /**
+  * Update the status of an existing customer order by orderNumber or id.
+  */
+Line 379:
+  // Sync newly confirmed order directly into merchant orders
+Line 421:
+  // Update browser caches only after the backend confirms the transition.
+Line 456:
+  /**
+  * Call backend checkout endpoint POST /api/v1/orders/checkout
+  */
+Line 505:
+  // Filter out dummy/placeholder orders completely
+Line 515:
+  // Auto-sync real customer orders into merchant queue
+Line 519:
+  // Exclude placeholder mock customer orders

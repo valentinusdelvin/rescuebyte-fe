@@ -1,12 +1,10 @@
 /**
- * Comprehensive Backend API TypeScript Definitions matching Swagger 2.0 contract.
- * Source Swagger: https://dolpin-fourthree.bccdev.id/swagger/doc.json
+ * Definisi TypeScript API Backend selaras kontrak Swagger 2.0.
+ * Sumber Swagger: https://dolpin-fourthree.bccdev.id/swagger/doc.json
  * Base URL: https://dolpin-fourthree.bccdev.id/
  */
 
-/* ==========================================================================
- * Universal Envelope & Error Contracts
- * ========================================================================== */
+// Kontrak universal response & format error
 
 export interface ApiResponse<T = unknown> {
   request_id: string;
@@ -46,9 +44,7 @@ export interface HealthResponse {
   status: 'healthy' | string;
 }
 
-/* ==========================================================================
- * System Enums
- * ========================================================================== */
+// Enum sistem
 
 export enum AuthProvider {
   ProviderLocal = 'LOCAL',
@@ -92,9 +88,7 @@ export interface EnumsResponse {
   [key: string]: unknown;
 }
 
-/* ==========================================================================
- * Auth DTOs
- * ========================================================================== */
+// DTO autentikasi
 
 export interface LoginRequest {
   email: string;
@@ -139,9 +133,7 @@ export interface AuthResponse {
   user?: UserResponse;
 }
 
-/* ==========================================================================
- * User DTOs
- * ========================================================================== */
+// DTO profil user
 
 export interface UpdateProfileRequest {
   avatar_url?: string;
@@ -156,9 +148,7 @@ export interface UpdateUserRoleRequest {
   user_id: string;
 }
 
-/* ==========================================================================
- * Cart DTOs
- * ========================================================================== */
+// DTO keranjang belanja
 
 export interface AddToCartRequest {
   product_variant_id: string;
@@ -216,9 +206,7 @@ export interface CartResponse {
   total_payment?: number;
 }
 
-/* ==========================================================================
- * Product DTOs
- * ========================================================================== */
+// DTO produk & varian
 
 export interface CreateProductVariantRequest {
   current_stock: number;
@@ -308,9 +296,7 @@ export interface GetProductsResponse {
   products?: ProductCardResponse[];
 }
 
-/* ==========================================================================
- * Store DTOs
- * ========================================================================== */
+// DTO profil & jadwal toko
 
 export interface CreateStoreRequest {
   address: string;
@@ -374,9 +360,7 @@ export interface GetStoresResponse {
   stores?: StoreResponse[];
 }
 
-/* ==========================================================================
- * Order DTOs
- * ========================================================================== */
+// DTO pesanan & transaksi
 
 export interface CheckoutItemRequest {
   product_variant_id: string;
@@ -507,9 +491,7 @@ export interface MidtransNotificationPayload {
   transaction_time?: string;
 }
 
-/* ==========================================================================
- * Storage DTOs
- * ========================================================================== */
+// DTO cloud storage
 
 export interface UploadResponse {
   content_type?: string;
@@ -518,9 +500,48 @@ export interface UploadResponse {
   url?: string;
 }
 
-/* ==========================================================================
- * Compatibility Aliases for Swagger Raw Models
- * ========================================================================== */
+// DTO ulasan & ringkasan toko
+
+export interface CreateReviewRequest {
+  rating: number;
+  content: string;
+}
+
+export interface UpdateReviewRequest {
+  rating: number;
+  content: string;
+}
+
+export interface ReviewAuthorResponse {
+  id?: string;
+  name?: string;
+  role?: string;
+  avatar_url?: string;
+}
+
+export interface ReviewResponse {
+  id: string;
+  user_id?: string;
+  product_id?: string;
+  store_id?: string;
+  rating: number;
+  content: string;
+  author?: ReviewAuthorResponse;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface GetReviewsResponse {
+  meta?: PaginationMeta;
+  reviews?: ReviewResponse[];
+}
+
+export interface StoreSummaryResponse {
+  average_rating: number;
+  total_reviews: number;
+}
+
+// Alias kompatibilitas tipe Swagger lama
 
 export type ErrorDetail = ApiErrorDetail;
 export type ErrorPayload = ApiErrorPayload;

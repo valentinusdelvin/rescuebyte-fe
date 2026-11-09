@@ -1,60 +1,81 @@
 # Original User Request
 
-## Approved Task Prompt — 2026-11-03T16:53:00Z
+## Approved Task Prompt — 2026-11-09T14:17:19Z
 
-Use a team with the following specializations as requested: Agent 1 — Lead Architect & Orchestrator, Agent 2 — UI/UX & Design System Specialist, Agent 3 — Frontend Developer & UI Slicing Specialist, Agent 4 — API Integration Specialist, Agent 5 — Code Refactoring Specialist, Agent 6 — QA & Code Reviewer, Agent 7 — Bug Fixing Specialist. Comprehensive frontend engineering, codebase restructuring, refactoring, UI/UX improvement, and frontend development on the RescueByte project as a competition showcase with autonomous execution across all phases.
+Use a team with Lead Architect, Frontend Developer, UI/UX Specialist, Refactoring Specialist, API Integration Specialist, QA & Code Reviewer, and Bug Fixer. Perform final homepage adjustments (limiting "Mystery Box di Sekitar" and "Mystery Box Terlaris" to 3 cards with "Lihat Selengkapnya" navigation to Marketplace) and global language localization to natural Indonesian across user-facing text in RescueByte.
 
 Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe
 Integrity mode: development
 
-Reference material:
-- Backend base URL: VITE_API_BASE_URL=https://dolpin-fourthree.bccdev.id/
-- Swagger documentation: https://dolpin-fourthree.bccdev.id/swagger/index.html
-- Project instructions and skills: .agents folder, AGENTS.md, and architecture documentation in .agents/docs/
-
 ## Requirements
 
-### R1. Comprehensive Audit and Architecture Plan (Phases 1 & 2)
-Perform a thorough audit of the frontend codebase, directory structure, routes, components, state management, API data fetching, configurations, .agents skills, and uncommitted Git status without modifying source code. Formulate a clear architectural blueprint, folder structure, component hierarchy, centralized API strategy, design system tokens, refactoring sequence, and agent file ownership plan before autonomous implementation begins.
+### R1. Homepage Section — Mystery Box di Sekitar
+- Display a maximum of 3 product cards only.
+- Retrieve products dynamically using the existing nearby-products API query, prioritizing products based on the customer's actual location and maintaining nearest-first sorting.
+- Do not use hardcoded or duplicated product data.
+- Preserve existing product card design and functionality.
+- Below the three product cards, add a clickable text link "Lihat Selengkapnya" that navigates to the Marketplace page using existing routing and navigation without breaking application state, with appropriate hover and pointer states.
+- If fewer than 3 products are available, display the available products without duplicating them.
 
-### R2. Code Refactoring and Codebase Restructuring (Phase 3)
-Restructure existing TSX components into clean, modular units by separating JSX presentation, styling, state management, and business logic into custom hooks and services. Eliminate dead code, unused imports, and logic duplication while strictly preserving existing application behavior and preventing regression.
+### R2. Homepage Section — Mystery Box Terlaris
+- Display a maximum of 3 product cards only.
+- Retrieve products dynamically using the existing best-selling or popularity query supported by the backend, preserving backend sorting criteria.
+- Do not use hardcoded or duplicated product data.
+- Maintain existing product card design.
+- Below the three product cards, add a clickable text link "Lihat Selengkapnya" that navigates to the Marketplace page using existing navigation without creating duplicate routes.
+- If fewer than 3 products are available, display the available products without duplicating them.
+- Do not change the Marketplace product listing limit or pagination.
 
-### R3. UI/UX Improvement and Design System Standardization (Phase 3)
-Refine the user interface for competition showcase quality by auditing accessibility, usability, and visual consistency in alignment with RescueByte design guidelines and .agents skills. Standardize design tokens, typography, spacing, and colors using Tailwind CSS, and build reusable UI components with responsive layouts across mobile, tablet, and desktop viewports.
+### R3. Global Language Localization — Natural Indonesian
+- Audit and localize user-facing text across the frontend: navigation menus, page titles, section headings, buttons and action labels, product descriptions and supporting text, form labels and placeholders, validation messages, success and error messages, loading states, empty states, confirmation dialogs, tooltips and helper text, authentication and account messages, review and rating interfaces, and marketplace/homepage content.
+- Use natural, conversational, clear, slightly casual yet professional, and concise Indonesian that feels written by a real Indonesian university student or developer.
+- Antislop guidelines for copywriting and code hygiene apply during the work.
+- Technical terminology must remain in English where appropriate (e.g., API, Backend, Frontend, Dashboard, Marketplace, Authentication, Authorization, Bearer Token, Request, Response, Loading State, Error Handling, Pagination, Filtering, Sorting, Review, Component, Hook, Responsive, Location, Checkout).
+- Do not translate programming identifiers, variable names, function names, API endpoints, database fields, or code-level terminology.
+- Do not translate brand names such as RescueByte or Mystery Box.
+- Only modify user-facing text and copywriting; do not change application logic just to translate text, and do not modify backend responses.
+- Avoid excessive slang, emojis, overly promotional language, and robotic or repetitive AI-generated wording.
 
-### R4. Centralized API Integration (Phase 3)
-Establish a centralized API client utilizing VITE_API_BASE_URL (https://dolpin-fourthree.bccdev.id/) with typed service functions, custom hooks, and TypeScript response/request schemas matching backend Swagger documentation. Eliminate direct API calls inside presentational components, handling loading, error, empty states, and schema validation without altering backend API contracts.
-
-### R5. Independent QA Review, Bug Remediation, and Validation (Phase 4)
-Conduct independent QA review and validation across architecture, TypeScript checks, and Swagger API contracts, documenting issues with reproduction steps for targeted bug remediation. Execute verification cycles until all criteria pass, delivering the 10 final deliverable reports without altering backend/database systems or executing destructive git commands.
+## Verification Resources
+- Standard repository verification commands: `npm run build` and TypeScript typechecking.
+- Manual/visual verification of the homepage sections, navigation links, and localized Indonesian text across UI components.
 
 ## Acceptance Criteria
 
-### Build and Static Verification
-- [ ] `npm run build` succeeds with 0 errors
-- [ ] TypeScript check (`npx tsc --noEmit` or equivalent) passes with 0 errors
-- [ ] Linting checks pass with no blocking errors
+### Homepage Product Display & Navigation
+- [ ] Mystery Box di Sekitar displays a maximum of 3 products.
+- [ ] Mystery Box Terlaris displays a maximum of 3 products.
+- [ ] Both sections use their respective backend queries independently.
+- [ ] Neither section duplicates product cards when fewer than 3 products are available.
+- [ ] Both sections have a "Lihat Selengkapnya" link with proper hover and pointer states.
+- [ ] Both links navigate correctly to Marketplace without breaking application state or creating duplicate routes.
+- [ ] Marketplace product listing and pagination remain unchanged.
 
-### UI/UX and Component Standards
-- [ ] Reusable UI components provide explicit loading, error, empty, and success states
-- [ ] Responsive layouts reflow cleanly without overflow or broken tap targets across mobile, tablet, and desktop viewports
-- [ ] Semantic HTML, focus states, and readable color contrast adhere to project accessibility standards
-- [ ] Styling uses standardized Tailwind CSS tokens without redundant or conflicting inline rules
+### Language Localization & Consistency
+- [ ] User-facing English text that should be Indonesian has been localized into natural, conversational, concise, and consistent Indonesian across all audited areas.
+- [ ] Technical terminology remains in English where appropriate.
+- [ ] Brand names (RescueByte, Mystery Box) are preserved.
+- [ ] No application logic or API contracts are broken by localization changes.
 
-### Architecture and API Integration
-- [ ] All API communication routes through a centralized client using VITE_API_BASE_URL (https://dolpin-fourthree.bccdev.id/)
-- [ ] Presentational components contain no direct API fetch calls or backend coupling
-- [ ] TypeScript request and response types match the backend Swagger specification
-- [ ] Existing features and user flows remain fully functional without behavioral regressions
-
-### Operational Constraints and Deliverables
-- [ ] No changes are made to backend, database, server, or production infrastructure
-- [ ] No destructive Git commands, git push, merge to main, or deployments are executed
-- [ ] No sensitive credentials, secrets, or uncommitted files are overwritten
-- [ ] Final deliverables report covers all 10 items (architecture summary, final folder structure, modified pages/components, refactoring log, API integration summary, bug reports/fixes, file changes, build/lint/test results, known issues, and next recommendations)
+### Build & Integrity
+- [ ] Build and TypeScript checks pass without errors.
+- [ ] Existing working features and previous bug fixes remain functional.
 
 
-## Continuation Request — 2026-11-03T19:19:56Z
+## Follow-up — 2026-11-09T14:18:48Z
 
-Continue the previous Teamwork run from its last recorded state. Review completed tasks, pending tasks, and existing changes before resuming. Do not repeat completed work or overwrite existing changes.
+CRITICAL USER CLARIFICATION:
+The user explicitly clarified:
+"eh itu yang kumaksud tuh command pada kode loh ya, kek dokumentasi nya! bukan pada UI FrontEnd nya oke."
+
+TRANSLATION & SCOPE ADJUSTMENT:
+- DO NOT change user-facing UI copy/text across components/pages. The UI text is already established.
+- The localization / natural Indonesian instruction applies to CODE COMMENTS, JSDoc, and CODEBASE DOCUMENTATION (antislop-code guidelines).
+- Keep technical terms in English (API, Backend, Dashboard, Marketplace, etc.).
+- Ensure code comments and documentation sound natural and clean (no generic AI slop comments).
+
+HOMEPAGE REQUIREMENTS REMAIN ACTIVE:
+- Mystery Box di Sekitar: maximum 3 cards, nearby dynamic query, with "Lihat Selengkapnya" link navigating to Marketplace.
+- Mystery Box Terlaris: maximum 3 cards, popularity query, with "Lihat Selengkapnya" link navigating to Marketplace.
+
+Please adjust the team's scope immediately to respect this clarification.

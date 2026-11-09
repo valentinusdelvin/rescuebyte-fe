@@ -18,46 +18,31 @@ export interface OrderQueryParams {
 }
 
 export const orderApi = {
-  /**
-   * List customer order history
-   * GET /api/v1/orders
-   */
+  /** Ambil riwayat pesanan pelanggan (GET /api/v1/orders). */
   async getCustomerOrders(params?: OrderQueryParams): Promise<GetOrdersResponse> {
     const res = await apiClient.get<GetOrdersResponse>('/api/v1/orders', { params });
     return res.data;
   },
 
-  /**
-   * Create a new checkout order with Midtrans snap token
-   * POST /api/v1/orders/checkout
-   */
+  /** Buat pesanan baru dan peroleh Snap token Midtrans (POST /api/v1/orders/checkout). */
   async checkout(data: CheckoutRequest): Promise<CheckoutResponse> {
     const res = await apiClient.post<CheckoutResponse>('/api/v1/orders/checkout', data);
     return res.data;
   },
 
-  /**
-   * List merchant incoming and fulfilled orders
-   * GET /api/v1/orders/seller
-   */
+  /** Ambil daftar pesanan masuk dan riwayat pesanan merchant (GET /api/v1/orders/seller). */
   async getSellerOrders(params?: OrderQueryParams): Promise<GetOrdersResponse> {
     const res = await apiClient.get<GetOrdersResponse>('/api/v1/orders/seller', { params });
     return res.data;
   },
 
-  /**
-   * Get full order detail by ID
-   * GET /api/v1/orders/{id}
-   */
+  /** Ambil detail lengkap pesanan berdasarkan ID (GET /api/v1/orders/{id}). */
   async getOrderDetail(orderId: string): Promise<OrderDetailResponse> {
     const res = await apiClient.get<OrderDetailResponse>(`/api/v1/orders/${orderId}`);
     return res.data;
   },
 
-  /**
-   * Customer-initiated order cancellation
-   * POST /api/v1/orders/{id}/cancel
-   */
+  /** Pembatalan pesanan oleh pelanggan (POST /api/v1/orders/{id}/cancel). */
   async cancelOrder(orderId: string, data?: CancelOrderRequest): Promise<MessageResponse> {
     const res = await apiClient.post<MessageResponse>(
       `/api/v1/orders/${orderId}/cancel`,
@@ -66,10 +51,7 @@ export const orderApi = {
     return res.data;
   },
 
-  /**
-   * Merchant updates order fulfillment status
-   * PATCH /api/v1/orders/{id}/status
-   */
+  /** Update status progres pesanan oleh merchant (PATCH /api/v1/orders/{id}/status). */
   async updateOrderStatus(
     orderId: string,
     data: UpdateOrderStatusRequest
@@ -81,10 +63,7 @@ export const orderApi = {
     return res.data;
   },
 
-  /**
-   * Query payment transaction status for an order
-   * GET /api/v1/payments/order/{order_id}
-   */
+  /** Cek status transaksi pembayaran pesanan (GET /api/v1/payments/order/{order_id}). */
   async getPaymentStatus(orderId: string): Promise<PaymentResponse> {
     const res = await apiClient.get<PaymentResponse>(`/api/v1/payments/order/${orderId}`);
     return res.data;

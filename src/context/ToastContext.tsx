@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -24,6 +24,7 @@ export interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -35,16 +36,33 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   const showToast = useCallback(
     (message: string, type: ToastType = 'info', duration = 3500) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      const newToast: Toast = { id, message, type, duration };
+      if (!message || !message.trim()) return;
+      const cleanMessage = message.trim();
+      const now = Date.now();
 
-      setToasts((prev) => [...prev, newToast]);
-
-      if (duration > 0) {
-        setTimeout(() => {
-          removeToast(id);
-        }, duration);
+      const lastTime = recentToastsRef.current.get(cleanMessage);
+      if (lastTime && now - lastTime < 2500) {
+        return;
       }
+      recentToastsRef.current.set(cleanMessage, now);
+
+      setToasts((prev) => {
+        if (prev.some((t) => t.message === cleanMessage)) {
+          return prev;
+        }
+
+        const cappedPrev = prev.length >= 3 ? prev.slice(prev.length - 2) : prev;
+        const id = `${now}-${Math.random().toString(36).slice(2, 9)}`;
+        const newToast: Toast = { id, message: cleanMessage, type, duration };
+
+        if (duration > 0) {
+          setTimeout(() => {
+            removeToast(id);
+          }, duration);
+        }
+
+        return [...cappedPrev, newToast];
+      });
     },
     [removeToast]
   );
@@ -52,51 +70,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={{ toasts, showToast, removeToast, clearToasts }}>
       {children}
-      {/* Toast Notification Floating Container */}
-      {toasts.length > 0 && (
-        <div
-          role="region"
-          aria-label="Notifikasi"
-          className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"
-        >
-          {toasts.map((toast) => {
-            const isSuccess = toast.type === 'success';
-            const isError = toast.type === 'error';
-            const isWarning = toast.type === 'warning';
-
-            const bgClass = isSuccess
-              ? 'bg-[#1b4332] text-white border-[#2d6a4f]'
-              : isError
-              ? 'bg-[#b91c1c] text-white border-red-700'
-              : isWarning
-              ? 'bg-[#d97706] text-white border-amber-600'
-              : 'bg-[#212529] text-white border-neutral-700';
-
-            return (
-              <div
-                key={toast.id}
-                role="alert"
-                className={`pointer-events-auto flex items-start justify-between gap-3 p-3.5 rounded-xl border shadow-lg transition-all transform animate-in fade-in slide-in-from-bottom-2 duration-200 text-sm font-medium ${bgClass}`}
-              >
-                <div className="flex items-center gap-2">
-                  {isSuccess && <span>✓</span>}
-                  {isError && <span>✕</span>}
-                  {isWarning && <span>⚠</span>}
-                  <span>{toast.message}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeToast(toast.id)}
-                  aria-label="Tutup notifikasi"
-                  className="opacity-70 hover:opacity-100 transition-opacity ml-2 text-base leading-none focus:outline-none"
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </ToastContext.Provider>
   );
 };

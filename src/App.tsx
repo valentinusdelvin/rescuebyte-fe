@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Toast, ToastType } from './components/common/Toast';
+import { ToastType } from './components/common/Toast';
 import { BrandLoadingOverlay } from './components/common/BrandLoadingOverlay';
 import { useBrandLoading } from './hooks/useBrandLoading';
 import { useAuth } from './hooks/useAuth';
@@ -19,10 +19,7 @@ import { findOrderById } from './app/orderRouteData';
 import { AppRoutes } from './app/AppRoutes';
 import { isCustomerOrderDetailPath, parseHash, safeDecode } from './app/hashRouting';
 
-/**
- * Root Application Component
- * Modernized with route-level code splitting, deep linking hash params, and context consumption.
- */
+/** Komponen Shell Utama Aplikasi: Mengatur modular routing hash, deep linking, dan auth guard. */
 export function App() {
   const { isLoading, loadingTitle, loadingSubtitle, triggerLoading } = useBrandLoading();
   const { user } = useAuth();
@@ -30,11 +27,29 @@ export function App() {
 
   const [activeView, setActiveView] = useState<ActiveViewId>(() => {
     const { path, params } = parseHash();
-    if (path.startsWith('beranda-seller') || path === 'beranda') return 'view-beranda';
-    if (path.startsWith('profil-seller') || path === 'profil') return 'view-profil';
-    if (path.startsWith('riwayat-seller') || path.startsWith('riwayat')) return 'view-riwayat';
-    if (path.startsWith('buat-dagangan-seller') || path.startsWith('buat-dagangan')) return 'view-buat-dagangan';
-    if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) return 'view-daganganku';
+    const isSellerPath =
+      path.startsWith('beranda-seller') ||
+      path === 'beranda' ||
+      path.startsWith('profil-seller') ||
+      path === 'profil' ||
+      path.startsWith('riwayat-seller') ||
+      path.startsWith('riwayat') ||
+      path.startsWith('buat-dagangan-seller') ||
+      path.startsWith('buat-dagangan') ||
+      path.startsWith('daganganku-seller') ||
+      path.startsWith('daganganku') ||
+      path.startsWith('ulasan-seller') ||
+      path === 'ulasan';
+
+    if (isSellerPath) {
+      if (!getCurrentUser()) return 'view-auth-role-selection';
+      if (path.startsWith('beranda-seller') || path === 'beranda') return 'view-beranda';
+      if (path.startsWith('profil-seller') || path === 'profil') return 'view-profil';
+      if (path.startsWith('riwayat-seller') || path.startsWith('riwayat')) return 'view-riwayat';
+      if (path.startsWith('buat-dagangan-seller') || path.startsWith('buat-dagangan')) return 'view-buat-dagangan';
+      if (path.startsWith('daganganku-seller') || path.startsWith('daganganku')) return 'view-daganganku';
+      if (path.startsWith('ulasan-seller') || path === 'ulasan') return 'view-ulasan';
+    }
 
     if (isCustomerOrderDetailPath(path)) {
       if (params.get('id') || findOrderById(params.get('id') || '')) {
@@ -196,11 +211,7 @@ export function App() {
     };
   }, []);
 
-  // Toast state (integrated with ToastContext and local state fallback)
-  const [toastMessage, setToastMessage] = useState<string>('');
-  const [toastType, setToastType] = useState<ToastType>('success');
-  const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
-
+  // Toast handler (no-op / context delegate per R1)
   const showToast = useCallback(
     (message: string, typeOrDuration?: ToastType | number, maybeDuration?: number) => {
       const type: ToastType = typeof typeOrDuration === 'string' ? typeOrDuration : 'success';
@@ -215,9 +226,6 @@ export function App() {
       if (toastContextShow) {
         toastContextShow(message, type, duration);
       }
-      setToastMessage(message);
-      setToastType(type);
-      setIsToastVisible(true);
     },
     [toastContextShow]
   );
@@ -226,7 +234,7 @@ export function App() {
   useEffect(() => {
     const { path, params } = parseHash();
 
-    // Deep linking for product detail: #detail-produk?id=...
+    // Deep linking untuk halaman detail produk: #detail-produk?id=...
     if (
       (path.startsWith('detail-produk') || path.startsWith('detail') || path.startsWith('mystery-box-detail')) &&
       params.get('id')
@@ -264,7 +272,7 @@ export function App() {
       }
     }
 
-    // Deep linking for order detail: #detail-pesanan?id=...
+    // Deep linking untuk halaman detail pesanan: #detail-pesanan?id=...
     if (isCustomerOrderDetailPath(path) && params.get('id')) {
       const orderId = params.get('id')!;
       if (!paymentOrderData || (paymentOrderData.orderId !== orderId && paymentOrderData.backendOrderId !== orderId)) {
@@ -281,6 +289,7 @@ export function App() {
                   status: apiDetail.status,
                   items: (apiDetail.items || []).map((it: any) => ({
                     id: it.id,
+                    productId: it.product_id || it.productId || it.id,
                     name: it.product_name || 'Paket Surplus',
                     storeName: apiDetail.store_name || 'Toko Mitra',
                     categoryTags: ['Surplus Makanan'],
@@ -290,6 +299,7 @@ export function App() {
                     quantity: it.quantity || 1,
                   })),
                   primaryStore: {
+                    storeId: apiDetail.store_id || '',
                     storeName: apiDetail.store_name || 'Toko Mitra',
                     storeAddress: apiDetail.store_address || '',
                   },
@@ -313,7 +323,7 @@ export function App() {
       }
     }
 
-    // Deep linking for store: #toko?name=... or #toko?id=...
+    // Deep linking untuk halaman toko: #toko?name=... atau #toko?id=...
     if (path.startsWith('toko') || path.startsWith('store') || path.startsWith('detail-toko')) {
       if (params.get('name')) {
         setSelectedStoreName(safeDecode(params.get('name')!));
@@ -324,7 +334,7 @@ export function App() {
     }
   }, []);
 
-  // Handle Google OAuth Callback
+  // Tangani callback otorisasi Google OAuth
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -371,6 +381,9 @@ export function App() {
             setStoreName(store.name);
             localStorage.setItem('rescuebyte_store_name', store.name);
           }
+          if (store?.id) {
+            localStorage.setItem('rescuebyte_store_id', store.id);
+          }
         })
         .catch(() => {});
     }
@@ -379,7 +392,7 @@ export function App() {
   // Sync hash on navigation with deep linking query params
   const handleNavigate = useCallback(
     (viewId: string, label: string = '', tab?: OrderStatusTab) => {
-      // Auth guard: Require login before accessing marketplace, product detail, cart, checkout, orders, or order detail
+      // Auth guard: Wajib login untuk mengakses marketplace, checkout, dan pesanan
       if (
         viewId === 'view-customer-marketplace' ||
         viewId === 'view-customer-product-detail' ||
@@ -425,7 +438,10 @@ export function App() {
         const oId = paymentOrderData?.orderId || paymentOrderData?.backendOrderId;
         window.history.replaceState(null, '', oId ? `#detail-pesanan?id=${oId}` : '#detail-pesanan');
       } else if (viewId === 'view-customer-store') {
-        window.history.replaceState(null, '', selectedStoreName ? `#toko?name=${encodeURIComponent(selectedStoreName)}` : '#toko');
+        const hash = window.location.hash || '';
+        if (!hash.startsWith('#toko?') && !hash.includes('section=') && !hash.includes('ulasan-pelanggan')) {
+          window.history.replaceState(null, '', selectedStoreName ? `#toko?name=${encodeURIComponent(selectedStoreName)}` : '#toko');
+        }
       } else if (viewId === 'view-customer-profile') {
         window.history.replaceState(null, '', '#akun');
       } else if (viewId === 'view-customer-contact') {
@@ -446,6 +462,8 @@ export function App() {
         window.history.replaceState(null, '', '#buat-dagangan-seller');
       } else if (viewId === 'view-daganganku') {
         window.history.replaceState(null, '', '#daganganku-seller');
+      } else if (viewId === 'view-ulasan') {
+        window.history.replaceState(null, '', '#ulasan-seller');
       }
 
       setIsMobileOpen(false);
@@ -467,7 +485,7 @@ export function App() {
     setOrderTab,
   });
 
-  // If user logs out while on protected routes, automatically redirect to login
+  // Redirect otomatis ke halaman login jika user logout saat berada di route terproteksi
   useEffect(() => {
     const unsubscribe = subscribeToAuth((authLatest) => {
       const { path } = parseHash();
@@ -493,9 +511,12 @@ export function App() {
           path.startsWith('profil-seller') ||
           path.startsWith('riwayat-seller') ||
           path.startsWith('buat-dagangan-seller') ||
-          path.startsWith('daganganku-seller')
+          path.startsWith('daganganku-seller') ||
+          path.startsWith('ulasan-seller') ||
+          path === 'ulasan'
         ) {
-          handleNavigate('view-customer-home', 'Beranda Pelanggan');
+          handleNavigate('view-auth-role-selection', 'Pilih Peran');
+          window.history.replaceState(null, '', '#auth');
         }
       }
     });
@@ -503,16 +524,29 @@ export function App() {
   }, [handleNavigate]);
 
   const handleNavigateStore = useCallback(
-    (targetStoreName?: string, targetStoreId?: string) => {
+    (targetStoreName?: string, targetStoreId?: string, section?: string) => {
       const cleanName = targetStoreName && targetStoreName.trim() && targetStoreName.trim() !== 'TerasRasa Bakery' ? targetStoreName.trim() : 'Toko Rejak';
       setSelectedStoreName(cleanName);
       try {
         localStorage.setItem('rescuebyte_selected_store', cleanName);
       } catch { }
       setSelectedStoreId(targetStoreId);
-      handleNavigate('view-customer-store', 'Detail Toko');
+
+      const query = new URLSearchParams();
+      if (cleanName) query.set('name', cleanName);
+      if (targetStoreId) query.set('id', targetStoreId);
+      if (section) query.set('section', section);
+      window.location.hash = `#toko?${query.toString()}`;
+
+      if (!section) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      setActiveView('view-customer-store');
+      setActiveLabel('Detail Toko');
+      setIsMobileOpen(false);
     },
-    [handleNavigate]
+    [setActiveView, setActiveLabel, setIsMobileOpen]
   );
 
   return (
@@ -540,8 +574,7 @@ export function App() {
         triggerLoading={triggerLoading}
       />
 
-      {/* Global Toast & Loading Overlay */}
-      <Toast message={toastMessage} isVisible={isToastVisible} type={toastType} />
+      {/* Loading Overlay */}
       <BrandLoadingOverlay
         isVisible={isLoading}
         title={loadingTitle}

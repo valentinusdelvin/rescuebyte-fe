@@ -1,171 +1,104 @@
-# Forensic Audit Report: Milestone M1 Work Products
+# Forensic Audit & Adversarial Review Report — Milestone 1
 
-**Work Product**: Milestone M1 Deliverables (`src/index.css`, `src/utils/currency.ts`, `src/utils/markdown.ts`, `src/components/ui/*`)  
-**Profile**: General Project  
-**Auditor**: Forensic Integrity Auditor (M1)  
-**Parent / Orchestrator**: `59a4cfaf-061f-42fa-9551-4492d1892343`  
-**Integrity Mode**: Development (per `ORIGINAL_REQUEST.md:8`)  
+**Audit Target**: Milestone 1: Review API & Types Integration (`src/api/types.ts`, `src/api/services/reviewApi.ts`, `src/hooks/useReviews.ts`)  
+**Auditor**: Forensic Auditor (`auditor_m1`)  
+**Parent**: Orchestrator (`7d36458f-41bc-4fd3-8cbd-85997fb68e2b`)  
+**Integrity Mode**: Development (from `ORIGINAL_REQUEST.md`)  
 **Verdict**: **CLEAN**
-
----
-
-### Phase Results
-- **Check 1: Scope & File Authorization**: PASS — Git status confirms only authorized files within M1 scope were modified, created, or deleted. Zero changes to backend, server, or git configurations.
-- **Check 2: Static Verification (TypeScript Compilation)**: PASS — `npm run typecheck` (`tsc -b`) executed independently and completed with exit code 0 (0 compilation errors).
-- **Check 3: Production Build Execution**: PASS — `npm run build` executed independently, transforming 2489 modules and bundling client assets in 1.29s with exit code 0 (0 errors).
-- **Check 4: Code Quality & Linting Compliance**: PASS — `npx oxlint src/components/ui src/utils src/components/common/FormattedDescription.tsx` executed with 0 errors and 0 warnings.
-- **Check 5: Facade & Shortcut Detection**: PASS — All 7 UI components (`Button`, `Input`, `Badge`, `Card`, `Modal`, `EmptyState`, `Skeleton`) implement genuine interactive logic, forwardRefs, explicit loading/error/disabled states, and WCAG AA contrast.
-- **Check 6: Utility Determinism & Stress Testing**: PASS — `src/utils/currency.ts` and `src/utils/markdown.ts` were independently stress-tested against boundary values (negative numbers, NaN, floating point, empty strings, markdown tokens) in Node.js, yielding 100% correct outputs.
-- **Check 7: Dead Code Elimination Safety**: PASS — Confirmed via global repository grep that deleted starter boilerplate files (`FolderCard.tsx`, `Header.tsx`, `MysteryBoxThumb.tsx`, `useCounter.ts`, `Home.tsx`) have zero lingering imports or references.
-- **Check 8: Pre-populated Artifact Inspection**: PASS — Zero pre-populated test results or artificial attestation logs detected.
 
 ---
 
 ## 1. Observation
 
-### 1.1 Git Status & Scope Boundary Audit
-Command executed: `git status -s`
-```
- D src/components/FolderCard.tsx
- D src/components/Header.tsx
- M src/components/common/FormattedDescription.tsx
- D src/components/common/MysteryBoxThumb.tsx
- D src/hooks/useCounter.ts
- M src/index.css
- D src/pages/Home.tsx
-?? .agents/teamwork/
-?? src/components/ui/
-?? src/utils/currency.ts
-?? src/utils/markdown.ts
-```
-All touched files strictly correspond to the planned deliverables of Milestone M1. No modifications were made to backend configurations, database files, Dockerfiles, or git repositories.
+### 1.1 Source Code and Boundary Verification
+- **Target Files Checked**:
+  1. `src/api/types.ts` (Lines 521–564): Added 6 DTO interfaces (`CreateReviewRequest`, `UpdateReviewRequest`, `ReviewAuthorResponse`, `ReviewResponse`, `GetReviewsResponse`, `StoreSummaryResponse`).
+  2. `src/api/services/reviewApi.ts` (125 lines): Pure service wrapping 6 Review endpoints + `getStoreSummary` using centralized `apiClient`.
+  3. `src/hooks/useReviews.ts` (423 lines): Custom hooks (`useProductReviews`, `useStoreReviews`, `useStoreSummary`, `useReviewMutations`) and calculation helpers (`calculateAverageRating`, `calculateRatingDistribution`).
+- **Git File Boundaries (`git status --porcelain src/`)**:
+  ```
+   M src/api/types.ts
+  ?? src/api/services/reviewApi.ts
+  ?? src/hooks/useReviews.ts
+  ```
+  No other files in `src/` were touched. Exclusive file ownership strictly respected.
 
-### 1.2 TypeScript Compilation Check
-Command executed: `npm run typecheck`
-```
-> rescuebyte-fe@0.0.0 typecheck
-> tsc -b
-```
-Exit code: `0`. 0 compilation errors across the entire codebase.
+### 1.2 Prohibited Patterns & Facade Detection
+- Keyword scan (`powershell -Command "Select-String -Path 'src/api/services/reviewApi.ts', 'src/hooks/useReviews.ts' -Pattern 'mock|dummy|fake|sample'"`):
+  - Result: 0 matches found.
+- Endpoint implementation inspection (`src/api/services/reviewApi.ts`):
+  - `getProductReviews` -> `apiClient.get<GetReviewsResponse>('/api/v1/products/${productId}/reviews', { params })`
+  - `createProductReview` -> `apiClient.post<ReviewResponse>('/api/v1/products/${productId}/reviews', data)`
+  - `getStoreReviews` -> `apiClient.get<GetReviewsResponse>('/api/v1/stores/${storeId}/reviews', { params })`
+  - `createStoreReview` -> `apiClient.post<ReviewResponse>('/api/v1/stores/${storeId}/reviews', data)`
+  - `getStoreSummary` -> `apiClient.get<StoreSummaryResponse>('/api/v1/stores/${storeId}/summary')`
+  - `updateReview` -> `apiClient.patch<ReviewResponse>('/api/v1/reviews/${id}', data)`
+  - `deleteReview` -> `apiClient.delete<Record<string, string> | MessageResponse>('/api/v1/reviews/${id}')`
+  - No static returns or mocked responses detected.
 
-### 1.3 Production Build Check
-Command executed: `npm run build`
-```
-> rescuebyte-fe@0.0.0 build
-> tsc -b && vite build
+### 1.3 Compilation and Build Verification
+- Build command: `npm run build` (`tsc -b && vite build`)
+  - Output: `✓ built in 1.30s` with exit code `0` and 0 errors.
+- Linter command: `npm run lint` (`oxlint`)
+  - Output: `Found 45 warnings and 0 errors.` (All 45 warnings are in unrelated existing codebase files; 0 warnings or errors in M1 deliverables).
 
-vite v8.3.4 building client environment for production...
-transforming...
-✓ 2489 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                                                                          1.21 kB │ gzip:     0.65 kB
-dist/assets/index-CJ8ThnAB.css                                                         135.59 kB │ gzip:    26.84 kB
-dist/assets/index-useg_5Ni.js                                                        1,084.53 kB │ gzip:   302.16 kB
-✓ built in 1.29s
-```
-Exit code: `0`. The application builds cleanly for production.
-
-### 1.4 Linting Verification
-Command executed: `npx oxlint src/components/ui src/utils src/components/common/FormattedDescription.tsx`
-```
-Found 0 warnings and 0 errors.
-Finished in 22ms on 13 files with 104 rules using 12 threads.
-```
-Exit code: `0`.
-
-### 1.5 Dead Boilerplate Reference Check
-Grep verification confirmed 0 occurrences across `src/` for:
-- `FolderCard` -> 0 matches
-- `MysteryBoxThumb` -> 0 matches
-- `useCounter` -> 0 matches
-- Boilerplate `components/Header` -> 0 matches
-- Boilerplate `pages/Home` -> 0 matches
-
-### 1.6 Independent Empirical Stress Tests on Utilities
-Stress test executed via Node.js runtime against `src/utils/currency.ts`:
-- `formatRupiah(35000)` -> `"35.000"`
-- `formatRupiah(0)` -> `"0"`
-- `formatRupiah(-5000)` -> `"-5.000"`
-- `formatRupiah(NaN)` -> `"0"`
-- `formatRupiah(null)` -> `"0"`
-- `formatRupiah(undefined)` -> `"0"`
-- `formatRupiah(1250000.8)` -> `"1.250.001"` (rounded properly to integer)
-- `formatRupiahWithPrefix(35000)` -> `"Rp35.000"`
-- `formatPriceInput("10000")` -> `"10.000"`
-- `parsePriceInput("10.000")` -> `10000`
-- `parsePriceInput("")` -> `null`
-
-Stress test executed via Node.js runtime against `src/utils/markdown.ts`:
-- `renderInlineFormatted("hello world")` -> `["hello world"]`
-- `renderInlineFormatted("hello **world**")` -> `["hello ", <strong>world</strong>]`
-- `renderInlineFormatted("hello *world* and _foo_")` -> `["hello ", <em>world</em>, " and ", <em>foo</em>]`
-- `renderInlineFormatted("***awesome***")` -> `[<strong><em>awesome</em></strong>]`
-All AST nodes generated as native React elements, ensuring zero XSS injection risk.
+### 1.4 Test & Adversarial Verification
+- Test script: `node .agents/teamwork/worker_m1/verify_m1.cjs`
+  - Calculation tests: Empty reviews (returns 0 avg, all-zero distribution), single review, and multiple reviews passed.
+  - Contract verification: Live backend endpoints queried; returned 200 with proper payload wrappers, and 401 for unauthenticated mutation routes.
+- Adversarial edge-case assertions (tested via Node VM):
+  - `calculateAverageRating(null)` -> `0`
+  - `calculateAverageRating(undefined)` -> `0`
+  - `calculateAverageRating([{ rating: 'invalid' }, { rating: NaN }])` -> `0`
+  - `calculateRatingDistribution(null)` -> `{ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }`
+  - Rating clamping: `rating: 0` clamped to `1`, `rating: 6` clamped to `5`, `rating: 4.4` rounded to `4`.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Step 1 (Scope Verification)**: Inspection of `git status -s` revealed changes exclusively in `src/index.css`, `src/utils/`, `src/components/ui/`, and deletion of 5 unreferenced starter files. No files outside M1 were altered. This proves non-destructive execution and respect for milestone boundaries.
-2. **Step 2 (Compilation & Build Verification)**: Running `npm run typecheck` and `npm run build` independently confirmed that all new TypeScript interfaces, forwardRefs, and CSS `@theme` tokens compile without a single error or broken dependency.
-3. **Step 3 (Genuine Implementation Verification)**: Inspection of `src/components/ui/` showed authentic implementations:
-   - `Button`: handles `isLoading` with an accessible spinner and `aria-busy`, supports `leftIcon`/`rightIcon`, disables click events safely, and has high-contrast `:focus-visible:ring-primary` outlines.
-   - `Input`: automatically associates `<label>` and `<input>` via `useId`, exposes an accessible error alert with `role="alert"` and `aria-invalid`, and links hints via `aria-describedby`.
-   - `Modal`: traps Tab key navigation within dialog boundaries, closes on Escape, preserves and restores previous document focus, and locks background body scrolling.
-   - `Badge`, `Card`, `EmptyState`, `Skeleton`: complete, WCAG AA compliant, and fully styled with Tailwind tokens.
-   No dummy functions, constant stubs, or facades exist.
-4. **Step 4 (Behavioral Stress Testing)**: Dynamic execution in Node.js verified that utility functions handle edge cases (negative values, floating point rounding, null/NaN fallbacks) correctly.
-5. **Conclusion Link**: Because every check in both Phase 1 and Phase 2 passed without violation, the work product is verified authentic and compliant.
+1. **Step 1: Ground-Truth Contract Adherence**  
+   `ORIGINAL_REQUEST.md` mandates that all API communications route through the centralized API client using `VITE_API_BASE_URL` (`https://dolpin-fourthree.bccdev.id/`), with genuine DTOs matching backend Swagger and zero dummy data in final implementations. Review of `src/api/services/reviewApi.ts` confirmed that every method imports and calls `apiClient` without bypassing the interceptor or hardcoding responses.
+2. **Step 2: Boundary Integrity**  
+   Worker M1 was assigned exclusive ownership of `src/api/types.ts` (review additions), `src/api/services/reviewApi.ts`, and `src/hooks/useReviews.ts`. `git status` confirms zero unauthorized modifications in other components, routing, or assets.
+3. **Step 3: Authentic Functional Implementation**  
+   No facade implementations, dummy arrays, or pre-populated verification logs exist. Hooks actively track React state (`useState`, `useCallback`, `useMemo`, `useRef`), properly handle loading and error states, and invoke real backend APIs.
+4. **Step 4: Resilience and Edge Case Safety**  
+   Adversarial stress-testing of mathematical helpers demonstrated complete safety against empty reviews, null inputs, non-numeric ratings, and divide-by-zero risks.
+5. **Step 5: Compilation Soundness**  
+   `tsc -b && vite build` produced a production bundle with 0 errors, validating complete TypeScript compliance.
 
 ---
 
 ## 3. Caveats
 
-- **No Caveats**: The audit was comprehensive. All source code, styles, types, and build scripts within the scope of Milestone M1 were directly inspected, compiled, and tested.
+- **Database State**: The live backend database currently contains 0 reviews for existing stores and products. Real review records could not be fetched from production, but empty-state API responses (`payload.reviews = []` and `payload.meta`) were empirically verified against the live backend.
+- **Authenticated Endpoints**: Full creation, update, and deletion of reviews require a valid customer session token. These were verified to be actively protected by the backend gateway (returning HTTP 401 Bearer challenges) and correctly configured in the client service.
 
 ---
 
 ## 4. Conclusion
 
-**Verdict: CLEAN**
-
-Milestone M1 deliverables fulfill all architectural requirements and design specifications set forth in `ORIGINAL_REQUEST.md` and `PROJECT.md`. The implementation is genuine, accessible, type-safe, and free of any integrity violations or regressions.
-
-Milestone M1 is **APPROVED** to proceed to Milestone M2 (Centralized API Client, Swagger Types, & Custom Hooks).
+The deliverables for Milestone 1 are **CLEAN**. There are zero integrity violations, zero mock facades, zero unauthorized file modifications, and zero build/typecheck errors. Milestone 1 is verified and approved.
 
 ---
 
 ## 5. Verification Method
 
-To independently reproduce the forensic verification findings:
-
-1. **Check Git Status**:
+To independently reproduce the forensic verification:
+1. Check git status to confirm boundary enforcement:
    ```powershell
-   git status -s
+   git status --porcelain src/
    ```
-   *Expected: Only M1 files modified/created/deleted.*
-
-2. **Run TypeScript Check**:
-   ```powershell
-   npm run typecheck
-   ```
-   *Expected: Exit code 0.*
-
-3. **Run Production Build**:
+2. Verify production build and TypeScript compilation:
    ```powershell
    npm run build
    ```
-   *Expected: Exit code 0, 0 errors, assets emitted to `dist/`.*
-
-4. **Run Linter on M1 Files**:
+3. Run verification test suite:
    ```powershell
-   npx oxlint src/components/ui src/utils src/components/common/FormattedDescription.tsx
+   node .agents/teamwork/worker_m1/verify_m1.cjs
    ```
-   *Expected: 0 errors and 0 warnings.*
-
-5. **Run Empirical Currency Tests**:
+4. Verify edge case resistance:
    ```powershell
-   node --input-type=module -e "import('./src/utils/currency.ts').then(c => { console.log(c.formatRupiah(35000), c.formatRupiahWithPrefix(35000), c.parsePriceInput('10.000')); });"
+   node -e "const a = require('./.agents/teamwork/worker_m1/verify_m1.cjs');"
    ```
-   *Expected output: `35.000 Rp35.000 10000`.*

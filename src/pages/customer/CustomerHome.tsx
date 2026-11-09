@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import { User, ChevronRight } from 'lucide-react';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { MysteryBoxCard } from '../../components/customer/MysteryBoxCard';
 import { CustomerOrderModal } from '../../components/customer/CustomerOrderModal';
@@ -8,6 +8,8 @@ import { CustomerMysteryBox, TestimonialItem } from '../../types';
 import { getCurrentUser } from '../../services/authService';
 import { getPublicProducts, PublicProductItem } from '../../services/productService';
 import { formatDistanceKm } from '../../services/locationService';
+import { useGeolocation } from '../../hooks';
+import { batchFetchProductRatings } from '../../services/productRatingService';
 
 import heroFullBanner from '../../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
 import aboutUsTopImg from '../../assets/customer/about-us-top.svg';
@@ -85,8 +87,8 @@ function mapPublicProductToCustomerBox(p: PublicProductItem, isRadius = false): 
       'Berisi 1 porsi makanan surplus berkualitas dan higienis yang disiapkan langsung oleh merchant mitra.',
     tags: [realStoreName, realProductName, 'Halal MUI', 'Surplus Harian'],
     imageSrc,
-    rating: 4.9,
-    reviewCount: '42',
+    rating: (p as any).rating ?? 0,
+    reviewCount: (p as any).review_count ?? (p as any).reviewCount ?? 0,
     isRadiusItem: isRadius,
   };
 }
@@ -124,13 +126,13 @@ function getCachedBoxes(): { nearby: CustomerMysteryBox[]; bestSeller: CustomerM
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const mappedNearby = parsed.slice(0, 6).map((item) => ({
+        const mappedNearby = parsed.slice(0, 3).map((item) => ({
           ...item,
           isRadiusItem: false,
         }));
         const mappedBestSeller = [...parsed]
           .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0))
-          .slice(0, 6)
+          .slice(0, 3)
           .map((item) => ({
             ...item,
             isRadiusItem: true,
@@ -239,54 +241,125 @@ export function CustomerHome({
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Dynamic products from backend API
+  const { coordinates, permissionStatus, requestLocation } = useGeolocation();
+
+  // Produk dinamis dari API backend
   const cached = getCachedBoxes();
   const [nearbyBoxes, setNearbyBoxes] = useState<CustomerMysteryBox[]>(cached.nearby);
   const [bestSellerBoxes, setBestSellerBoxes] = useState<CustomerMysteryBox[]>(cached.bestSeller);
-  const [isLoadingBoxes, setIsLoadingBoxes] = useState<boolean>(cached.nearby.length === 0);
+  const [isLoadingNearby, setIsLoadingNearby] = useState<boolean>(cached.nearby.length === 0);
+  const [isLoadingBestSeller, setIsLoadingBestSeller] = useState<boolean>(cached.bestSeller.length === 0);
 
+  // Query 1: Mystery Box di Sekitar (berdasarkan koordinat lokasi pelanggan)
   useEffect(() => {
     let isMounted = true;
 
-    async function loadBoxes() {
+    async function loadNearbyBoxes() {
       try {
-        const coords = (() => {
-          try {
-            const saved = localStorage.getItem('rescuebyte_user_coords');
-            if (saved) return JSON.parse(saved);
-          } catch {}
-          return { lat: -7.9526, lng: 112.6146 };
-        })();
-
+        setIsLoadingNearby(true);
         const products = await getPublicProducts({
-          latitude: coords.lat,
-          longitude: coords.lng,
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          limit: 10,
         });
 
         if (!isMounted) return;
 
         if (products && products.length > 0) {
-          const sortedByDistance = [...products]
+          // Deduplikasi produk berdasarkan id
+          const uniqueProducts = Array.from(new Map(products.map((p) => [p.id, p])).values());
+
+          const ratingMap = await batchFetchProductRatings(uniqueProducts.map((p) => p.id));
+          if (!isMounted) return;
+
+          const enriched = uniqueProducts.map((p) => {
+            const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
+            return {
+              ...p,
+              rating: summary.rating,
+              reviewCount: summary.reviewCount,
+            };
+          });
+
+          // Urutkan terdekat lebih dulu dan batasi maksimal 3 kartu
+          const sortedByDistance = [...enriched]
             .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
+            .slice(0, 3)
             .map((p) => mapPublicProductToCustomerBox(p, false));
 
-          const sortedByDiscount = [...products]
-            .sort((a, b) => (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0))
-            .map((p) => mapPublicProductToCustomerBox(p, true));
-
           setNearbyBoxes(sortedByDistance);
-          setBestSellerBoxes(sortedByDiscount);
+        } else {
+          setNearbyBoxes([]);
         }
       } catch (err) {
-        console.warn('Failed to load boxes for CustomerHome:', err);
+        console.warn('Gagal memuat produk sekitar untuk CustomerHome:', err);
       } finally {
         if (isMounted) {
-          setIsLoadingBoxes(false);
+          setIsLoadingNearby(false);
         }
       }
     }
 
-    loadBoxes();
+    void loadNearbyBoxes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [coordinates.lat, coordinates.lng]);
+
+  // Query 2: Mystery Box Terlaris (berdasarkan ulasan & diskon)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBestSellerBoxes() {
+      try {
+        setIsLoadingBestSeller(true);
+        const products = await getPublicProducts({
+          limit: 10,
+        });
+
+        if (!isMounted) return;
+
+        if (products && products.length > 0) {
+          // Deduplikasi produk berdasarkan id
+          const uniqueProducts = Array.from(new Map(products.map((p) => [p.id, p])).values());
+
+          const ratingMap = await batchFetchProductRatings(uniqueProducts.map((p) => p.id));
+          if (!isMounted) return;
+
+          const enriched = uniqueProducts.map((p) => {
+            const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
+            return {
+              ...p,
+              rating: summary.rating,
+              reviewCount: summary.reviewCount,
+            };
+          });
+
+          // Urutkan berdasarkan ulasan terbanyak & persentase diskon, batasi maksimal 3 kartu
+          const sortedByPopularity = [...enriched]
+            .sort(
+              (a, b) =>
+                (b.reviewCount || 0) - (a.reviewCount || 0) ||
+                (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0)
+            )
+            .slice(0, 3)
+            .map((p) => mapPublicProductToCustomerBox(p, true));
+
+          setBestSellerBoxes(sortedByPopularity);
+        } else {
+          setBestSellerBoxes([]);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat produk terlaris untuk CustomerHome:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingBestSeller(false);
+        }
+      }
+    }
+
+    void loadBestSellerBoxes();
 
     return () => {
       isMounted = false;
@@ -318,12 +391,6 @@ export function CustomerHome({
   const handleConfirmOrder = (box: CustomerMysteryBox, quantity: number) => {
     if (onShowToast) {
       onShowToast(`🎉 Berhasil memesan ${quantity}x ${box.storeName}! Kode pickup telah disiapkan.`);
-    }
-  };
-
-  const handleContactSupport = () => {
-    if (onShowToast) {
-      onShowToast('Membuka live chat Customer Service RescueBite...');
     }
   };
 
@@ -433,19 +500,27 @@ export function CustomerHome({
       {/* 3. Section: Mystery Box di Sekitar */}
       <section className="px-6 py-10 lg:py-12" id="marketplace-section">
         <div className="w-full max-w-7xl mx-auto">
-          <div className="mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-[#1b1c1c] tracking-tight">
               Mystery Box di Sekitar
             </h2>
+            {permissionStatus === 'denied' && (
+              <button
+                type="button"
+                onClick={() => requestLocation(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors border border-emerald-200 cursor-pointer"
+                title="Aktifkan lokasi untuk hasil lebih akurat"
+              >
+                <span>📍 Coba Deteksi Lokasi</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoadingBoxes && nearbyBoxes.length === 0 ? (
-              <>
-                <BoxCardSkeleton />
-                <BoxCardSkeleton />
-                <BoxCardSkeleton />
-              </>
+            {isLoadingNearby && nearbyBoxes.length === 0 ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <BoxCardSkeleton key={idx} />
+              ))
             ) : nearbyBoxes.length === 0 ? (
               <BoxEmptyState message="Belum ada Mystery Box di sekitarmu saat ini." />
             ) : (
@@ -460,6 +535,26 @@ export function CustomerHome({
               ))
             )}
           </div>
+
+          {/* Link navigasi ke Marketplace */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="#marketplace"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onNavigateMarketplace) {
+                  onNavigateMarketplace();
+                } else {
+                  window.location.hash = '#marketplace';
+                }
+              }}
+              className="group inline-flex items-center gap-1.5 text-sm sm:text-base font-semibold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/40 rounded-lg px-3 py-1.5"
+              aria-label="Lihat selengkapnya Mystery Box di Sekitar di Marketplace"
+            >
+              <span className="group-hover:underline underline-offset-4">Lihat Selengkapnya</span>
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -473,12 +568,10 @@ export function CustomerHome({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoadingBoxes && bestSellerBoxes.length === 0 ? (
-              <>
-                <BoxCardSkeleton />
-                <BoxCardSkeleton />
-                <BoxCardSkeleton />
-              </>
+            {isLoadingBestSeller && bestSellerBoxes.length === 0 ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <BoxCardSkeleton key={idx} />
+              ))
             ) : bestSellerBoxes.length === 0 ? (
               <BoxEmptyState message="Belum ada Mystery Box terlaris saat ini." />
             ) : (
@@ -492,6 +585,26 @@ export function CustomerHome({
                 />
               ))
             )}
+          </div>
+
+          {/* Link navigasi ke Marketplace */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="#marketplace"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onNavigateMarketplace) {
+                  onNavigateMarketplace();
+                } else {
+                  window.location.hash = '#marketplace';
+                }
+              }}
+              className="group inline-flex items-center gap-1.5 text-sm sm:text-base font-semibold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/40 rounded-lg px-3 py-1.5"
+              aria-label="Lihat selengkapnya Mystery Box Terlaris di Marketplace"
+            >
+              <span className="group-hover:underline underline-offset-4">Lihat Selengkapnya</span>
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </a>
           </div>
         </div>
       </section>
@@ -631,9 +744,6 @@ export function CustomerHome({
                       <h3 className="font-bold text-[#1b1c1c] text-sm">
                         {testi.name}
                       </h3>
-                      <span className="text-xs text-gray-500 font-medium">
-                        {testi.role}
-                      </span>
                       <div className="flex text-amber-500 text-xs mt-0.5">
                         {'★'.repeat(testi.rating)}
                       </div>
@@ -656,7 +766,6 @@ export function CustomerHome({
         variant="full"
         onNavigateSeller={onNavigateSeller}
         onNavigateMarketplace={onNavigateMarketplace}
-        onContactSupport={handleContactSupport}
       />
 
       {/* Interactive Order Checkout Modal */}
@@ -688,7 +797,6 @@ export function CustomerHome({
                 className="w-full py-2.5 px-4 bg-[#0b1510] text-white rounded-xl font-semibold text-sm hover:bg-[#202a24] transition-colors"
                 onClick={() => {
                   setIsAuthModalOpen(false);
-                  if (onShowToast) onShowToast('Selamat datang kembali, Reza Akbar!');
                 }}
               >
                 Masuk sebagai Reza Akbar

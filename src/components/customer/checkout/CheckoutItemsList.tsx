@@ -81,9 +81,45 @@ export function CheckoutItemsList({
                     <h3 className="font-bold text-sm sm:text-base text-[#1b1c1c] truncate">
                       {item.name?.replace(/\s+Reguler$/i, '')}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                      <span className="text-amber-500 font-bold">★ {item.rating || group.rating || 4.9}</span>
-                      <span className="text-gray-400">({item.reviewCount || group.reviewCount || 42} ulasan)</span>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Lihat ulasan toko"
+                      className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-700 rounded w-fit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const query = new URLSearchParams();
+                        if (group.storeName) query.set('name', group.storeName);
+                        if (group.storeId) query.set('id', group.storeId);
+                        query.set('section', 'ulasan-pelanggan');
+                        window.location.hash = `#toko?${query.toString()}`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const query = new URLSearchParams();
+                          if (group.storeName) query.set('name', group.storeName);
+                          if (group.storeId) query.set('id', group.storeId);
+                          query.set('section', 'ulasan-pelanggan');
+                          window.location.hash = `#toko?${query.toString()}`;
+                        }
+                      }}
+                    >
+                      {(() => {
+                        const effectiveRating = item.rating || group.rating || 0;
+                        const effectiveReviews = Number(item.reviewCount || group.reviewCount || 0);
+                        return (
+                          <>
+                            <span className="text-amber-500 font-bold">
+                              ★ {effectiveRating > 0 ? Number(effectiveRating).toFixed(1) : '-'}
+                            </span>
+                            <span className="text-gray-400">
+                              ({effectiveReviews > 0 ? `${effectiveReviews} ulasan` : 'Belum ada ulasan'})
+                            </span>
+                          </>
+                        );
+                      })()}
                       <span className="text-gray-300">•</span>
                       <span>{item.distanceText || group.distanceText || '0.0 km'}</span>
                     </div>
@@ -183,9 +219,43 @@ export function CheckoutItemsList({
                     <h4 className="font-bold text-sm text-[#1b1c1c]">
                       {group.storeName}
                     </h4>
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                      <span className="text-amber-500 font-bold">★ {group.rating}</span>
-                      <span className="text-gray-400">({group.reviewCount} ulasan)</span>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Lihat ulasan toko"
+                      className="flex items-center gap-1 text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-700 rounded w-fit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const query = new URLSearchParams();
+                        if (group.storeName) query.set('name', group.storeName);
+                        if (group.storeId) query.set('id', group.storeId);
+                        query.set('section', 'ulasan-pelanggan');
+                        window.location.hash = `#toko?${query.toString()}`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const query = new URLSearchParams();
+                          if (group.storeName) query.set('name', group.storeName);
+                          if (group.storeId) query.set('id', group.storeId);
+                          query.set('section', 'ulasan-pelanggan');
+                          window.location.hash = `#toko?${query.toString()}`;
+                        }
+                      }}
+                    >
+                      {(() => {
+                        const ratingNum = Number(group.rating || 0);
+                        const reviewNum = Number(group.reviewCount || 0);
+                        return (
+                          <>
+                            <span className="text-amber-500 font-bold">★ {ratingNum > 0 ? ratingNum.toFixed(1) : '-'}</span>
+                            <span className="text-gray-400">
+                              ({reviewNum > 0 ? `${reviewNum} ulasan` : 'Belum ada ulasan'})
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -33,7 +33,7 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-2xl',
   };
 
-  // Keyboard trap and Escape listener
+  // Penjaga fokus keyboard dan penutup modal via tombol Escape
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -70,17 +70,15 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    // Save previous active element to restore focus on close
+    // Simpan elemen aktif sebelumnya agar fokus kembali saat modal ditutup
     previousActiveElement.current = document.activeElement as HTMLElement;
 
-    // Lock body scrolling
+    // Kunci scroll body saat modal aktif
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Attach key listener
     window.addEventListener('keydown', handleKeyDown);
 
-    // Initial focus on dialog
     const focusTimer = setTimeout(() => {
       if (modalRef.current) {
         const firstFocusable = modalRef.current.querySelector<HTMLElement>(

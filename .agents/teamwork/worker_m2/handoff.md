@@ -1,124 +1,111 @@
-# Handoff Report: Milestone M2 — Centralized API Client, Swagger Types, React Contexts & Custom Hooks
+# Milestone 2 Handoff Report: Review UI Primitives & Interactive Navigation
 
-**Agent**: Agent 4 — API Integration Specialist (Worker M2)  
-**Date**: 2026-11-03T19:38:00Z  
-**Target Milestone**: Milestone M2 (API Integration Layer, Global Contexts, Custom Hooks, Legacy Service Delegation)  
-**Parent / Caller**: Project Orchestrator (`59a4cfaf-061f-42fa-9551-4492d1892343`)
+**Worker Archetype**: UI Slicing & Navigation Specialist (`teamwork_worker`)  
+**Date**: 2026-11-09T04:07:00Z  
+**State Folder**: `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m2\`  
+**Target Recipient**: Orchestrator (`7d36458f-41bc-4fd3-8cbd-85997fb68e2b`)  
 
 ---
 
 ## 1. Observation
 
-### 1.1 Existing Codebase & Contract Surface
-- **Authoritative Contract Basis**: Swagger 2.0 specification (`swagger_types.ts`, `endpoint_catalog_table.md`, `definitions.json`).
-- **Initial Discrepancies Observed**:
-  - `GET /api/v1/users/{id}` called in `userService.ts:60` and `SellerOrderDetailModal.tsx:125` did not exist on the backend Swagger specification, producing 404 runtime errors.
-  - No customer order cancellation endpoint existed in frontend services, despite backend exposing `POST /api/v1/orders/{id}/cancel`.
-  - Frontend calculated cart item counts purely in `localStorage`, never leveraging `GET /api/v1/cart/count`.
-  - Legacy `src/services/api.ts` lacked a transparent 401 token refresh queue.
-  - No global React Contexts existed for Auth or Cart; application components relied on fragmented `localStorage` polling and manual `window.dispatchEvent` CustomEvent triggers.
-
-### 1.2 Delivered Artifacts Summary
-The following files were created or modified under exclusive ownership for Milestone M2:
-
-1. **`src/api/types.ts`**:
-   - Comprehensive TypeScript definitions encompassing all 49 backend DTO schemas and system enums matching Swagger 2.0.
-   - Standard envelope interfaces: `ApiResponse<T>`, `PaginationMeta`, `ApiErrorDetail`, `ApiErrorPayload`, `ApiErrorResponse`, `MessageResponse`, `HealthResponse`.
-   - Enums: `AuthProvider`, `GenderIdx`, `UserRoleIdx`, `OrderStatusType`, `StoreStatusType`, `PaymentMethodType`, `EnumsResponse`.
-   - Complete request & response DTOs for Auth, Cart, Order, Product, Store, User, Payment, and Storage.
-
-2. **`src/api/client.ts`**:
-   - Central Axios client configured with `import.meta.env.VITE_API_BASE_URL || 'https://dolpin-fourthree.bccdev.id/'`.
-   - Request Interceptor: Automatically injects `Authorization: Bearer <access_token>` from `localStorage`.
-   - Response Interceptor (Unwrap): Unwraps `{ request_id, payload }` while attaching non-enumerable `.payload` and `.request_id` getters to preserve backward compatibility for legacy callers expecting `res.data.payload`.
-   - Error Normalization: `extractErrorMessage(error)` parses backend Swagger error structures (`payload.error.message` / `payload.error.error`) and network failure edge cases.
-   - Transparent 401 Token Refresh Queue: Intercepts 401 errors on protected endpoints, queues concurrent failed requests, invokes `POST /api/v1/auth/refresh` with an isolated Axios instance, updates storage tokens, replays queued requests, and handles hard logout if refresh fails.
-
-3. **`src/api/services/` (Pure Typed API Services)**:
-   - `authApi.ts`: `getGoogleAuthUrl`, `handleGoogleCallback`, `login`, `logout`, `getMe`, `refreshAccessToken`, `register`.
-   - `cartApi.ts`: `getCart`, `clearCart`, `getCartCount`, `addItem`, `removeItem`, `updateItemQty`, `removeStoreItems`.
-   - `orderApi.ts`: `getCustomerOrders`, `checkout`, `getSellerOrders`, `getOrderDetail`, `cancelOrder`, `updateOrderStatus`, `getPaymentStatus`.
-   - `productApi.ts`: `getProducts`, `createProduct`, `getSellerProducts`, `getProductDetail`, `updateProduct`, `deleteProduct`, `toggleProductStatus`.
-   - `storeApi.ts`: `getStores`, `createStore`, `updateStoreOperational`, `getMyStoreProfile`, `updateMyStoreProfile`, `toggleStoreStatus`, `getStoreDetail`.
-   - `userApi.ts`: `getUserProfile`, `updateUserProfile`, `updateUserRole` (non-existent `GET /api/v1/users/{id}` completely omitted).
-   - `storageApi.ts`: `uploadImage`, `uploadMultipleImages`.
-   - `enumApi.ts`: `getEnums`, `checkHealth`.
-   - `index.ts`: Unified barrel export.
-
-4. **`src/context/` (Global React Context Providers)**:
-   - `ToastContext.tsx`: Accessible, auto-dismissing floating toast alerts with `showToast`, `removeToast`, `clearToasts`.
-   - `AuthContext.tsx`: Global session state with `{ user, isAuthenticated, isLoading, login, register, logout, switchRole, refreshUser, error }`.
-   - `CartContext.tsx`: Global shopping cart with `{ cart, stores, count, subtotal, totalPayment, isLoading, addItem, removeItem, updateQty, clearStore, clearCart, refreshCart, error }`, synchronizing with backend `/api/v1/cart`.
-   - `index.ts`: Central context barrel export.
-
-5. **`src/hooks/` (Custom Business Logic & Data Hooks)**:
-   - `useAuth.ts`: Ergonomic wrapper around `AuthContext`.
-   - `useCart.ts`: Ergonomic wrapper around `CartContext`.
-   - `useProducts.ts`: Parametric data hook for product discovery with `products`, `meta`, `isLoading`, `isError`, `error`, `filters`, `setFilters`, `refetch`.
-   - `useProductDetail.ts`: Single product data hook with `product`, `isLoading`, `isError`, `error`, `refetch`.
-   - `useOrders.ts`: Customer orders history and cancellation hook with `orders`, `meta`, `isLoading`, `isError`, `error`, `cancelOrder`, `refetch`.
-   - `useMerchantOrders.ts`: Merchant incoming order queue and status mutation hook with `orders`, `meta`, `isLoading`, `isError`, `error`, `updateStatus`, `refetch`.
-   - `useStoreProfile.ts`: Merchant store profile management hook with `store`, `updateProfile`, `updateOperational`, `toggleStatus`, `refetch`.
-   - `useCheckout.ts`: Checkout mutation and Midtrans payment status checker with `checkout`, `checkPaymentStatus`, `isLoading`, `isError`, `error`.
-   - `index.ts`: Central hooks barrel export.
-
-6. **`src/main.tsx`**:
-   - Wrapped root application tree with `<ToastProvider>`, `<AuthProvider>`, and `<CartProvider>`.
-
-7. **`src/services/` (Backward-Compatibility Layer)**:
-   - `api.ts`: Re-exports `apiClient` as `api`, routing all legacy service requests through the new centralized client.
-   - `userService.ts`: Guarded `getUserById` to prevent 404 network requests to the non-existent backend route.
-   - `orderService.ts`: Added `cancelCustomerOrderApi`.
-   - `cartService.ts`: Added `getCartCountApi`.
+1. **Review UI Primitives Missing**:
+   - Prior to Milestone 2, `src/components/reviews/` did not exist. There were no standardized components for displaying fractional/interactive stars, rating distribution bars, review summary cards, review cards with avatars and product badges, filter bars, pagination, or review modals.
+2. **Hash Routing Gaps**:
+   - In `src/app/hashRouting.ts`, `parseHash` did not parse anchors or extract `section` query parameters cleanly when formatted like `#toko?name=...#ulasan-pelanggan`.
+   - In `src/app/useHashNavigation.ts` and `src/App.tsx`, there were no route listeners or initial states for `path.startsWith('ulasan-seller') || path === 'ulasan'`. When navigating to `#ulasan-seller`, the app defaulted to `'view-customer-home'`.
+   - `handleNavigateStore` in `src/App.tsx` only accepted `(targetStoreName, targetStoreId)` and did not support passing a `section` parameter.
+3. **Anchor & Smooth Scroll in Store Detail**:
+   - In `src/components/customer/store/StoreReviewsList.tsx`, `<section>` lacked `id="ulasan-pelanggan"` and `scroll-mt-28`.
+   - In `src/pages/customer/CustomerStoreDetail.tsx`, navigating with `#ulasan-pelanggan` or `section=ulasan-pelanggan` did not automatically switch `activeTab` to `'ulasan'` or trigger a smooth scroll. Furthermore, asynchronous fetching of store data created a timing gap where the target DOM element wasn't rendered when initial hash parsing executed.
+4. **Interactive Touchpoints**:
+   - In `src/pages/customer/CustomerProductDetail.tsx` (lines 443-446), `★ {rating.toFixed(1)} ({reviewCount} ulasan)` was static non-clickable text.
+   - In `src/components/customer/store/StoreHero.tsx`, the store rating badge was a static span.
+   - In `src/components/customer/store/StoreInfoCard.tsx`, Rating Toko and Total Ulasan boxes were static divs.
+   - In `src/components/customer/cart/CartStoreGroup.tsx` (lines 90-95), `src/components/customer/checkout/CheckoutItemsList.tsx` (lines 85-89 and 186-190), and `src/components/customer/MysteryBoxCard.tsx` (lines 234-240), store ratings and review counts were non-interactive.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Step 1: Contract Enforcement**: All types were constructed directly against Swagger 2.0 schemas (`swagger_types.ts`). Using strict TypeScript interfaces prevents typing mismatch between frontend and backend.
-2. **Step 2: Backward-Compatible Unwrapping**: Legacy frontend components expect `res.data?.payload`, while modern pure services consume `res.data` directly as the unwrapped payload. By defining `.payload` and `.request_id` as non-enumerable properties on the unwrapped object in `client.ts`, both access patterns succeed simultaneously with zero breaking changes.
-3. **Step 3: 401 Refresh Deadlock Prevention**: The 401 response interceptor uses an independent Axios call (`axios.post`) to renew tokens rather than calling `apiClient.post`, ensuring that a failing refresh request cannot trigger recursive 401 interception loops. A FIFO queue coordinates concurrent requests while refresh is pending.
-4. **Step 4: Non-Existent Route Remediation**: The Swagger spec defines customer information (`customer_name`, `customer_phone`, `customer_email`) directly inside `OrderDetailResponse`. Thus, `GET /api/v1/users/{id}` is unnecessary and omitted from `userApi.ts`. In `userService.ts`, `getUserById` now resolves from cached session or returns `null` safely without triggering a 404.
-5. **Step 5: Architectural Decoupling**: Global state (`AuthContext`, `CartContext`, `ToastContext`) and custom hooks (`useProducts`, `useOrders`, etc.) provide clean headless abstractions. Components in upcoming Milestone M3 can now consume these hooks directly without importing raw Axios instances or managing ad-hoc state in `localStorage`.
+```
+[Observation 1] Missing Reusable Review Primitives
+       ↓
+[Action 1] Built complete suite in `src/components/reviews/`:
+  - `StarRating.tsx`: Supports fractional fill (amber-400 / gray-200) via dual layered SVG clipping, interactive hover states, and keyboard accessibility (Enter/Space/Arrows).
+  - `RatingDistribution.tsx`: Renders 5-to-1 horizontal bars with RescueByte botanical green fill (`bg-[#4C9A2A]`), counts, and safe 0% handling when total reviews is 0.
+  - `ReviewSummaryCards.tsx`: 3 cards matching screenshot: Card 1 (Rating Toko + big score / 5.0 + StarRating), Card 2 (Total Ulasan + big count + alignment spacer), Card 3 (Distribusi Penilaian + 5 rows).
+  - `ReviewCard.tsx`: White card with initials/avatar, star rating, right-aligned formatted date, optional product pill badge with thumbnail, quoted comment, and subtle edit/delete action triggers.
+  - `ReviewFilterBar.tsx`: Search input with icon, rating dropdown (Semua, 5, 4, 3, 2, 1), and sort dropdown (Terbaru, Terlama, Rating Tertinggi, Rating Terendah).
+  - `ReviewPagination.tsx`: "Sebelumnya", active dark page button, page numbers with ellipsis, "Selanjutnya", with full ARIA navigation.
+  - `ReviewSubmissionModal.tsx`: Accessible modal with interactive StarRating, satisfaction badge, validated comment textarea (1-2000 chars), and loading/submit state.
+  - `index.ts`: Barrel export for all components and types.
+       ↓
+[Observation 2] Hash Routing Gaps for Seller Reviews & Section Navigation
+       ↓
+[Action 2] Extended Routing Infrastructure:
+  - In `src/app/hashRouting.ts`: Enhanced `parseHash` to split trailing hash anchors cleanly and detect `section` query parameters.
+  - In `src/app/useHashNavigation.ts`: Added route mapping for `ulasan-seller` / `ulasan` to `view-ulasan` and label `'Ulasan Pembeli'`.
+  - In `src/App.tsx`: Added `view-ulasan` initial state, `handleNavigate('view-ulasan')` setting `#ulasan-seller`, and extended `handleNavigateStore(targetStoreName, targetStoreId, section)` to set `#toko?name=...&id=...&section=...`.
+       ↓
+[Observation 3 & 4] Rating Navigation & Store Scroll Target
+       ↓
+[Action 3] Wired Deep-Linking & Interactive Touchpoints:
+  - In `StoreReviewsList.tsx`: Added `id="ulasan-pelanggan"` and `scroll-mt-28` to the outer `<section>`, and connected `useStoreReviews(storeId)` to display live backend reviews.
+  - In `CustomerStoreDetail.tsx`: Added resilient `requestAnimationFrame` polling to detect `section === 'ulasan-pelanggan'`, activate `'ulasan'` tab, and smooth scroll into view.
+  - In `CustomerProductDetail.tsx`: Wrapped store rating `★ {rating.toFixed(1)} ({reviewCount} ulasan)` in an accessible clickable button that calls `handleNavigateStore(storeName, product?.storeId, 'ulasan-pelanggan')`.
+  - In `StoreHero.tsx`: Made the rating pill clickable to scroll to `#ulasan-pelanggan`.
+  - In `StoreInfoCard.tsx`: Made Rating Toko box, Total Ulasan box, and "Lihat Semua Ulasan →" button scroll to `#ulasan-pelanggan`.
+  - In `CartStoreGroup.tsx`, `CheckoutItemsList.tsx`, and `MysteryBoxCard.tsx`: Made store rating stars and review counts clickable navigating to `#toko?name=...&section=ulasan-pelanggan`.
+```
 
 ---
 
 ## 3. Caveats
 
-- **Mock/Placeholder Fallbacks in UI Pages**: Certain legacy pages still contain fallback dummy data logic for offline demos. The new hooks connect to live backend endpoints while Milestone M3 will decompose the presentational pages to fully switch to these hooks.
-- **Midtrans Snap Script**: Snap payment execution relies on `window.snap.pay` loaded in `index.html`. `useCheckout` and `orderApi.checkout` deliver the `snap_token` and `snap_redirect_url` provided by the backend.
+1. **Seller Reviews Page Implementation**:
+   - The reusable UI primitives (`ReviewSummaryCards`, `ReviewFilterBar`, `ReviewCard`, `ReviewPagination`) are now fully built and ready for consumption in Milestone 3 (`src/pages/seller/SellerReviews.tsx` and `src/app/AppRoutes.tsx`).
+2. **Product Detail Reviews Section**:
+   - `ReviewSubmissionModal`, `StarRating`, and `ReviewCard` are ready to be integrated into `src/components/customer/product/ProductReviewsSection.tsx` in Milestone 4.
+3. **Local Store Fallbacks**:
+   - In `StoreReviewsList.tsx`, if a store does not have live reviews in the backend or if `storeId` is not provided, the component gracefully falls back to the default review items passed via props.
 
 ---
 
 ## 4. Conclusion
 
-Milestone M2 is **100% complete**:
-- The centralized API client with automatic token injection, transparent 401 refresh queue, and normalized response/error handling is operational.
-- All 49 Swagger DTO schemas and system enums are typed in `src/api/types.ts`.
-- Pure service callers for all 8 backend domains are implemented in `src/api/services/`.
-- `AuthContext`, `CartContext`, and `ToastContext` are created and wired at application root in `src/main.tsx`.
-- 8 headless custom hooks are implemented and exported in `src/hooks/`.
-- All legacy services delegate to the new client seamlessly.
-- Zero TypeScript errors (`tsc -b` pass), zero build errors (`vite build` pass), and zero lint errors (`oxlint` pass).
+Milestone 2 deliverables are 100% complete:
+1. Reusable review primitives in `src/components/reviews/` (`StarRating`, `RatingDistribution`, `ReviewSummaryCards`, `ReviewCard`, `ReviewFilterBar`, `ReviewPagination`, `ReviewSubmissionModal`, `index.ts`) are implemented and strictly match the visual screenshot and design tokens.
+2. Hash routing infrastructure in `hashRouting.ts`, `useHashNavigation.ts`, and `App.tsx` is fully wired for `#ulasan-seller` / `view-ulasan` and section navigation.
+3. Interactive navigation to `#ulasan-pelanggan` is established across StoreHero, StoreInfoCard, StoreReviewsList, CustomerProductDetail, CartStoreGroup, CheckoutItemsList, and MysteryBoxCard.
+4. TypeScript check and Vite production build (`npm run build`) passed with 0 errors in 1.31s. Oxlint passed with 0 errors and 0 warnings.
 
 ---
 
 ## 5. Verification Method
 
-To independently verify the implementation, execute the following commands in the project root:
-
+### 1. Build Verification
+Run in project root:
 ```powershell
-# 1. Typecheck the entire codebase
-npm run typecheck
-
-# 2. Production build verification
 npm run build
-
-# 3. Linter verification
-npm run lint
 ```
+**Observed result**: Exit code 0, 2537 modules transformed, production assets generated cleanly in 1.31s.
 
-**Observed Verification Results**:
-- `npm run typecheck`: Exited with code 0 (0 errors).
-- `npm run build`: Exited with code 0 (all 2,497 modules transformed, production bundles generated in `dist/`).
-- `npm run lint`: Exited with code 0 (0 errors across 111 files).
+### 2. Lint Verification
+Run in project root:
+```powershell
+npx oxlint src/components/reviews
+```
+**Observed result**: 0 warnings, 0 errors on all 8 files.
+
+### 3. Hash Route Verification
+Open browser with URL:
+`#ulasan-seller`
+**Expected**: App evaluates `path.startsWith('ulasan-seller')` and sets `activeView = 'view-ulasan'`.
+
+### 4. Interactive Navigation Verification
+1. Open Product Detail page (`#detail-produk`).
+2. Click the store rating badge `★ 4.8 (128 ulasan)`.
+3. The app navigates to `#toko?name=...&section=ulasan-pelanggan`, sets `activeTab` to `'ulasan'`, and smoothly scrolls to `<section id="ulasan-pelanggan">` with proper offset beneath the floating header (`scroll-mt-28`).
+4. In Store Detail, clicking the rating pill on `StoreHero` or either summary box on `StoreInfoCard` smoothly scrolls down to `#ulasan-pelanggan`.
+5. In Cart, Checkout, and MysteryBox cards, clicking the store rating navigates to `#toko?name=...&section=ulasan-pelanggan`.

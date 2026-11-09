@@ -1,47 +1,59 @@
-## 2026-11-03T19:48:27Z
+## 2026-11-09T04:29:19Z
+You are the Seller UI Specialist (teamwork_worker) for Milestone 3: Seller Dashboard "Ulasan Pembeli" Page Implementation.
+
+MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-You are Agent 3 & Agent 5 — Frontend Developer & Code Refactoring Specialist (Worker M3).
-Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m3
-Original Request: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
-Master Blueprint: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md
-Parent: da2dba90-b6bf-4c5e-813a-a8fef275193d / Project Orchestrator: 59a4cfaf-061f-42fa-9551-4492d1892343
+Context & Instructions:
+- Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe
+- State folder: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m3\
+- Original request path: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
+- Scope document: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator_2\SCOPE.md
+- Reference screenshot: C:/Users/fahmi/.gemini/antigravity/brain/4423c825-0620-4ba8-a2a4-23e9688b9196/.user_uploaded/media_1794193326013_1e8c58c4.jpg
+- UI Primitives built in Milestone 2: `src/components/reviews/` (`StarRating`, `RatingDistribution`, `ReviewSummaryCards`, `ReviewCard`, `ReviewFilterBar`, `ReviewPagination`, `ReviewSubmissionModal`, `index.ts`)
+- Data Hooks built in Milestone 1: `src/hooks/useReviews.ts` (`useStoreReviews`, `useStoreSummary`, `calculateAverageRating`, `calculateRatingDistribution`)
 
-Read reference reports before starting:
-- c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
-- c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md
-- Worker M1 Report (UI Primitives & Tokens): c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m1\handoff.md
-- Worker M2 Report (API Client, Contexts, Hooks): c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m2\handoff.md
-- Explorer 1 Report (Architecture & Dead Code): c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\teamwork_explorer_survey_1\handoff.md
-- Explorer 2 Report (UI/UX & Accessibility): c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\teamwork_explorer_survey_2\handoff.md
+Your Exclusive File Ownership:
+- `src/pages/seller/SellerReviews.tsx` (create)
+- `src/app/AppRoutes.tsx` (wire SellerReviews into activeView === 'view-ulasan')
 
-Scope & File Ownership (Exclusive write ownership for Milestone M3):
-- `src/pages/*`
-- `src/components/customer/*`
-- `src/components/seller/*`
-- `src/components/dashboard/*`
-- `src/components/layout/*`
-- `src/components/auth/*`
-- `src/App.tsx`
+Task Deliverables:
+1. Create `src/pages/seller/SellerReviews.tsx`:
+   - Follow the reference screenshot `media_1794193326013_1e8c58c4.jpg` faithfully.
+   - Header:
+     * Title: "Ulasan Pembeli" (`font-display font-bold text-2xl text-gray-900 mb-6 sm:mb-8`)
+   - Summary Cards Section:
+     * Render `<ReviewSummaryCards averageRating={averageRating} totalReviews={totalReviews} distribution={ratingDistribution} isLoading={isLoading} />`.
+     * Data: fetch store reviews and summary via `useStoreReviews(storeId)` or `useStoreSummary(storeId)`.
+     * IMPORTANT: DO NOT HARDCODE screenshot example numbers (4.8 or 128). Use real backend data / calculations.
+   - Search & Filter Bar:
+     * Render `<ReviewFilterBar searchQuery={searchQuery} onSearchChange={setSearchQuery} ratingFilter={ratingFilter} onRatingFilterChange={setRatingFilter} sortBy={sortBy} onSortChange={setSortBy} />`.
+     * Filter logic:
+       - Search: match reviewer name, review content, or product name (case-insensitive).
+       - Rating filter: null for "Semua Rating", or 1, 2, 3, 4, 5.
+       - Sort: 'terbaru' (created_at desc), 'terlama' (created_at asc), 'rating-tinggi' (rating desc), 'rating-rendah' (rating asc).
+   - Review List Cards:
+     * For each review in filtered list, render `<ReviewCard key={review.id} id={review.id} reviewerName={review.author?.name || 'Pembeli'} reviewerAvatar={review.author?.avatar_url} rating={review.rating} createdAt={formatDate(review.created_at)} comment={review.content} productName={...} />`.
+     * Loading state: render 3 Skeleton cards when `isLoading`.
+     * Empty state: when 0 reviews exist or 0 match filter, render `<EmptyState title="Belum Ada Ulasan" description="Toko ini belum memiliki ulasan dari pembeli." />` (from `src/components/ui/EmptyState.tsx`).
+   - Pagination:
+     * Render `<ReviewPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />`.
+     * Paginate client-side (e.g. 5 or 10 reviews per page).
+   - Responsive styling: warm off-white background (`bg-[#f7f7f5]` / `bg-surface-app`), white cards with subtle border and shadow, clean padding.
 
-Tasks:
-1. Decompose the 4 giant pages (>1,000 lines) into modular subcomponents:
-   - `CustomerStoreDetail.tsx` (1,240 lines): break into subcomponents (e.g. `StoreHero`, `StoreTabs`, `StoreDaganganGrid`, `StoreInfoCard`, `StoreReviewsList`).
-   - `CustomerOrderDetail.tsx` (1,161 lines): break into subcomponents (e.g. `OrderStepper`, `OrderItemsList`, `OrderPickupInfo`, `OrderPaymentAction`).
-   - `CustomerCheckout.tsx` (1,128 lines): break into subcomponents (e.g. `CheckoutItemsList`, `CheckoutContactForm`, `CheckoutPaymentMethod`, `CheckoutSummary`). Convert custom payment selection divs to semantic keyboard-accessible `<button type="button" role="radio" aria-checked=...>`.
-   - `CustomerMarketplace.tsx` (1,156 lines): eliminate 140 lines of duplicate card markup by importing `<MysteryBoxCard />`.
-2. Decouple presentational components from raw service calls by migrating them to custom hooks (`useAuth`, `useCart`, `useProducts`, `useOrders`, `useMerchantOrders`, `useStoreProfile`, `useCheckout`) and Contexts (`useAuthContext`, `useCartContext`).
-3. Consolidate currency formatting: eliminate all remaining duplicate inline `formatRupiah` definitions across pages/components, importing from `src/utils/currency.ts`.
-4. Modernize `src/App.tsx`:
-   - Implement route-level code splitting using `React.lazy()` and `<Suspense fallback={<BrandLoadingOverlay />}>` to eliminate Vite's 1.09 MB chunk warning.
-   - Support hash query parameters for deep linking (`#detail-produk?id=...`, `#toko?name=...` or `?id=...`, `#detail-pesanan?id=...`) so refreshing the page preserves state.
-   - Eliminate heavy prop drilling by consuming `AuthContext` and `CartContext`.
-5. UI/UX & Accessibility Hardening:
-   - Add mobile sticky bottom conversion action bars for `CustomerCart.tsx`, `CustomerCheckout.tsx`, and `CustomerProductDetail.tsx`.
-   - Fix `CustomerHeader.tsx:311` mobile offset bug (change `left-[calc(50%+24px)]` to `left-1/2`).
-   - Fix color contrast in `PerformanceChart.tsx` (change `#eab308` to `#b45309`) and add accessible hidden data table `<table className="sr-only">`.
-   - Expand touch targets to >= 44x44px and ensure focus rings use `:focus-visible:ring-primary`.
-6. Run verification commands: `npm run typecheck` (`tsc -b`), `npm run build`, and `npm run lint`. Ensure 0 errors!
-7. Output your detailed handoff report to:
-   `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m3\handoff.md`
-8. Send completion message to orchestrator.
+2. In `src/app/AppRoutes.tsx`:
+   - Import `SellerReviews` (or `React.lazy(() => import('../pages/seller/SellerReviews'))`).
+   - Find lines 342-351 where unmatched views fall into `<PlaceholderPage>`.
+   - Replace placeholder for `'view-ulasan'` with:
+     ```tsx
+     {activeView === 'view-ulasan' && (
+       <SellerReviews storeName={storeName} storeId={storeId} />
+     )}
+     ```
+   - Ensure other views remain untouched.
+   - Verify sidebar navigation: clicking "Ulasan Pembeli" in Sidebar (`activeView === 'view-ulasan'`) renders `SellerReviews` and highlights the menu item.
+
+3. Build & Static Verification:
+   Run `npm run build` (`tsc -b && vite build`) and `npx oxlint src/pages/seller/SellerReviews.tsx src/app/AppRoutes.tsx` via `run_command` ensuring 0 TypeScript and bundling errors.
+
+4. File handoff report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m3\handoff.md` and message the orchestrator when completed.

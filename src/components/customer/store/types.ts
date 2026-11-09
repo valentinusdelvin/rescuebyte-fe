@@ -15,11 +15,15 @@ export interface StoreProductItem {
 export interface StoreReviewItem {
   id: string;
   name: string;
-  role: string;
+  role?: string;
   rating: number;
   avatar: string;
   comment: string;
   date: string;
+  productId?: string;
+  productName?: string;
+  productImage?: string;
+  type?: 'store' | 'product';
 }
 
 export interface StoreDetailInfo {

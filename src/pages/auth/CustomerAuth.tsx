@@ -73,6 +73,8 @@ export function CustomerAuth({
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   // Sync mode with window hash if user navigates with browser back/forward
   useEffect(() => {
@@ -90,6 +92,8 @@ export function CustomerAuth({
 
   const switchMode = (newMode: 'login' | 'register') => {
     setMode(newMode);
+    setLoginError(null);
+    setRegisterError(null);
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', newMode === 'register' ? '#daftar' : '#masuk');
     }
@@ -97,8 +101,11 @@ export function CustomerAuth({
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     if (!loginEmail.trim() || !loginPassword) {
-      if (onShowToast) onShowToast('Silakan isi alamat email dan kata sandi kamu.', 'error');
+      const msg = 'Silakan isi alamat email dan kata sandi kamu.';
+      setLoginError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
 
@@ -107,22 +114,20 @@ export function CustomerAuth({
 
     // Pre-flight check: store email cannot log in via Customer form
     if (currentRole === 'customer' && existingRole === 'seller') {
+      const msg = 'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.';
+      setLoginError(msg);
       if (onShowToast) {
-        onShowToast(
-          'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.',
-          'error'
-        );
+        onShowToast(msg, 'error');
       }
       return;
     }
 
     // Pre-flight check: customer email cannot log in via Mitra Toko form
     if (currentRole === 'seller' && existingRole === 'customer') {
+      const msg = 'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.';
+      setLoginError(msg);
       if (onShowToast) {
-        onShowToast(
-          'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.',
-          'error'
-        );
+        onShowToast(msg, 'error');
       }
       return;
     }
@@ -165,11 +170,10 @@ export function CustomerAuth({
         clearAuth();
         setRoleForEmail(cleanEmail, 'customer');
         setIsSubmitting(false);
+        const msg = 'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.';
+        setLoginError(msg);
         if (onShowToast) {
-          onShowToast(
-            'Akun ini terdaftar sebagai Customer. Silakan masuk melalui halaman login Customer.',
-            'error'
-          );
+          onShowToast(msg, 'error');
         }
         return;
       }
@@ -179,11 +183,10 @@ export function CustomerAuth({
         clearAuth();
         setRoleForEmail(cleanEmail, 'seller');
         setIsSubmitting(false);
+        const msg = 'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.';
+        setLoginError(msg);
         if (onShowToast) {
-          onShowToast(
-            'Akun ini terdaftar sebagai Mitra Toko. Silakan masuk melalui halaman login Mitra Toko.',
-            'error'
-          );
+          onShowToast(msg, 'error');
         }
         return;
       }
@@ -240,30 +243,42 @@ export function CustomerAuth({
     } catch (err: unknown) {
       setIsSubmitting(false);
       const message = extractErrorMessage(err, 'Gagal masuk. Periksa kembali email dan kata sandi kamu.');
+      setLoginError(message);
       if (onShowToast) onShowToast(message, 'error');
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError(null);
     if (!fullName.trim()) {
-      if (onShowToast) onShowToast('Silakan isi nama lengkap kamu.', 'error');
+      const msg = 'Silakan isi nama lengkap kamu.';
+      setRegisterError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
     if (!registerEmail.trim()) {
-      if (onShowToast) onShowToast('Silakan isi alamat email kamu.', 'error');
+      const msg = 'Silakan isi alamat email kamu.';
+      setRegisterError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
     if (registerPassword.length < 8) {
-      if (onShowToast) onShowToast('Kata sandi harus minimal 8 karakter.', 'error');
+      const msg = 'Kata sandi harus minimal 8 karakter.';
+      setRegisterError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
     if (registerPassword !== confirmPassword) {
-      if (onShowToast) onShowToast('Konfirmasi kata sandi tidak cocok.', 'error');
+      const msg = 'Konfirmasi kata sandi tidak cocok.';
+      setRegisterError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
     if (!agreeTerms) {
-      if (onShowToast) onShowToast('Silakan setujui Syarat & Ketentuan dan Kebijakan Privasi.', 'error');
+      const msg = 'Silakan setujui Syarat & Ketentuan dan Kebijakan Privasi.';
+      setRegisterError(msg);
+      if (onShowToast) onShowToast(msg, 'error');
       return;
     }
 
@@ -311,6 +326,7 @@ export function CustomerAuth({
     } catch (err: unknown) {
       setIsSubmitting(false);
       const message = extractErrorMessage(err, 'Gagal mendaftar akun. Silakan coba lagi.');
+      setRegisterError(message);
       if (onShowToast) onShowToast(message, 'error');
     }
   };
@@ -418,9 +434,15 @@ export function CustomerAuth({
             {mode === 'login' ? (
               <CustomerLoginForm
                 email={loginEmail}
-                setEmail={setLoginEmail}
+                setEmail={(val) => {
+                  setLoginEmail(val);
+                  if (loginError) setLoginError(null);
+                }}
                 password={loginPassword}
-                setPassword={setLoginPassword}
+                setPassword={(val) => {
+                  setLoginPassword(val);
+                  if (loginError) setLoginError(null);
+                }}
                 rememberMe={rememberMe}
                 setRememberMe={setRememberMe}
                 onSubmit={handleLoginSubmit}
@@ -432,19 +454,35 @@ export function CustomerAuth({
                 onShowPrivacy={() => onShowToast?.('Membuka Kebijakan Privasi RescueBite', 'info')}
                 isSubmitting={isSubmitting}
                 roleType={currentRole}
+                errorMessage={loginError}
               />
             ) : (
               <CustomerRegisterForm
                 fullName={fullName}
-                setFullName={setFullName}
+                setFullName={(val) => {
+                  setFullName(val);
+                  if (registerError) setRegisterError(null);
+                }}
                 email={registerEmail}
-                setEmail={setRegisterEmail}
+                setEmail={(val) => {
+                  setRegisterEmail(val);
+                  if (registerError) setRegisterError(null);
+                }}
                 password={registerPassword}
-                setPassword={setRegisterPassword}
+                setPassword={(val) => {
+                  setRegisterPassword(val);
+                  if (registerError) setRegisterError(null);
+                }}
                 confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
+                setConfirmPassword={(val) => {
+                  setConfirmPassword(val);
+                  if (registerError) setRegisterError(null);
+                }}
                 agreeTerms={agreeTerms}
-                setAgreeTerms={setAgreeTerms}
+                setAgreeTerms={(val) => {
+                  setAgreeTerms(val);
+                  if (registerError) setRegisterError(null);
+                }}
                 onSubmit={handleRegisterSubmit}
                 onGoogleAuth={handleGoogleAuth}
                 onSwitchToLogin={() => switchMode('login')}
@@ -453,6 +491,7 @@ export function CustomerAuth({
                 onShowPrivacy={() => onShowToast?.('Membuka Kebijakan Privasi RescueBite', 'info')}
                 isSubmitting={isSubmitting}
                 roleType={currentRole}
+                errorMessage={registerError}
               />
             )}
           </div>

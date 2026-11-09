@@ -1,0 +1,216 @@
+{
+  "totalComments": 1232,
+  "slopCount": 28,
+  "categoryStats": {
+    "api": {
+      "files": 11,
+      "comments": 259,
+      "slop": 26
+    },
+    "hooks": {
+      "files": 6,
+      "comments": 49,
+      "slop": 0
+    },
+    "context": {
+      "files": 3,
+      "comments": 32,
+      "slop": 1
+    },
+    "utils": {
+      "files": 3,
+      "comments": 52,
+      "slop": 0
+    },
+    "components": {
+      "files": 37,
+      "comments": 276,
+      "slop": 1
+    },
+    "pages": {
+      "files": 18,
+      "comments": 229,
+      "slop": 0
+    },
+    "services": {
+      "files": 17,
+      "comments": 306,
+      "slop": 0
+    },
+    "app": {
+      "files": 3,
+      "comments": 5,
+      "slop": 0
+    }
+  },
+  "slopDetails": [
+    {
+      "file": "src/api/types.ts",
+      "line": 7,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 9,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 49,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 51,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 95,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 97,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 142,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 144,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 159,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 161,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 219,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 221,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 311,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 313,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 377,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 379,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 510,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 512,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 521,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 523,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 564,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/types.ts",
+      "line": 566,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/client.ts",
+      "line": 129,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/client.ts",
+      "line": 131,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/client.ts",
+      "line": 145,
+      "text": "/* ==========================================================================",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/api/client.ts",
+      "line": 147,
+      "text": "* ========================================================================== */",
+      "pattern": "decorative_separator"
+    },
+    {
+      "file": "src/context/AuthContext.tsx",
+      "line": 215,
+      "text": "// Initialize session on mount",
+      "pattern": "obvious_restatement"
+    },
+    {
+      "file": "src/components/seller/StoreLocationMap.tsx",
+      "line": 70,
+      "text": "// Initialize Map",
+      "pattern": "obvious_restatement"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import {
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { formatRupiah } from '../../utils/currency';
+import { reviewApi } from '../../api/services/reviewApi';
 import {
   OrderStepper,
   OrderItemsList,
@@ -18,6 +19,7 @@ import {
   OrderReviewModal,
   OrderItemDetail,
 } from '../../components/customer/order';
+import { DualReviewSubmitPayload } from '../../components/customer/order/OrderReviewModal';
 import { PaymentOrderData, CustomerOrderStatus } from '../../types';
 import {
   fetchOrderDetailApi,
@@ -159,6 +161,18 @@ export function CustomerOrderDetail({
     return () => { isMounted = false; };
   }, [profileStoreId]);
 
+  const [backendOrderDetail, setBackendOrderDetail] = useState<any | null>(null);
+
+  const resolvedStoreId = useMemo(() => {
+    return (
+      backendOrderDetail?.store_id ||
+      effectiveOrderData?.primaryStore?.storeId ||
+      profileStoreId ||
+      storeProfile?.id ||
+      ''
+    );
+  }, [backendOrderDetail?.store_id, effectiveOrderData?.primaryStore?.storeId, profileStoreId, storeProfile?.id]);
+
   const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
     const s = effectiveOrderData?.status || orderData?.status;
     if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
@@ -188,6 +202,9 @@ export function CustomerOrderDetail({
 
     const refreshOrderStatus = async (includePaymentDetails: boolean) => {
       const latest = await fetchOrderDetailApi(backendOrderId);
+      if (latest) {
+        setBackendOrderDetail(latest);
+      }
       const payment = includePaymentDetails
         ? await fetchPaymentDetailsApi(backendOrderId)
         : null;
@@ -524,6 +541,8 @@ export function CustomerOrderDetail({
     }
   }, [activeStep, storeName, grandTotal, totalBoxes, completionTimestamp, orderTimeFormatted]);
 
+  const isOrderCompleted = currentStatus === 'selesai' || activeStep === 5;
+
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingReview(true);
@@ -535,10 +554,63 @@ export function CustomerOrderDetail({
     }, 600);
   };
 
+  const handleSubmitDualReview = async (payload: DualReviewSubmitPayload) => {
+    setIsSubmittingReview(true);
+    try {
+      const { storeReview, productReview } = payload;
+      const apiCalls: Promise<any>[] = [];
+
+      // 1. Submit store review to POST /api/v1/stores/{store_id}/reviews
+      if (resolvedStoreId && storeReview.rating > 0) {
+        apiCalls.push(
+          reviewApi.createStoreReview(resolvedStoreId, {
+            rating: storeReview.rating,
+            content: storeReview.content,
+          })
+        );
+      }
+
+      // 2. Submit product review to POST /api/v1/products/{product_id}/reviews
+      const targetProductId =
+        productReview.productId && productReview.productId !== 'default-product'
+          ? productReview.productId
+          : orderItemsList[0]?.productId || orderItemsList[0]?.id;
+
+      if (targetProductId && productReview.rating > 0) {
+        apiCalls.push(
+          reviewApi.createProductReview(targetProductId, {
+            rating: productReview.rating,
+            content: productReview.content,
+          })
+        );
+      }
+
+      if (apiCalls.length === 0) {
+        onShowToast?.('Mohon lengkapi ulasan toko dan produk terlebih dahulu.', 'warning');
+        return;
+      }
+
+      await Promise.all(apiCalls);
+      setIsReviewSubmitted(true);
+      setIsReviewModalOpen(false);
+      onShowToast?.('Terima kasih! Ulasan toko dan produk berhasil dikirim.', 'success');
+    } catch (err) {
+      const errorMsg = extractErrorMessage(err, 'Gagal mengirim ulasan. Silakan coba lagi.');
+      onShowToast?.(errorMsg, 'error');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const orderItemsList: OrderItemDetail[] = useMemo(() => {
     if (items && items.length > 0) {
       return items.map((it, idx) => ({
         id: it?.id || String(idx),
+        productId:
+          (it as any)?.productId ||
+          (it as any)?.product_id ||
+          backendOrderDetail?.items?.[idx]?.product_id ||
+          it?.id,
         name: it?.name || itemName,
         imageSrc: it?.imageSrc || saladStopCard,
         originalPrice: it?.originalPrice || originalUnitPrice,
@@ -551,6 +623,11 @@ export function CustomerOrderDetail({
     return [
       {
         id: primaryItem?.id || '1',
+        productId:
+          (primaryItem as any)?.productId ||
+          (primaryItem as any)?.product_id ||
+          backendOrderDetail?.items?.[0]?.product_id ||
+          primaryItem?.id,
         name: primaryItem?.name || itemName,
         imageSrc: primaryItem?.imageSrc || saladStopCard,
         originalPrice: primaryItem?.originalPrice || originalUnitPrice,
@@ -560,7 +637,7 @@ export function CustomerOrderDetail({
         storeName: primaryItem?.storeName || storeName,
       },
     ];
-  }, [items, itemName, originalUnitPrice, rescueUnitPrice, discountPercent, storeName, primaryItem, totalBoxes]);
+  }, [items, itemName, originalUnitPrice, rescueUnitPrice, discountPercent, storeName, primaryItem, totalBoxes, backendOrderDetail]);
 
   const handlePayNow = () => {
     if (isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading) return;
@@ -703,14 +780,16 @@ export function CustomerOrderDetail({
             timelineNote={statusConfig.timelineNote}
           />
 
-          {/* Feedback & Review Prompt Card */}
-          <OrderReviewSection
-            storeName={storeName}
-            setIsReviewModalOpen={setIsReviewModalOpen}
-            selectedRating={selectedRating}
-            setSelectedRating={setSelectedRating}
-            isReviewSubmitted={isReviewSubmitted}
-          />
+          {/* Feedback & Review Prompt Card - ONLY rendered when order status is selesai */}
+          {isOrderCompleted && (
+            <OrderReviewSection
+              storeName={storeName}
+              setIsReviewModalOpen={setIsReviewModalOpen}
+              selectedRating={selectedRating}
+              setSelectedRating={setSelectedRating}
+              isReviewSubmitted={isReviewSubmitted}
+            />
+          )}
 
           {/* Two-Column Grid: Saved Goods & Partner vs Payment & Recommendations */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -785,9 +864,6 @@ export function CustomerOrderDetail({
                           <p className="text-xs sm:text-sm font-bold text-[#1b1c1c]">
                             Rp {formatRupiah(rec.rescue_price)}
                           </p>
-                          <p className="text-[11px] font-semibold text-emerald-600">
-                            Sisa {rec.stock} Box
-                          </p>
                         </div>
                       </div>
                     ))
@@ -806,6 +882,8 @@ export function CustomerOrderDetail({
       {/* Review Modal Dialog */}
       <OrderReviewModal
         storeName={storeName}
+        storeId={resolvedStoreId}
+        items={orderItemsList}
         isReviewModalOpen={isReviewModalOpen}
         setIsReviewModalOpen={setIsReviewModalOpen}
         selectedRating={selectedRating}
@@ -815,6 +893,7 @@ export function CustomerOrderDetail({
         isSubmittingReview={isSubmittingReview}
         isReviewSubmitted={isReviewSubmitted}
         onSubmitReview={handleSubmitReview}
+        onSubmitDualReview={handleSubmitDualReview}
       />
 
       {/* Customer Footer */}

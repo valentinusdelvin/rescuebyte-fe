@@ -24,13 +24,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    // Base interactive styles with accessible focus indicator
+    // Style interaktif dasar dengan indikator focus yang aksesibel
     const baseStyles =
       'inline-flex items-center justify-center font-sans transition-all duration-200 cursor-pointer select-none ' +
       'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ' +
       'disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
 
-    // Botanical Rescue variants
+    // Varian warna Botanical Rescue
     const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
       primary:
         'bg-primary text-white hover:bg-primary-dark shadow-xs hover:shadow-level-1',
@@ -44,7 +44,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         'bg-transparent text-primary hover:bg-surface-container hover:text-on-surface',
     };
 
-    // Standard touch and responsive sizes
+    // Standar ukuran responsive dan target sentuh minimal
     const sizeStyles: Record<NonNullable<ButtonProps['size']>, string> = {
       sm: 'h-9 px-3.5 text-xs font-semibold rounded-lg gap-1.5',
       md: 'h-11 px-5 text-sm font-semibold rounded-xl gap-2',

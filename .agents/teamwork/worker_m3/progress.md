@@ -1,23 +1,25 @@
-# Worker M3 Progress Tracker
+# Progress — Milestone 3: Seller Dashboard "Ulasan Pembeli" Page
 
-Last visited: 2026-11-03T20:40:00Z
+Last visited: 2026-11-09T04:41:00Z
 
-## Status: Milestone M3 Completed
-
-### Tasks
-- [x] Read reference reports (ORIGINAL_REQUEST, PROJECT, Worker M1 handoff, Worker M2 handoff, Explorer 1 & 2 surveys)
-- [x] Task 1: Decompose giant pages (>1000 lines) into modular subcomponents:
-  - [x] `CustomerStoreDetail.tsx` (1,240 lines -> 316 lines)
-  - [x] `CustomerOrderDetail.tsx` (1,161 lines -> 474 lines)
-  - [x] `CustomerCheckout.tsx` (1,128 lines -> 640 lines)
-  - [x] `CustomerMarketplace.tsx` (1,156 lines; eliminated 140 lines of duplicate card markup)
-- [x] Task 2: Decouple presentational components from raw services (migrated to custom hooks & contexts)
-- [x] Task 3: Consolidate currency formatting (eliminated all duplicate `formatRupiah`, imported from `src/utils/currency.ts`)
-- [x] Task 4: Modernize `src/App.tsx` (React.lazy + Suspense fallback, hash query params deep linking, consume AuthContext & CartContext)
-- [x] Task 5: UI/UX & A11y hardening:
-  - [x] Mobile sticky bottom action bars for Cart, Checkout, ProductDetail
-  - [x] CustomerHeader.tsx:311 mobile offset fix (`left-[calc(50%+24px)]` -> `left-1/2 -translate-x-1/2`)
-  - [x] PerformanceChart.tsx color contrast (`#b45309`) + sr-only table
-  - [x] Touch targets >= 44x44px and focus-visible rings `:focus-visible:ring-primary`
-- [x] Task 6: Verification: `npm run typecheck`, `npm run build`, `npm run lint` (0 errors)
-- [x] Task 7 & 8: Handoff report & notification
+## Status
+- [x] Initialized DISPATCH.md and BRIEFING.md
+- [x] Inspect codebase: SCOPE.md, `src/components/reviews/`, `src/hooks/useReviews.ts`, `src/components/ui/EmptyState.tsx`, `src/pages/seller/`, `src/app/AppRoutes.tsx`, reference screenshot
+- [x] Implement `src/pages/seller/SellerReviews.tsx`
+  - [x] Header: "Ulasan Pembeli" (`font-display font-bold text-2xl text-gray-900 mb-6 sm:mb-8 tracking-tight`)
+  - [x] Summary Cards: `<ReviewSummaryCards averageRating={averageRating} totalReviews={totalReviews} distribution={ratingDistribution} isLoading={isLoading} />`
+  - [x] Search & Filter Bar: `<ReviewFilterBar searchQuery={searchQuery} onSearchChange={handleSearchChange} ratingFilter={ratingFilter} onRatingFilterChange={handleRatingFilterChange} sortBy={sortBy} onSortChange={handleSortChange} />`
+  - [x] Review Card List: `<ReviewCard ... />` with authentic backend data, author avatars, star ratings, Indonesian dates, and product pills
+  - [x] Skeleton Loading: 3 animated pulse cards when loading
+  - [x] Empty States: `<EmptyState title="Belum Ada Ulasan" ... />` when 0 reviews exist, and search filter reset state when 0 match
+  - [x] Pagination: `<ReviewPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />` client-side paginated
+- [x] Update `src/app/AppRoutes.tsx`:
+  - [x] Lazy route code splitting: `const SellerReviews = React.lazy(...)`
+  - [x] Replace placeholder for `activeView === 'view-ulasan'`
+  - [x] Exclude `view-ulasan` from PlaceholderPage condition
+- [x] Verification:
+  - [x] `npm run build` PASS (tsc -b && vite build in 1.57s)
+  - [x] `npm run typecheck` PASS
+  - [x] `npx oxlint src/pages/seller/SellerReviews.tsx src/app/AppRoutes.tsx` PASS (0 errors, 0 warnings)
+  - [x] Layout compliance verified
+- [x] Write handoff report (`handoff.md`)

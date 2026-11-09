@@ -6,6 +6,7 @@ export interface TimelineStep {
 
 export interface OrderItemDetail {
   id?: string;
+  productId?: string;
   name?: string;
   imageSrc?: string;
   originalPrice?: number;

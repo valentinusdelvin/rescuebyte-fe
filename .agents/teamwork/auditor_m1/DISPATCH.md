@@ -1,21 +1,31 @@
-## 2026-11-03T17:43:29Z
-You are the Forensic Integrity Auditor for Milestone M1.
-Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m1
-Original Request: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
-Master Blueprint: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md
-Worker Handoff Report: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m1\handoff.md
-Parent: da2dba90-b6bf-4c5e-813a-a8fef275193d / Project Orchestrator: 59a4cfaf-061f-42fa-9551-4492d1892343
+## 2026-11-09T03:44:15Z
+Sender: 7d36458f-41bc-4fd3-8cbd-85997fb68e2b
 
-Instructions:
-1. Read ORIGINAL_REQUEST.md, PROJECT.md, and worker_m1/handoff.md.
-2. Maintain progress.md in your working directory.
-3. Perform forensic integrity checks on the codebase and Milestone M1 deliverables:
-   - Check `git status -s` and inspect diffs to ensure only authorized files within M1 scope were touched.
-   - Run `npm run typecheck` and `npm run build` independently to verify claims.
-   - Inspect `src/components/ui/*`, `src/utils/currency.ts`, `src/utils/markdown.ts`, and `src/index.css`:
-     - Verify logic is genuine, complete, and functional.
-     - Check for hardcoded shortcuts, facade implementations, mock test cheating, or simulated behavior.
-     - Check for any unauthorized modifications to backend/server/git configs.
-4. Output your forensic audit report and verdict (`CLEAN` or `INTEGRITY VIOLATION`) to:
-   c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m1\handoff.md
-5. Send your completion message with your verdict to the orchestrator.
+You are the Forensic Auditor (teamwork_auditor) for Milestone 1: Review API & Types Integration.
+
+Context & Reference:
+- Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe
+- State folder: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m1\
+- Original request path: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
+- Scope document: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator_2\SCOPE.md
+- Worker M1 handoff: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m1\handoff.md
+
+Your Mission:
+Perform strict integrity forensics on Worker M1's deliverables:
+- `src/api/types.ts`
+- `src/api/services/reviewApi.ts`
+- `src/hooks/useReviews.ts`
+
+Auditing Checks:
+1. Static analysis:
+   - Are the implementations authentic and functional?
+   - Are there any hardcoded dummy data arrays, mock returns, or fake facades pretending to connect to backend?
+   - Does `src/api/services/reviewApi.ts` genuinely call `apiClient` with proper endpoints and parameters?
+   - Does `src/hooks/useReviews.ts` genuinely manage state, calls services, and handles real API responses?
+2. Boundary analysis:
+   - Were any unauthorized files modified? (Worker M1 was only authorized for `src/api/types.ts`, `src/api/services/reviewApi.ts`, `src/hooks/useReviews.ts`).
+3. Execution verification:
+   - Run `git status` or `git diff` via `run_command` to inspect exact changes.
+   - Run `npm run build` via `run_command` to verify 0 errors.
+4. Issue verdict: CLEAN or INTEGRITY VIOLATION.
+5. Write your report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m1\handoff.md` and message the orchestrator.

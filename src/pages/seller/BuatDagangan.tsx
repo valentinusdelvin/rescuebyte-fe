@@ -58,6 +58,7 @@ export function BuatDagangan({
   const [photoName, setPhotoName] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculations
@@ -116,24 +117,33 @@ export function BuatDagangan({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     if (!productName.trim() || productName.trim().length < 2) {
-      if (onShowToast) onShowToast('Nama produk minimal 2 karakter!');
+      const msg = 'Nama produk minimal 2 karakter!';
+      setFormError(msg);
+      if (onShowToast) onShowToast(msg);
       return;
     }
 
     if (rescuePrice <= 0 || normalPrice <= 0) {
-      if (onShowToast) onShowToast('Harga produk harus lebih dari 0!');
+      const msg = 'Harga produk harus lebih dari 0!';
+      setFormError(msg);
+      if (onShowToast) onShowToast(msg);
       return;
     }
 
     if (rescuePrice >= normalPrice) {
-      if (onShowToast) onShowToast('Harga Rescue harus lebih hemat daripada Harga Normal!');
+      const msg = 'Harga Rescue harus lebih hemat daripada Harga Normal!';
+      setFormError(msg);
+      if (onShowToast) onShowToast(msg);
       return;
     }
 
     if (stock <= 0) {
-      if (onShowToast) onShowToast('Stok tersedia minimal 1 box!');
+      const msg = 'Stok tersedia minimal 1 box!';
+      setFormError(msg);
+      if (onShowToast) onShowToast(msg);
       return;
     }
 
@@ -155,6 +165,7 @@ export function BuatDagangan({
           uploadedImageUrl = uploadRes.url;
         } catch (uploadErr) {
           const uploadMsg = extractErrorMessage(uploadErr, 'Gagal mengunggah foto produk. Periksa koneksi lalu coba lagi.');
+          setFormError(uploadMsg);
           if (onShowToast) onShowToast(uploadMsg);
           setIsSubmitting(false);
           return;
@@ -207,11 +218,12 @@ export function BuatDagangan({
       }
     } catch (err) {
       const msg = extractErrorMessage(err, 'Gagal membuat produk baru. Periksa isian lalu coba lagi.');
-      if (msg.toLowerCase().includes('store not found') || msg.toLowerCase().includes('toko tidak ditemukan')) {
-        onShowToast?.('Profil toko belum terdaftar di server. Silakan lengkapi profil toko terlebih dahulu.');
-      } else {
-        onShowToast?.(msg);
-      }
+      const finalMsg =
+        msg.toLowerCase().includes('store not found') || msg.toLowerCase().includes('toko tidak ditemukan')
+          ? 'Profil toko belum terdaftar di server. Silakan lengkapi profil toko terlebih dahulu.'
+          : msg;
+      setFormError(finalMsg);
+      onShowToast?.(finalMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -436,6 +448,17 @@ export function BuatDagangan({
               )}
             </div>
           </div>
+
+          {/* Inline Form Error */}
+          {formError && (
+            <div
+              role="alert"
+              className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold flex items-center gap-2"
+            >
+              <span className="shrink-0 text-sm font-bold">✕</span>
+              <span>{formError}</span>
+            </div>
+          )}
 
           {/* Action Button: Simpan Perubahan */}
           <div>

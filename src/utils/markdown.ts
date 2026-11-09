@@ -1,11 +1,6 @@
 import React from 'react';
 
-/**
- * Parses inline markdown into React nodes:
- * - ***bold & italic***
- * - **bold**
- * - *italic* or _italic_
- */
+/** Parser inline markdown sederhana ke elemen React (bold, italic, bold-italic). */
 export function renderInlineFormatted(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   const regex = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*(?!\*)[^*]+\*|_[^_]+_)/g;

@@ -9,6 +9,7 @@ export interface MarketplaceBoxItem extends CustomerMysteryBox {
   categoryType: 'pastry' | 'heavy' | 'beverage' | 'snack';
   productName?: string;
   stock?: number;
+  distanceKm?: number;
 }
 
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
@@ -66,6 +67,7 @@ export function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Mal
     stock: p.stock ?? 1,
     remainingBoxesText: `Sisa ${p.stock ?? 1} Box`,
     distanceText,
+    distanceKm: typeof p.distance_km === 'number' ? p.distance_km : 9999,
     discountPercent: discount,
     originalPrice: normalPrice,
     rescuePrice: rescuePrice,
@@ -75,8 +77,8 @@ export function mapPublicProductToItem(p: PublicProductItem, fallbackCity = 'Mal
       'Berisi 1 porsi makanan berat surplus hari ini dengan rasa dan kualitas terjamin.',
     tags: [realStoreName, realProductName, 'Halal MUI', 'Surplus Harian'],
     imageSrc: p.main_image_url || cardMonsieurSpoon,
-    rating: 4.9,
-    reviewCount: 42,
+    rating: (p as any).rating ?? 0,
+    reviewCount: (p as any).review_count ?? (p as any).reviewCount ?? 0,
   };
 }
 
@@ -118,18 +120,18 @@ export interface SortConfig {
 
 export const SORT_OPTIONS: SortConfig[] = [
   {
-    id: 'jam_ambil',
-    label: 'Jam Ambil',
-    defaultOrder: 'asc',
-    ascLabel: 'Paling Awal Pagi / Sore',
-    descLabel: 'Paling Akhir Malam',
-  },
-  {
     id: 'lokasi',
     label: 'Lokasi',
     defaultOrder: 'asc',
     ascLabel: 'Jarak Terdekat mulai 0 km',
     descLabel: 'Jarak Terjauh',
+  },
+  {
+    id: 'jam_ambil',
+    label: 'Jam Ambil',
+    defaultOrder: 'asc',
+    ascLabel: 'Paling Awal Pagi / Sore',
+    descLabel: 'Paling Akhir Malam',
   },
   {
     id: 'ulasan',

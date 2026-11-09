@@ -29,64 +29,43 @@ export interface GetSellerProductsParams {
 }
 
 export const productApi = {
-  /**
-   * Query marketplace products with spatial distance and filters
-   * GET /api/v1/products
-   */
+  /** Query produk marketplace dengan filter dan kalkulasi jarak geospasial (GET /api/v1/products). */
   async getProducts(params?: GetProductsParams): Promise<GetProductsResponse> {
     const res = await apiClient.get<GetProductsResponse>('/api/v1/products', { params });
     return res.data;
   },
 
-  /**
-   * Merchant creates a new product and initial variants
-   * POST /api/v1/products
-   */
+  /** Merchant membuat produk baru beserta variannya (POST /api/v1/products). */
   async createProduct(data: CreateProductRequest): Promise<ProductResponse> {
     const res = await apiClient.post<ProductResponse>('/api/v1/products', data);
     return res.data;
   },
 
-  /**
-   * Merchant retrieves their own product catalog
-   * GET /api/v1/products/me/list
-   */
+  /** Merchant mengambil katalog produk miliknya sendiri (GET /api/v1/products/me/list). */
   async getSellerProducts(params?: GetSellerProductsParams): Promise<ProductResponse[]> {
     const res = await apiClient.get<ProductResponse[]>('/api/v1/products/me/list', { params });
     return res.data;
   },
 
-  /**
-   * Get public product detail with variants and image gallery
-   * GET /api/v1/products/{id}
-   */
+  /** Ambil detail produk publik, galeri foto, dan variannya (GET /api/v1/products/{id}). */
   async getProductDetail(id: string): Promise<ProductResponse> {
     const res = await apiClient.get<ProductResponse>(`/api/v1/products/${id}`);
     return res.data;
   },
 
-  /**
-   * Merchant updates product info and stock
-   * PUT /api/v1/products/{id}
-   */
+  /** Merchant memperbarui informasi dan stok produk (PUT /api/v1/products/{id}). */
   async updateProduct(id: string, data: UpdateProductRequest): Promise<ProductResponse> {
     const res = await apiClient.put<ProductResponse>(`/api/v1/products/${id}`, data);
     return res.data;
   },
 
-  /**
-   * Merchant deletes a product
-   * DELETE /api/v1/products/{id}
-   */
+  /** Merchant menghapus produk dari katalog (DELETE /api/v1/products/{id}). */
   async deleteProduct(id: string): Promise<MessageResponse> {
     const res = await apiClient.delete<MessageResponse>(`/api/v1/products/${id}`);
     return res.data;
   },
 
-  /**
-   * Merchant toggles product active status
-   * PATCH /api/v1/products/{id}/status
-   */
+  /** Merchant mengubah status aktif/nonaktif produk (PATCH /api/v1/products/{id}/status). */
   async toggleProductStatus(
     id: string,
     data: ToggleProductStatusRequest

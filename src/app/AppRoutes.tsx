@@ -8,7 +8,7 @@ import type { ActiveViewId, OrderStatusTab, CustomerMysteryBox, CheckoutPayload,
 import type { UseBrandLoadingReturn } from '../hooks/useBrandLoading';
 import type { ToastType } from '../components/common/Toast';
 
-// Route-level code splitting using React.lazy() to eliminate Vite chunk size warning
+// Code splitting level route menggunakan React.lazy() agar bundle size efisien
 const CustomerHome = React.lazy(() => import('../pages/customer/CustomerHome').then((m) => ({ default: m.CustomerHome })));
 const CustomerMarketplace = React.lazy(() => import('../pages/customer/CustomerMarketplace').then((m) => ({ default: m.CustomerMarketplace })));
 const CustomerContact = React.lazy(() => import('../pages/customer/CustomerContact').then((m) => ({ default: m.CustomerContact })));
@@ -26,6 +26,7 @@ const StoreProfile = React.lazy(() => import('../pages/seller/StoreProfile').the
 const OrderHistory = React.lazy(() => import('../pages/seller/OrderHistory').then((m) => ({ default: m.OrderHistory })));
 const BuatDagangan = React.lazy(() => import('../pages/seller/BuatDagangan').then((m) => ({ default: m.BuatDagangan })));
 const Daganganku = React.lazy(() => import('../pages/seller/Daganganku').then((m) => ({ default: m.Daganganku })));
+const SellerReviews = React.lazy(() => import('../pages/seller/SellerReviews').then((m) => ({ default: m.SellerReviews })));
 const PlaceholderPage = React.lazy(() => import('../pages/shared/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 
 
@@ -48,7 +49,7 @@ export interface AppRoutesProps {
   isAuthenticated: boolean;
   showToast: (message: string, typeOrDuration?: ToastType | number, maybeDuration?: number) => void;
   handleNavigate: (viewId: string, label?: string, tab?: OrderStatusTab) => void;
-  handleNavigateStore: (storeName?: string, storeId?: string) => void;
+  handleNavigateStore: (storeName?: string, storeId?: string, section?: string) => void;
   triggerLoading: UseBrandLoadingReturn['triggerLoading'];
 }
 
@@ -124,8 +125,8 @@ export function AppRoutes({
                     storeName: (product.storeName && product.storeName !== 'TerasRasa Bakery') ? product.storeName : 'Toko Rejak',
                     storeAvatar: 'TR',
                     storeAddress: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang, Jawa Timur',
-                    rating: product.rating || 4.8,
-                    reviewCount: typeof product.reviewCount === 'number' ? product.reviewCount : Number(product.reviewCount) || 320,
+                    rating: product.rating || 0,
+                    reviewCount: typeof product.reviewCount === 'number' ? product.reviewCount : Number(product.reviewCount) || 0,
                     distanceText: product.distanceText || '1.2 km',
                     categoryTags:
                       product.tags && product.tags.length > 0
@@ -339,11 +340,15 @@ export function AppRoutes({
                     onTriggerLoading={triggerLoading}
                   />
                 )}
+                {activeView === 'view-ulasan' && (
+                  <SellerReviews storeName={storeName} />
+                )}
                 {activeView !== 'view-beranda' &&
                   activeView !== 'view-profil' &&
                   activeView !== 'view-riwayat' &&
                   activeView !== 'view-buat-dagangan' &&
-                  activeView !== 'view-daganganku' && (
+                  activeView !== 'view-daganganku' &&
+                  activeView !== 'view-ulasan' && (
                     <PlaceholderPage
                       title={activeLabel}
                       onBackToBeranda={() => handleNavigate('view-beranda', 'Beranda Toko')}

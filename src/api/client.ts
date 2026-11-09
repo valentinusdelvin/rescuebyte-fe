@@ -9,6 +9,22 @@ export const ACCESS_TOKEN_KEY = 'access_token';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const AUTH_STORAGE_KEY = 'rescuebyte_auth';
 
+export function clearAllSensitiveSession(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem('rescuebyte_login_at');
+  localStorage.removeItem('rescuebyte_user_role');
+  localStorage.removeItem('rescuebyte_customer_cart');
+  localStorage.removeItem('rescuebyte_selected_store');
+  localStorage.removeItem('rescuebyte_store_logo');
+  localStorage.removeItem('rescuebyte_store_name');
+  localStorage.removeItem('rescuebyte_store_email');
+  localStorage.removeItem('rescuebyte_store_address');
+  localStorage.removeItem('rescuebyte_store_coordinates');
+}
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -18,9 +34,7 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-/**
- * Queue item for requests stalled while an access token refresh is in flight.
- */
+/** Antrean request yang ditahan saat proses refresh token sedang berjalan. */
 interface FailedRequestQueueItem {
   resolve: (token: string) => void;
   reject: (error: unknown) => void;
@@ -41,7 +55,7 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 /**
- * Extracts a normalized, human-friendly error message from any backend API or network error.
+ * Ekstrak pesan error yang user-friendly dan ternormalisasi dari error API maupun network.
  */
 export function extractErrorMessage(err: unknown, fallbackMessage = 'Terjadi kesalahan pada sistem.'): string {
   const defaultFallback = 'Terjadi kesalahan pada sistem.';
@@ -72,7 +86,7 @@ export function extractErrorMessage(err: unknown, fallbackMessage = 'Terjadi kes
     const data = err.response?.data as ApiErrorResponse | Record<string, unknown> | undefined;
     if (data && typeof data === 'object') {
       const responseData = data as Record<string, unknown>;
-      // Keep actionable business messages from the API, but never expose transport/server internals.
+      // Pertahankan pesan bisnis dari API, jangan tampilkan internal server/transport ke user.
       if (responseData.payload && typeof responseData.payload === 'object') {
         const errorObj = (responseData.payload as { error?: { message?: unknown; error?: unknown; details?: unknown } }).error;
         const details = usableMessage(errorObj?.details);
@@ -110,9 +124,7 @@ export function extractErrorMessage(err: unknown, fallbackMessage = 'Terjadi kes
   return fallbackMessage;
 }
 
-/* ==========================================================================
- * Request Interceptor: Injects Authorization Header from localStorage
- * ========================================================================== */
+// Request Interceptor: Sisipkan Bearer token autentikasi dari localStorage
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== 'undefined') {
@@ -126,22 +138,19 @@ apiClient.interceptors.request.use(
   (error: unknown) => Promise.reject(error)
 );
 
-/* ==========================================================================
- * Response Interceptor: Unwraps Payload + Transparent 401 Refresh Queue
- * ========================================================================== */
+// Response Interceptor: Unwrap payload dan tangani antrean refresh token 401 otomatis
 interface CustomInternalAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Unwraps { request_id, payload } envelope while keeping backward-compatibility
+    // Unwrap envelope { request_id, payload } dengan tetap menjaga backward compatibility
     const resData = response.data;
     if (resData && typeof resData === 'object' && 'payload' in resData) {
       const payload = resData.payload;
       if (typeof payload === 'object' && payload !== null) {
-        // Expose self-referencing .payload and .request_id property non-enumerably
-        // This satisfies callers doing `response.data.payload` AND callers doing `response.data`
+        // Pasang properti .payload dan .request_id secara non-enumerable agar kompatibel untuk pemanggil data maupun data.payload
         try {
           if (!('payload' in payload)) {
             Object.defineProperty(payload, 'payload', {
@@ -160,7 +169,7 @@ apiClient.interceptors.response.use(
             });
           }
         } catch {
-          // If sealed/frozen, skip definition
+          // Lewati jika objek frozen
         }
         response.data = payload;
       } else {
@@ -172,7 +181,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomInternalAxiosRequestConfig | undefined;
 
-    // Attach normalized message on error for easy UI consumption
+    // Lampirkan pesan error yang sudah dinormalisasi agar mudah dipakai di UI
     const normalizedMessage = extractErrorMessage(error);
     (error as AxiosError & { normalizedMessage?: string }).normalizedMessage = normalizedMessage;
 
@@ -187,12 +196,16 @@ apiClient.interceptors.response.use(
       url.includes('/api/v1/auth/register') ||
       url.includes('/api/v1/auth/logout');
 
-    // Handle 401 Unauthorized on protected routes with automatic token refresh
+    // Tangani 401 Unauthorized pada route terproteksi lewat refresh token otomatis
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       const refreshToken = typeof window !== 'undefined' ? localStorage.getItem(REFRESH_TOKEN_KEY) : null;
 
       if (!refreshToken) {
-        // No refresh token available, session is completely expired
+        // Tidak ada refresh token, sesi user sudah kedaluwarsa penuh
+        if (typeof window !== 'undefined') {
+          clearAllSensitiveSession();
+          window.dispatchEvent(new CustomEvent('rescuebyte_auth_expired'));
+        }
         return Promise.reject(error);
       }
 
@@ -213,7 +226,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Perform direct token refresh using an isolated axios call to avoid interceptor recursion
+        // Jalankan refresh token memakai instance axios terisolasi agar tidak loop rekursif di interceptor
         const refreshResponse = await axios.post<ApiResponse<AuthResponse>>(
           `${API_BASE_URL.replace(/\/+$/, '')}/api/v1/auth/refresh`,
           { refresh_token: refreshToken },
@@ -234,7 +247,6 @@ apiClient.interceptors.response.use(
           throw new Error('Refresh token exchange did not return a valid access token');
         }
 
-        // Update localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
           localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
@@ -248,10 +260,10 @@ apiClient.interceptors.response.use(
               localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
             }
           } catch {
-            // Ignore parse errors on cached user
+            // Abaikan jika cache user gagal diparse
           }
 
-          // Broadcast auth refreshed event
+          // Broadcast event pembaruan token autentikasi
           window.dispatchEvent(
             new CustomEvent('rescuebyte_auth_refreshed', {
               detail: { access_token: newAccessToken },
@@ -269,12 +281,9 @@ apiClient.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
 
-        // Wipe credentials on hard refresh failure
+        // Bersihkan seluruh kredensial sesi jika refresh token gagal total
         if (typeof window !== 'undefined') {
-          localStorage.removeItem(ACCESS_TOKEN_KEY);
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-
+          clearAllSensitiveSession();
           window.dispatchEvent(new CustomEvent('rescuebyte_auth_expired'));
         }
 

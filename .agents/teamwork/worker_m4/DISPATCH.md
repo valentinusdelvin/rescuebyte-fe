@@ -1,73 +1,80 @@
-# Dispatch — Worker M4: Independent QA Review, Bug Remediation, & 10 Final Deliverables
+# DISPATCH — Worker M4: Product Detail Customer Reviews Section
 
-## Role and Identity
-- **Agent**: Worker M4 (Agent 7 — Bug Fixing Specialist & Agent 6 — QA Reviewer)
-- **Archetype**: `teamwork_worker`
-- **Working Directory**: `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\`
-- **Parent**: `59a4cfaf-061f-42fa-9551-4492d1892343`
+## Objective
+Implement Milestone 4: Product Detail Customer Reviews section ("Ulasan Pengguna") with review summary, dynamic rating distribution, review card list, interactive review submission modal, and author edit/delete actions using real backend API integration.
 
-## Mandatory Integrity Warning
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+## Mandatory Files Owned (Exclusive)
+- `src/components/customer/product/ProductReviewsSection.tsx` (create new file)
+- `src/pages/customer/CustomerProductDetail.tsx` (mount `ProductReviewsSection` directly below "Tentang Produk")
 
-## Objectives
-1. **End-to-End QA Validation & Bug Remediation**:
-   - Inspect all routes, customer pages, seller pages, dashboard, and modals.
-   - Run `npm run typecheck` (`tsc -b`), `npm run build`, and `npm run lint` (`oxlint`).
-   - If any bugs, typing issues, layout flaws, or warnings are found, fix them immediately.
-   - Clean up any temporary scratch files (e.g., `.cjs` or test scripts) if any exist.
-2. **Compile the 10 Final Deliverables Report**:
-   Author a comprehensive, competition-grade final report in `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md` covering all 10 mandatory deliverables:
-   1. **Architecture Summary**: Architectural blueprint, design token system, centralized API architecture, state management with React Contexts, route-level code splitting.
-   2. **Final Folder Structure**: Complete tree diagram of `src/` showcasing `api/`, `components/` (ui, customer, seller, dashboard, layout, auth), `context/`, `hooks/`, `pages/`, `services/`, `utils/`.
-   3. **Modified Pages and Components**: Detailed table of every modified/created component, lines reduced, subcomponents extracted, and role.
-   4. **Refactoring & Optimization Log**: Log of all code refactorings, decoupling from window event bus, state preservation, elimination of 1.09 MB chunk warning down to 447 kB.
-   5. **Centralized API Integration Summary**: Mapping of all 43 backend Swagger endpoints across 8 domain services, 49 DTO schemas in `types.ts`, Axios client with auto Bearer token injection and transparent 401 refresh queue.
-   6. **Bug Reports and Remediations**: Catalog of bugs identified and resolved (including the non-existent backend user endpoint `GET /api/v1/users/{id}`, currency formatting duplicates, hash deep-link wipe on refresh, CustomerHeader mobile offset, PerformanceChart WCAG contrast).
-   7. **File Changes Inventory**: Comprehensive manifest of new files created, files refactored, and deleted dead boilerplate files.
-   8. **Build, Lint, and Test Results**: Exact output and status of `npm run build`, `npm run typecheck`, and `npm run lint`.
-   9. **Known Limitations & Edge Cases**: Production considerations (live Midtrans credentials in offline sandbox, browser history handling).
-   10. **Next Recommendations**: Future enhancements for production scaling (PWA service worker, WebSocket for live order notifications, E2E Cypress/Playwright suites).
-
-## Reference Files
+## Input Context & Files to Read
 - `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m1\handoff.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m2\handoff.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m3\handoff.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\reviewer_m3\handoff.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m3\handoff.md`
+- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator_2\SCOPE.md`
+- `src/hooks/useReviews.ts` (provides `useProductReviews`, `useReviewMutations`, `calculateAverageRating`, `calculateRatingDistribution`)
+- `src/hooks/useAuth.ts` and `src/context/AuthContext.tsx` (provides `useAuth()` with `user`, `isAuthenticated`)
+- `src/components/reviews/` primitives:
+  - `StarRating.tsx`
+  - `RatingDistribution.tsx`
+  - `ReviewCard.tsx`
+  - `ReviewSubmissionModal.tsx`
+- `src/components/ui/` primitives: `Button.tsx`, `Modal.tsx`, `EmptyState.tsx`
 
-## Output Requirements
-Write your comprehensive report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md`.
-Notify parent via `send_message` when complete.
+## Detailed Implementation Requirements
 
+### 1. Create `src/components/customer/product/ProductReviewsSection.tsx`
+- **Section Container**:
+  `<section id="ulasan-produk" aria-label="Ulasan Pengguna" className="bg-white rounded-3xl p-6 sm:p-7 border border-black/10 shadow-xs mt-6 sm:mt-8">`
+- **Header & Title**:
+  - Heading: "Ulasan Pengguna" (`font-display font-extrabold text-base sm:text-lg text-[#1b1c1c]`)
+  - "Tulis Ulasan" action button with Plus/Pencil icon:
+    - If user is not authenticated: prompt login / auth modal (`onRequireAuth` or open auth modal)
+    - If user is authenticated: open `ReviewSubmissionModal` in create mode.
+- **Review Summary**:
+  - Compute statistics from `useProductReviews(productId)`:
+    - `averageRating`: formatted to 1 decimal place (e.g. `4.8` or `0.0` when no reviews)
+    - `totalReviews`: total count (e.g. `12 ulasan` or `Belum ada ulasan`)
+    - `StarRating`: display stars reflecting `averageRating`
+    - `RatingDistribution`: horizontal progress bars for 5, 4, 3, 2, 1 stars when `totalReviews > 0`
+- **Review List**:
+  - Render list of `ReviewCard` components from `reviews`:
+    - Reviewer name: `review.author?.name || 'Pelanggan RescueByte'`
+    - Reviewer avatar: `review.author?.avatar_url`
+    - Rating: `review.rating`
+    - Date: `review.created_at`
+    - Comment: `review.content`
+    - Edit & Delete authorization:
+      `canEdit={Boolean(user?.id && (review.user_id === user.id || review.author?.id === user.id))}`
+      `canDelete={Boolean(user?.id && (review.user_id === user.id || review.author?.id === user.id))}`
+- **Interactive Mutations**:
+  - `createProductReview(productId, { rating, content })`: calls `useReviewMutations().createProductReview`, refetches reviews, closes modal, shows success toast.
+  - `updateReview(reviewId, { rating, content })`: opens modal in edit mode with prefilled values, calls `useReviewMutations().updateReview`, refetches reviews, closes modal, shows success toast.
+  - `deleteReview(reviewId)`: opens confirmation dialog / handles delete action, calls `useReviewMutations().deleteReview`, refetches reviews, shows success toast.
+- **States**:
+  - Loading: skeleton cards with pulse animation
+  - Empty: `<EmptyState title="Belum Ada Ulasan" description="Jadilah yang pertama memberikan ulasan untuk produk ini!" />` with CTA button "Tulis Ulasan Pertama"
+  - Error: accessible error alert banner with "Coba Lagi" retry button.
+- **Responsive Layout**:
+  - Works seamlessly on mobile (<640px), tablet (640-1024px), and desktop (>1024px).
 
-## 2026-11-03T20:50:17Z
-You are Worker M4 (Agent 7 — Bug Fixing Specialist & Agent 6 — QA Reviewer).
-Your working directory is c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\
-Your dispatch instructions are at c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\DISPATCH.md
-Read c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
-Read c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md
-Read the prior handoff reports in worker_m1, worker_m2, worker_m3, reviewer_m3, and auditor_m3.
+### 2. Update `src/pages/customer/CustomerProductDetail.tsx`
+- Import `ProductReviewsSection` from `../../components/customer/product/ProductReviewsSection`.
+- Mount it directly below the "Tentang Produk" `<article>` within `<main>`:
+  `<ProductReviewsSection productId={product?.id} productName={title} onShowToast={onShowToast} onRequireAuth={() => setIsAuthModalOpen(true)} />`
 
-MANDATORY INTEGRITY WARNING:
+### 3. MANDATORY INTEGRITY WARNING
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-Tasks:
-1. End-to-End QA Validation:
-   - Verify `npm run typecheck` (`tsc -b`), `npm run build`, and `npm run lint` (`oxlint`).
-   - Clean up any stray temporary scratch files.
-   - Remediate any remaining bugs or edge cases across customer, seller, and dashboard views.
-2. Author the comprehensive 10 Final Deliverables Report in c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md covering all 10 items:
-   1. Architecture Summary
-   2. Final Folder Structure
-   3. Modified Pages and Components
-   4. Refactoring and Optimization Log
-   5. Centralized API Integration Summary
-   6. Bug Reports and Remediations
-   7. File Changes Inventory
-   8. Build, Lint, and Test Results
-   9. Known Limitations and Edge Cases
-   10. Next Recommendations
+## Completion Criteria
+1. `npm run typecheck` passes with 0 errors.
+2. `npx oxlint src/components/customer/product/ProductReviewsSection.tsx src/pages/customer/CustomerProductDetail.tsx` passes with 0 errors.
+3. `npm run build` succeeds and produces valid production bundles.
+4. Output report in `.agents/teamwork/worker_m4/handoff.md`.
 
-Notify parent (59a4cfaf-061f-42fa-9551-4492d1892343) via send_message when complete.
+
+## 2026-11-09T04:51:43Z
+Implement Milestone 4: Product Detail Customer Reviews Section ("Ulasan Pengguna").
+Tasks:
+1. Create `ProductReviewsSection.tsx`
+2. Mount `ProductReviewsSection` in `CustomerProductDetail.tsx` directly below "Tentang Produk"
+3. Run verification: `npm run typecheck`, `npx oxlint ...`, `npm run build`
+4. Write handoff report in `.agents/teamwork/worker_m4/handoff.md` and message orchestrator when complete.

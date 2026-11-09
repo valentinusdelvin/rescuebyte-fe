@@ -4,10 +4,7 @@ import { UploadResponse } from '../types';
 export type StorageFolder = 'avatars' | 'products' | 'stores';
 
 export const storageApi = {
-  /**
-   * Upload a single image file to cloud storage
-   * POST /api/v1/storage/upload
-   */
+  /** Upload satu file gambar ke cloud storage (POST /api/v1/storage/upload). */
   async uploadImage(
     file: File,
     folder: StorageFolder = 'products'
@@ -24,10 +21,7 @@ export const storageApi = {
     return res.data;
   },
 
-  /**
-   * Upload multiple image files to cloud storage
-   * POST /api/v1/storage/upload-multiple
-   */
+  /** Upload banyak file gambar sekaligus ke cloud storage (POST /api/v1/storage/upload-multiple). */
   async uploadMultipleImages(
     files: File[],
     folder: StorageFolder = 'products'

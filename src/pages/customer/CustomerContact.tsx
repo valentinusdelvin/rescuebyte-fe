@@ -72,9 +72,6 @@ export function CustomerContact({
     e.preventDefault();
 
     if (!validate()) {
-      if (onShowToast) {
-        onShowToast('Silakan periksa kembali formulir yang belum lengkap.', 'error');
-      }
       return;
     }
 
@@ -97,13 +94,6 @@ ${suggestion.trim()}`;
 
     // Buka Gmail Compose di tab baru
     window.open(gmailUrl, '_blank');
-
-    if (onShowToast) {
-      onShowToast(
-        'Membuka Gmail... Silakan tekan Send untuk mengirim saran kamu.',
-        'info'
-      );
-    }
 
     // Jangan mengosongkan form setelah Gmail terbuka
   };

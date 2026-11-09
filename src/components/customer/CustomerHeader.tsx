@@ -39,7 +39,7 @@ const NAV_TABS: NavTabItem[] = [
 export function CustomerHeader({
   activeTab = 'beranda',
   currentUser: propCurrentUser,
-  onNavigateHome,
+  onNavigateHome: _onNavigateHome,
   onNavigateSeller,
   onNavigateProfile,
   onNavigateOrders,
@@ -119,13 +119,7 @@ export function CustomerHeader({
 
   const handleLogout = async () => {
     setIsProfileDropdownOpen(false);
-    if (onNavigateHome) {
-      onNavigateHome();
-    } else if (onSelectTab) {
-      onSelectTab('beranda');
-    } else {
-      window.location.hash = '#beranda-customer';
-    }
+    window.location.hash = '#auth';
     try {
       await logoutUser();
       if (onShowToast) {

@@ -49,9 +49,7 @@ export function getRoleForEmail(email: string): 'seller' | 'customer' | null {
   return null;
 }
 
-/**
- * Register or update the role associated with an email
- */
+/** Simpan atau perbarui role yang diasosiasikan dengan email. */
 export function setRoleForEmail(email: string, role: 'seller' | 'customer'): void {
   if (!email) return;
   const cleanEmail = email.trim().toLowerCase();
@@ -83,16 +81,12 @@ function notifyAuthListeners(user: UserPayload | null) {
   });
 }
 
-/**
- * Extracts descriptive user-friendly message from backend error response
- */
+/** Ekstrak pesan user-friendly dari respon error backend. */
 export function extractApiErrorMessage(err: unknown, defaultMessage: string): string {
   return extractErrorMessage(err, defaultMessage);
 }
 
-/**
- * Save auth payload into localStorage and notify listeners
- */
+/** Simpan payload autentikasi ke localStorage dan broadcast ke listener. */
 export function saveAuth(payload: AuthPayload): void {
   try {
     const rawAvatar = payload.user.avatar_url;
@@ -109,6 +103,9 @@ export function saveAuth(payload: AuthPayload): void {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizedPayload));
     localStorage.setItem(ACCESS_TOKEN_KEY, normalizedPayload.access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, normalizedPayload.refresh_token);
+    if (!localStorage.getItem('rescuebyte_login_at')) {
+      localStorage.setItem('rescuebyte_login_at', String(Date.now()));
+    }
 
     const roleId = Number(normalizedPayload.user.role_id);
     const roleStr = typeof normalizedPayload.user.role === 'string' ? normalizedPayload.user.role.toLowerCase() : '';
@@ -132,9 +129,7 @@ export function saveAuth(payload: AuthPayload): void {
   }
 }
 
-/**
- * Retrieve saved auth payload from localStorage
- */
+/** Ambil data payload autentikasi tersimpan dari localStorage. */
 export function getAuth(): AuthPayload | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -145,9 +140,7 @@ export function getAuth(): AuthPayload | null {
   }
 }
 
-/**
- * Retrieve currently logged in user
- */
+/** Ambil data user yang sedang login. */
 export function getCurrentUser(): UserPayload | null {
   const auth = getAuth();
   if (!auth?.user) return null;
@@ -157,29 +150,26 @@ export function getCurrentUser(): UserPayload | null {
   return auth.user;
 }
 
-/**
- * Retrieve active access token
- */
+/** Ambil access token aktif. */
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-/**
- * Retrieve active refresh token
- */
+/** Ambil refresh token aktif. */
 export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Clear authentication session and notify listeners
- */
+/** Bersihkan sesi autentikasi dan notifikasi seluruh listener. */
 export function clearAuth(): void {
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem('rescuebyte_login_at');
     localStorage.removeItem('rescuebyte_user_role');
+    localStorage.removeItem('rescuebyte_customer_cart');
+    localStorage.removeItem('rescuebyte_selected_store');
     localStorage.removeItem('rescuebyte_store_logo');
     localStorage.removeItem('rescuebyte_store_name');
     localStorage.removeItem('rescuebyte_store_email');
@@ -192,9 +182,7 @@ export function clearAuth(): void {
   }
 }
 
-/**
- * Register user using Axios client with real endpoint /api/v1/auth/register
- */
+/** Daftarkan user baru via POST /api/v1/auth/register. */
 export async function registerUser(data: {
   name: string;
   email: string;
@@ -224,9 +212,7 @@ export async function registerUser(data: {
   }
 }
 
-/**
- * Login user using Axios client with real endpoint /api/v1/auth/login
- */
+/** Login user via POST /api/v1/auth/login. */
 export async function loginUser(data: {
   email: string;
   password?: string;
@@ -251,9 +237,7 @@ export async function loginUser(data: {
   }
 }
 
-/**
- * Logout user calling /api/v1/auth/logout with refresh_token
- */
+/** Logout user dengan mengirim refresh_token ke POST /api/v1/auth/logout. */
 export async function logoutUser(): Promise<void> {
   const refreshToken = getRefreshToken();
   try {
@@ -267,9 +251,7 @@ export async function logoutUser(): Promise<void> {
   }
 }
 
-/**
- * Fetch current authenticated user via /api/v1/auth/me
- */
+/** Ambil profil user yang sedang login via GET /api/v1/auth/me. */
 export async function fetchCurrentUser(): Promise<UserPayload | null> {
   try {
     const response = await api.get('/api/v1/auth/me');
@@ -292,9 +274,7 @@ export async function fetchCurrentUser(): Promise<UserPayload | null> {
   }
 }
 
-/**
- * Refresh access token calling /api/v1/auth/refresh
- */
+/** Perbarui access token via POST /api/v1/auth/refresh. */
 export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
@@ -322,9 +302,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-/**
- * Fetch Google OAuth2 URL from /api/v1/auth/google
- */
+/** Ambil URL Google OAuth2 via GET /api/v1/auth/google. */
 export async function getGoogleAuthUrl(): Promise<{ auth_url: string; state: string }> {
   try {
     const response = await api.get('/api/v1/auth/google');
@@ -338,9 +316,7 @@ export async function getGoogleAuthUrl(): Promise<{ auth_url: string; state: str
   }
 }
 
-/**
- * Handle Google OAuth2 callback code & state exchange via /api/v1/auth/google/callback
- */
+/** Tukar kode callback Google OAuth2 via GET /api/v1/auth/google/callback. */
 export async function handleGoogleCallback(code: string, state: string): Promise<AuthPayload> {
   try {
     const response = await api.get('/api/v1/auth/google/callback', {

@@ -147,10 +147,12 @@ export function Header({
     try {
       await logoutUser();
       if (onShowToast) onShowToast('Berhasil keluar dari akun.');
-      if (onNavigate) onNavigate('view-customer-home');
+      if (onNavigate) onNavigate('view-auth-role-selection');
+      window.location.hash = '#auth';
     } catch {
       if (onShowToast) onShowToast('Berhasil keluar.');
-      if (onNavigate) onNavigate('view-customer-home');
+      if (onNavigate) onNavigate('view-auth-role-selection');
+      window.location.hash = '#auth';
     }
   };
 

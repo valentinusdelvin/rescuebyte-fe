@@ -2,10 +2,7 @@ import apiClient from '../client';
 import { EnumsResponse, HealthResponse } from '../types';
 
 export const enumApi = {
-  /**
-   * Fetch backend system enums (genders, roles, active statuses)
-   * GET /api/v1/enums
-   */
+  /** Ambil enum sistem backend (jenis kelamin, role, status aktif) (GET /api/v1/enums). */
   async getEnums(types?: string): Promise<EnumsResponse> {
     const res = await apiClient.get<EnumsResponse>('/api/v1/enums', {
       params: types ? { types } : undefined,
@@ -13,10 +10,7 @@ export const enumApi = {
     return res.data;
   },
 
-  /**
-   * Check backend health status
-   * GET /health
-   */
+  /** Cek status kesehatan server backend (GET /health). */
   async checkHealth(): Promise<HealthResponse> {
     const res = await apiClient.get<HealthResponse>('/health');
     return res.data;

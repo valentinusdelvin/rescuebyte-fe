@@ -56,7 +56,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Sync cart when authentication state changes
+  // Sinkronkan isi keranjang saat status autentikasi berubah
   useEffect(() => {
     if (isAuthenticated) {
       void refreshCart();
@@ -155,7 +155,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Compute total count and subtotal
+  // Hitung akumulasi total kuantitas item dan subtotal harga
   const stores = cart?.stores || [];
   const count =
     cart?.total_items ??

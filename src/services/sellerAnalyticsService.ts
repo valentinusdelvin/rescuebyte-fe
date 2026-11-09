@@ -201,21 +201,20 @@ export async function getSellerPerformanceData(
     storeName ||
     (typeof window !== 'undefined' ? localStorage.getItem('rescuebyte_store_name') || '' : '');
 
-  // 1. Fetch freshest orders from backend GET /api/v1/orders/seller
+  // Ambil pesanan terbaru dari backend GET /api/v1/orders/seller
   try {
     await fetchMerchantOrdersApi(activeStore, 'all');
   } catch (err) {
     console.warn('Backend fetchMerchantOrdersApi failed, using cached store orders:', err);
   }
 
-  // 2. Read normalized merchant orders for this store
+  // Baca pesanan merchant yang telah dinormalisasi untuk toko ini
   const allOrders = getMerchantOrders(activeStore);
 
-  // 3. Filter orders according to selected period
+  // Filter pesanan sesuai rentang periode yang dipilih
   const filteredOrders = filterOrdersByPeriod(allOrders, period);
 
-  // 4. Calculate Total Pemasukan:
-  // Defined as sum of grandTotal of completed orders in that period
+  // Hitung total pemasukan dari akumulasi grandTotal pesanan selesai
   const totalPemasukan = filteredOrders
     .filter((o) => o.status === 'selesai')
     .reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -224,14 +223,14 @@ export async function getSellerPerformanceData(
 
   const completedOrdersCount = filteredOrders.filter((o) => o.status === 'selesai').length;
 
-  // 5. Calculate unique buyers in that period
+  // Hitung jumlah pembeli unik dalam periode terkait
   const buyersSet = new Set<string>();
   filteredOrders.forEach((o) => {
     const key = o.customerName?.trim() || o.id;
     if (key) buyersSet.add(key.toLowerCase());
   });
 
-  // 6. Compute 6 trend data points for the SVG chart
+  // Hitung titik data tren untuk visualisasi grafik SVG
   const trendPoints = computeTrendPoints(allOrders, period);
 
   return {

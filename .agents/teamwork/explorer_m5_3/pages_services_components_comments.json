@@ -1,0 +1,3313 @@
+[
+  {
+    "file": "src/services/authService.ts",
+    "line": 10,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/**\n* Retrieve registered role associated with a specific email\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 23,
+    "endLine": 23,
+    "type": "line",
+    "raw": "// ignore parse error"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 26,
+    "endLine": 26,
+    "type": "line",
+    "raw": "// Fallback heuristic based on store email keywords"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 52,
+    "endLine": 54,
+    "type": "block",
+    "raw": "/**\n* Register or update the role associated with an email\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 64,
+    "endLine": 64,
+    "type": "line",
+    "raw": "// ignore storage error"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 86,
+    "endLine": 88,
+    "type": "block",
+    "raw": "/**\n* Extracts descriptive user-friendly message from backend error response\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 93,
+    "endLine": 95,
+    "type": "block",
+    "raw": "/**\n* Save auth payload into localStorage and notify listeners\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 138,
+    "endLine": 140,
+    "type": "block",
+    "raw": "/**\n* Retrieve saved auth payload from localStorage\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 151,
+    "endLine": 153,
+    "type": "block",
+    "raw": "/**\n* Retrieve currently logged in user\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 163,
+    "endLine": 165,
+    "type": "block",
+    "raw": "/**\n* Retrieve active access token\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 170,
+    "endLine": 172,
+    "type": "block",
+    "raw": "/**\n* Retrieve active refresh token\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 177,
+    "endLine": 179,
+    "type": "block",
+    "raw": "/**\n* Clear authentication session and notify listeners\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 201,
+    "endLine": 203,
+    "type": "block",
+    "raw": "/**\n* Register user using Axios client with real endpoint /api/v1/auth/register\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 233,
+    "endLine": 235,
+    "type": "block",
+    "raw": "/**\n* Login user using Axios client with real endpoint /api/v1/auth/login\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 260,
+    "endLine": 262,
+    "type": "block",
+    "raw": "/**\n* Logout user calling /api/v1/auth/logout with refresh_token\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 276,
+    "endLine": 278,
+    "type": "block",
+    "raw": "/**\n* Fetch current authenticated user via /api/v1/auth/me\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 301,
+    "endLine": 303,
+    "type": "block",
+    "raw": "/**\n* Refresh access token calling /api/v1/auth/refresh\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 331,
+    "endLine": 333,
+    "type": "block",
+    "raw": "/**\n* Fetch Google OAuth2 URL from /api/v1/auth/google\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 347,
+    "endLine": 349,
+    "type": "block",
+    "raw": "/**\n* Handle Google OAuth2 callback code & state exchange via /api/v1/auth/google/callback\n*/"
+  },
+  {
+    "file": "src/services/authService.ts",
+    "line": 366,
+    "endLine": 368,
+    "type": "block",
+    "raw": "/**\n* Google OAuth handler fallback (for offline or local simulated login)\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 14,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/**\n* Calculates total box count across all stores in the cart.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 24,
+    "endLine": 26,
+    "type": "block",
+    "raw": "/**\n* Retrieve cart stores from localStorage, filtering out legacy placeholder stores.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 67,
+    "endLine": 69,
+    "type": "block",
+    "raw": "/**\n* Save cart stores to localStorage and broadcast change event.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 85,
+    "endLine": 87,
+    "type": "block",
+    "raw": "/**\n* Get current total count of items in the cart.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 92,
+    "endLine": 94,
+    "type": "block",
+    "raw": "/**\n* Fetch total cart item count from backend API if authenticated, fallback to local cart.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 110,
+    "endLine": 112,
+    "type": "block",
+    "raw": "/**\n* Helper to get 2-letter uppercase initials for a store name.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 123,
+    "endLine": 125,
+    "type": "block",
+    "raw": "/**\n* Fetch a product's first variant ID from the backend.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 143,
+    "endLine": 146,
+    "type": "block",
+    "raw": "/**\n* Fetch cart from backend API (/api/v1/cart) when authenticated.\n* Seamlessly maps backend StoreCartGroup and CartItemResponse to frontend models.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 212,
+    "endLine": 216,
+    "type": "block",
+    "raw": "/**\n* Add a mystery box product to the cart with specified quantity.\n* If the item already exists in the store group, its quantity is increased (max 5).\n* Returns the updated total cart item count.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 226,
+    "endLine": 226,
+    "type": "line",
+    "raw": "// Match by storeId or storeName"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 251,
+    "endLine": 251,
+    "type": "line",
+    "raw": "// Add new item to existing store"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 275,
+    "endLine": 275,
+    "type": "line",
+    "raw": "// If store doesn't exist yet, create a new StoreCartGroup"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 309,
+    "endLine": 311,
+    "type": "block",
+    "raw": "/**\n* Add item to cart with backend API synchronization if authenticated.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 346,
+    "endLine": 348,
+    "type": "block",
+    "raw": "/**\n* Update cart item quantity with backend API synchronization.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 365,
+    "endLine": 367,
+    "type": "block",
+    "raw": "/**\n* Remove an item from a store group with backend API synchronization.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 402,
+    "endLine": 404,
+    "type": "block",
+    "raw": "/**\n* Remove an entire store group.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 427,
+    "endLine": 429,
+    "type": "block",
+    "raw": "/**\n* Clear all items from the cart.\n*/"
+  },
+  {
+    "file": "src/services/cartService.ts",
+    "line": 446,
+    "endLine": 448,
+    "type": "block",
+    "raw": "/**\n* Subscribe to cart updates across components and window storage events.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 71,
+    "endLine": 74,
+    "type": "block",
+    "raw": "/**\n* Get all merchant products from localStorage.\n* Automatically filters out legacy mock placeholder products and ensures fallback to real initial products.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 101,
+    "endLine": 103,
+    "type": "block",
+    "raw": "/**\n* Save all products to localStorage.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 112,
+    "endLine": 114,
+    "type": "block",
+    "raw": "/**\n* Add a new product to the list.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 139,
+    "endLine": 141,
+    "type": "block",
+    "raw": "/**\n* Update an existing product.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 149,
+    "endLine": 151,
+    "type": "block",
+    "raw": "/**\n* Delete a product.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 183,
+    "endLine": 185,
+    "type": "block",
+    "raw": "/**\n* Maps a backend ProductResponse or PublicProductItem to frontend ProductItem model.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 250,
+    "endLine": 253,
+    "type": "block",
+    "raw": "/**\n* Create a new product in the backend via POST /api/v1/products.\n* Automatically synchronizes with local storage cache upon creation.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 263,
+    "endLine": 263,
+    "type": "line",
+    "raw": "// Sync into local cache"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 275,
+    "endLine": 278,
+    "type": "block",
+    "raw": "/**\n* Fetch the merchant's product list from GET /api/v1/products/me/list.\n* A successful empty response is authoritative; cached data is used only when the request fails.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 306,
+    "endLine": 308,
+    "type": "block",
+    "raw": "/**\n* Toggle product active status via PATCH /api/v1/products/:id/status\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 330,
+    "endLine": 332,
+    "type": "block",
+    "raw": "/**\n* Delete product via DELETE /api/v1/products/:id\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 359,
+    "endLine": 361,
+    "type": "block",
+    "raw": "/**\n* Synchronize product updates to the marketplace cached items in localStorage\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 397,
+    "endLine": 399,
+    "type": "block",
+    "raw": "/**\n* Update product stock both in local cache and backend database.\n*/"
+  },
+  {
+    "file": "src/services/productService.ts",
+    "line": 486,
+    "endLine": 489,
+    "type": "block",
+    "raw": "/**\n* Fetch marketplace public products via GET /api/v1/products.\n* Supports location coordinates (latitude, longitude) for dynamic distance calculation.\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 1,
+    "endLine": 6,
+    "type": "block",
+    "raw": "/**\n* Location Data & OpenStreetMap Geocoding Service for RescueBite\n* Provides Indonesian administrative data (Kota & Kecamatan) and\n* OpenStreetMap (Nominatim & Photon) search/reverse geocoding.\n* Complies with .agents/docs/api.md and .agents/docs/typescript.md.\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 14,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/**\n* Filter Cities by prefix / query\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 21,
+    "endLine": 21,
+    "type": "line",
+    "raw": "// Prioritize startsWith, then includes"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 37,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* Get districts (kecamatan) for a selected city\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 83,
+    "endLine": 85,
+    "type": "block",
+    "raw": "/**\n* OpenStreetMap Nominatim Live Search (100% Free)\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 95,
+    "endLine": 95,
+    "type": "line",
+    "raw": "// 1. Check local POI matches first (instant response)"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 117,
+    "endLine": 117,
+    "type": "line",
+    "raw": "// 2. Fetch Photon by Komoot (Fast autocomplete OSM search)"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 165,
+    "endLine": 165,
+    "type": "line",
+    "raw": "// 3. Fetch Nominatim OpenStreetMap (Comprehensive Indonesian address search)"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 232,
+    "endLine": 234,
+    "type": "block",
+    "raw": "/**\n* Reverse Geocode via Nominatim (Free)\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 270,
+    "endLine": 272,
+    "type": "block",
+    "raw": "/**\n* Great-circle distance using Haversine formula (matches backend distance_km calculation).\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 292,
+    "endLine": 294,
+    "type": "block",
+    "raw": "/**\n* Format distance in km cleanly matching backend style (e.g. '0.2 km', '2.1 km').\n*/"
+  },
+  {
+    "file": "src/services/locationService.ts",
+    "line": 302,
+    "endLine": 304,
+    "type": "block",
+    "raw": "/**\n* Retrieve saved user coordinates from localStorage or fallback to default coordinates.\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 117,
+    "endLine": 119,
+    "type": "block",
+    "raw": "/**\n* Retrieve all customer orders from localStorage, filtering out legacy placeholder dummy orders.\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 163,
+    "endLine": 165,
+    "type": "block",
+    "raw": "/**\n* Save customer orders to localStorage and notify listeners.\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 182,
+    "endLine": 187,
+    "type": "block",
+    "raw": "/**\n* Create a new customer order from checkout payment data.\n* - Saves order to customer order history\n* - Clears cart if order originated from cart\n* - Syncs to merchant order queue\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 237,
+    "endLine": 237,
+    "type": "line",
+    "raw": "// 1. Prepend new order to customer list"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 242,
+    "endLine": 242,
+    "type": "line",
+    "raw": "// 2. Also register in merchant order queue if already paid / waiting confirmation"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 290,
+    "endLine": 290,
+    "type": "line",
+    "raw": "// 3. Clear cart if order originated from cart"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 302,
+    "endLine": 304,
+    "type": "block",
+    "raw": "/**\n* Subscribe to customer orders updates.\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 332,
+    "endLine": 334,
+    "type": "block",
+    "raw": "/**\n* Update the status of an existing customer order by orderNumber or id.\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 379,
+    "endLine": 379,
+    "type": "line",
+    "raw": "// Sync newly confirmed order directly into merchant orders"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 421,
+    "endLine": 421,
+    "type": "line",
+    "raw": "// Update browser caches only after the backend confirms the transition."
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 456,
+    "endLine": 458,
+    "type": "block",
+    "raw": "/**\n* Call backend checkout endpoint POST /api/v1/orders/checkout\n*/"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 505,
+    "endLine": 505,
+    "type": "line",
+    "raw": "// Filter out dummy/placeholder orders completely"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 515,
+    "endLine": 515,
+    "type": "line",
+    "raw": "// Auto-sync real customer orders into merchant queue"
+  },
+  {
+    "file": "src/services/orderService.ts",
+    "line": 519,
+    "endLine": 519,
+    "type": "line",
+    "raw": "// Exclude placeholder mock customer orders"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 148,
+    "endLine": 150,
+    "type": "block",
+    "raw": "/**\n* Testimonials Mock Data\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 208,
+    "endLine": 212,
+    "type": "block",
+    "raw": "/**\n* Continuous infinite marquee track data:\n* Two identical 12-card halves (4848px each, total 9696px).\n* Translating -50% guarantees the screen is ALWAYS 100% filled with zero gaps on any screen size.\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 216,
+    "endLine": 228,
+    "type": "block",
+    "raw": "/**\n* Customer Home Page Component (\"Beranda Customer\")\n* Pixel-accurate reproduction of the user Figma design.\n* Features:\n*  - Floating pill top header\n*  - High-impact hero with ambient food rescue lighting and mystery box\n*  - Section: Mystery Box Populer\n*  - Section: Mystery Box Populer di Sekitarmu (Radius 5 km) with filters\n*  - Section: About Us (Dual Organic Bento Cards)\n*  - Section: Apa Kata Mereka (Testimonials)\n*  - Customer Footer\n*  - Interactive checkout modal\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 239,
+    "endLine": 239,
+    "type": "line",
+    "raw": "// Modal states"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 246,
+    "endLine": 246,
+    "type": "line",
+    "raw": "// Dynamic products from backend API"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 267,
+    "endLine": 267,
+    "type": "line",
+    "raw": "// Batch fetch product ratings to avoid N+1 queries"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 281,
+    "endLine": 281,
+    "type": "line",
+    "raw": "// Exactly 6 cards sorted by distance ascending"
+  },
+  {
+    "file": "src/pages/customer/CustomerHome.tsx",
+    "line": 287,
+    "endLine": 287,
+    "type": "line",
+    "raw": "// Exactly 6 cards sorted by popularity/reviews or discount descending"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 65,
+    "endLine": 65,
+    "type": "line",
+    "raw": "// Resilient smooth scrolling to #ulasan-pelanggan"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 84,
+    "endLine": 84,
+    "type": "line",
+    "raw": "// Detect section=ulasan-pelanggan or #ulasan-pelanggan on mount"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 93,
+    "endLine": 93,
+    "type": "line",
+    "raw": "// Listen to hash changes while mounted"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 106,
+    "endLine": 106,
+    "type": "line",
+    "raw": "// Resolve store name from prop, localStorage, or fallback to Toko Rejak"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 118,
+    "endLine": 118,
+    "type": "line",
+    "raw": "// Clean up any stale legacy TerasRasa Bakery in localStorage"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 127,
+    "endLine": 127,
+    "type": "line",
+    "raw": "// Dynamic store data initialized cleanly with honest zero defaults"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 146,
+    "endLine": 146,
+    "type": "line",
+    "raw": "// Track resolved store backend UUID"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 155,
+    "endLine": 155,
+    "type": "line",
+    "raw": "// Live reviews & rating summary from backend API"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 162,
+    "endLine": 162,
+    "type": "line",
+    "raw": "// Sync storeData rating & reviewCount reactively whenever backend summary changes"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 171,
+    "endLine": 171,
+    "type": "line",
+    "raw": "// Initial store products"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 174,
+    "endLine": 174,
+    "type": "line",
+    "raw": "// Fetch product reviews for products belonging to this store"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 180,
+    "endLine": 180,
+    "type": "line",
+    "raw": "// Sync store profile & products dynamically from backend API & local storage"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 188,
+    "endLine": 188,
+    "type": "line",
+    "raw": "// 1. Fetch live stores from backend GET /api/v1/stores"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 192,
+    "endLine": 192,
+    "type": "line",
+    "raw": "// Find store in backend list by storeId first, then name"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 277,
+    "endLine": 277,
+    "type": "line",
+    "raw": "// Fetch real store summary statistics from dedicated backend endpoint"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 289,
+    "endLine": 289,
+    "type": "line",
+    "raw": "// Silently fall back to useStoreReviews hook calculation"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 294,
+    "endLine": 294,
+    "type": "line",
+    "raw": "// 2. Fetch live products from backend GET /api/v1/products?store_id=... with coordinates & localStorage"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 305,
+    "endLine": 305,
+    "type": "line",
+    "raw": "// If backend returned distance_km on products, use backend-calculated distance"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 313,
+    "endLine": 313,
+    "type": "line",
+    "raw": "// Match from backend public products strictly by store"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 341,
+    "endLine": 341,
+    "type": "line",
+    "raw": "// Also check if current seller's local dagangan matches this store"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 369,
+    "endLine": 369,
+    "type": "line",
+    "raw": "// Set live products from database"
+  },
+  {
+    "file": "src/pages/customer/CustomerStoreDetail.tsx",
+    "line": 383,
+    "endLine": 383,
+    "type": "line",
+    "raw": "// Reviews list mapped from live backend reviews"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 29,
+    "endLine": 33,
+    "type": "block",
+    "raw": "/**\n* CustomerAuth Page (Login & Register Views)\n* Supports Customer (role_id: 1) and Mitra Toko (role_id: 3) authentication.\n* Complies with AGENTS.md, .agents/docs/architecture.md, and antislop guidelines.\n*/"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 45,
+    "endLine": 45,
+    "type": "line",
+    "raw": "// Sync role when prop changes"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 62,
+    "endLine": 62,
+    "type": "line",
+    "raw": "// Login form states"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 67,
+    "endLine": 67,
+    "type": "line",
+    "raw": "// Register form states"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 74,
+    "endLine": 74,
+    "type": "line",
+    "raw": "// Submission state"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 79,
+    "endLine": 79,
+    "type": "line",
+    "raw": "// Sync mode with window hash if user navigates with browser back/forward"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 115,
+    "endLine": 115,
+    "type": "line",
+    "raw": "// Pre-flight check: store email cannot log in via Customer form"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 125,
+    "endLine": 125,
+    "type": "line",
+    "raw": "// Pre-flight check: customer email cannot log in via Mitra Toko form"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 168,
+    "endLine": 168,
+    "type": "line",
+    "raw": "// Role guard: Customer cannot login through Mitra Toko portal"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 181,
+    "endLine": 181,
+    "type": "line",
+    "raw": "// Role guard: Mitra Toko cannot login through Customer portal"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 194,
+    "endLine": 194,
+    "type": "line",
+    "raw": "// Record verified role in email registry"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 197,
+    "endLine": 197,
+    "type": "line",
+    "raw": "// Synchronize role state"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 229,
+    "endLine": 229,
+    "type": "line",
+    "raw": "// ignore"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 237,
+    "endLine": 237,
+    "type": "line",
+    "raw": "// Always redirect to landing page (customer home) for both customer and restaurant"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 290,
+    "endLine": 290,
+    "type": "line",
+    "raw": "// Register role in email registry"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 313,
+    "endLine": 313,
+    "type": "line",
+    "raw": "// ignore"
+  },
+  {
+    "file": "src/pages/auth/CustomerAuth.tsx",
+    "line": 320,
+    "endLine": 320,
+    "type": "line",
+    "raw": "// Always redirect to landing page (customer home) for both customer and restaurant"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 16,
+    "endLine": 18,
+    "type": "block",
+    "raw": "/**\n* Format a number or numeric string with Indonesian dot thousand separator.\n*/"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 26,
+    "endLine": 28,
+    "type": "block",
+    "raw": "/**\n* Parse an Indonesian dot-separated number string back to integer.\n*/"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 34,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* BuatDagangan Page Component\n* Allows merchants to create food rescue listings with real photo upload,\n* dynamic pricing calculation with discount badges, and dot-thousand formatted inputs.\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 45,
+    "endLine": 45,
+    "type": "line",
+    "raw": "// Form state"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 52,
+    "endLine": 52,
+    "type": "line",
+    "raw": "// Modal editor state"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 55,
+    "endLine": 55,
+    "type": "line",
+    "raw": "// Photo state"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 64,
+    "endLine": 64,
+    "type": "line",
+    "raw": "// Calculations"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 71,
+    "endLine": 71,
+    "type": "line",
+    "raw": "// Handle file input"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 155,
+    "endLine": 155,
+    "type": "line",
+    "raw": "// 1. Upload photo if selected by user"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 175,
+    "endLine": 175,
+    "type": "line",
+    "raw": "// 2. Submit product to backend API POST /api/v1/products"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 204,
+    "endLine": 204,
+    "type": "line",
+    "raw": "// Reset form"
+  },
+  {
+    "file": "src/pages/seller/BuatDagangan.tsx",
+    "line": 215,
+    "endLine": 215,
+    "type": "line",
+    "raw": "// Navigate to Daganganku view"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 51,
+    "endLine": 53,
+    "type": "block",
+    "raw": "/**\n* Fetch current seller's store profile via GET /api/v1/stores/me/profile\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 68,
+    "endLine": 70,
+    "type": "block",
+    "raw": "/**\n* Update basic store profile details via PUT /api/v1/stores/me/profile\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 97,
+    "endLine": 99,
+    "type": "block",
+    "raw": "/**\n* Update store operational schedule & active status via PUT /api/v1/stores/me/operational\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 122,
+    "endLine": 124,
+    "type": "block",
+    "raw": "/**\n* Toggle store status between ACTIVE and INACTIVE via PATCH /api/v1/stores/me/status\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 139,
+    "endLine": 141,
+    "type": "block",
+    "raw": "/**\n* Create a new store if none exists yet via POST /api/v1/stores\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 171,
+    "endLine": 173,
+    "type": "block",
+    "raw": "/**\n* Fetch all public stores via GET /api/v1/stores\n*/"
+  },
+  {
+    "file": "src/services/storeService.ts",
+    "line": 191,
+    "endLine": 193,
+    "type": "block",
+    "raw": "/**\n* Fetch a single store by ID via GET /api/v1/stores/:id\n*/"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 27,
+    "endLine": 27,
+    "type": "line",
+    "raw": "// Semua tab di dalam kapsul tengah memiliki ukuran panjang yang sama persis (uniform)"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 34,
+    "endLine": 38,
+    "type": "block",
+    "raw": "/**\n* Customer Floating Pill Navigation Bar\n* - Center Capsule: Uniform-sized Animated Sliding Navbar / Active Indicator\n* - Logo & Daftar/Masuk / Profile Avatar: Cross-over sliding indicator + smooth hover scale expansion\n*/"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 66,
+    "endLine": 66,
+    "type": "line",
+    "raw": "// Close profile dropdown when clicking outside or pressing Escape"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 136,
+    "endLine": 136,
+    "type": "line",
+    "raw": "// Subscribe to auth state updates reactively"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 144,
+    "endLine": 144,
+    "type": "line",
+    "raw": "// Common header container ref for coordinate calculations across all 3 elements"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 147,
+    "endLine": 147,
+    "type": "line",
+    "raw": "// References to all 5 interactive elements"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 156,
+    "endLine": 156,
+    "type": "line",
+    "raw": "// Indicator styles for smooth sliding animation"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 173,
+    "endLine": 173,
+    "type": "line",
+    "raw": "// Target indicator is hovered element if hovered, otherwise active/selected page tab (null if on profile/none)"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 178,
+    "endLine": 178,
+    "type": "line",
+    "raw": "// Scale for indicator: blooms when on logo or auth button"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 188,
+    "endLine": 188,
+    "type": "line",
+    "raw": "// Sync selected tab when activeTab prop changes (React recommended pattern without effect)"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 195,
+    "endLine": 195,
+    "type": "line",
+    "raw": "// Update sliding indicator bounding box relative to headerContainerRef"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 211,
+    "endLine": 211,
+    "type": "line",
+    "raw": "// Use unscaled layout dimensions"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 215,
+    "endLine": 215,
+    "type": "line",
+    "raw": "// Calculate center point relative to container to prevent double-scaling"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 230,
+    "endLine": 230,
+    "type": "line",
+    "raw": "// Recalculate on tab change or mount"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 238,
+    "endLine": 238,
+    "type": "line",
+    "raw": "// Recalculate on resize and when fonts load"
+  },
+  {
+    "file": "src/components/customer/CustomerHeader.tsx",
+    "line": 254,
+    "endLine": 254,
+    "type": "line",
+    "raw": "// Guard: Redirect unauthenticated user to login when clicking marketplace"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 23,
+    "endLine": 25,
+    "type": "block",
+    "raw": "/**\n* Format ISO date string into Indonesian readable format e.g. \"28 Oktober 2026\"\n*/"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 42,
+    "endLine": 45,
+    "type": "block",
+    "raw": "/**\n* Seller Dashboard - Ulasan Pembeli Page\n* Faithful to reference design: 3 summary cards, filter/search bar, review card list, client pagination.\n*/"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 47,
+    "endLine": 47,
+    "type": "line",
+    "raw": "// Stored seller store ID from localStorage"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 56,
+    "endLine": 56,
+    "type": "line",
+    "raw": "// Resolve merchant store profile if storeId is not explicitly provided"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 62,
+    "endLine": 62,
+    "type": "line",
+    "raw": "// Real store review data and rating summary from backend API"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 76,
+    "endLine": 76,
+    "type": "line",
+    "raw": "// Fetch merchant products for product mapping (e.g. Mystery Box titles & thumbnails)"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 102,
+    "endLine": 102,
+    "type": "line",
+    "raw": "// Search & Filter state"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 123,
+    "endLine": 123,
+    "type": "line",
+    "raw": "// Filter and sort reviews"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 127,
+    "endLine": 127,
+    "type": "line",
+    "raw": "// 1. Rating filter (Semua Rating = null, or 1 - 5)"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 132,
+    "endLine": 132,
+    "type": "line",
+    "raw": "// 2. Search query filter (reviewer name, review content, product name)"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 154,
+    "endLine": 154,
+    "type": "line",
+    "raw": "// 3. Sorting logic"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 167,
+    "endLine": 167,
+    "type": "line",
+    "raw": "// Default: 'terbaru'"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 176,
+    "endLine": 176,
+    "type": "line",
+    "raw": "// Pagination calculation"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 265,
+    "endLine": 265,
+    "type": "block",
+    "raw": "/* Empty state when the store has no reviews yet */"
+  },
+  {
+    "file": "src/pages/seller/SellerReviews.tsx",
+    "line": 273,
+    "endLine": 273,
+    "type": "block",
+    "raw": "/* Empty state when reviews exist but none match search/filter */"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 39,
+    "endLine": 41,
+    "type": "block",
+    "raw": "/**\n* Filter orders based on the selected period\n*/"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 76,
+    "endLine": 78,
+    "type": "block",
+    "raw": "/**\n* Compute 6 trend data points tailored to the selected period\n*/"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 86,
+    "endLine": 86,
+    "type": "line",
+    "raw": "// 6 daily points ending today"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 117,
+    "endLine": 117,
+    "type": "line",
+    "raw": "// 6 intervals across the current month (Days: 1-5, 6-10, 11-15, 16-20, 21-25, 26-31)"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 149,
+    "endLine": 149,
+    "type": "line",
+    "raw": "// 'tahun-ini': 6 monthly points ending in current month (or Jan-Jun)"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 192,
+    "endLine": 195,
+    "type": "block",
+    "raw": "/**\n* Fetch and calculate seller store performance metrics from backend orders API.\n* Uses the proven integration mechanism of ActivityCards and FinanceCard.\n*/"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 204,
+    "endLine": 204,
+    "type": "line",
+    "raw": "// 1. Fetch freshest orders from backend GET /api/v1/orders/seller"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 211,
+    "endLine": 211,
+    "type": "line",
+    "raw": "// 2. Read normalized merchant orders for this store"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 214,
+    "endLine": 214,
+    "type": "line",
+    "raw": "// 3. Filter orders according to selected period"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 217,
+    "endLine": 217,
+    "type": "line",
+    "raw": "// 4. Calculate Total Pemasukan:"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 218,
+    "endLine": 218,
+    "type": "line",
+    "raw": "// Defined as sum of grandTotal of completed orders in that period"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 227,
+    "endLine": 227,
+    "type": "line",
+    "raw": "// 5. Calculate unique buyers in that period"
+  },
+  {
+    "file": "src/services/sellerAnalyticsService.ts",
+    "line": 234,
+    "endLine": 234,
+    "type": "line",
+    "raw": "// 6. Compute 6 trend data points for the SVG chart"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 18,
+    "endLine": 20,
+    "type": "block",
+    "raw": "/**\n* Fetch current user profile from GET /api/v1/users/profile\n*/"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 38,
+    "endLine": 38,
+    "type": "line",
+    "raw": "// Sync with local auth storage"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 57,
+    "endLine": 61,
+    "type": "block",
+    "raw": "/**\n* Note: GET /api/v1/users/:id does not exist in Swagger 2.0 backend.\n* Customer information is already included directly in OrderDetailResponse.\n* This method is retained solely for backward compatibility.\n*/"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 67,
+    "endLine": 67,
+    "type": "line",
+    "raw": "// Route does not exist on backend; return null cleanly without triggering a 404 network request"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 71,
+    "endLine": 74,
+    "type": "block",
+    "raw": "/**\n* Update authenticated user's profile via PUT /api/v1/users/profile\n* Accepts: name, avatar_url, phone_number, date_of_birth, gender\n*/"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 92,
+    "endLine": 92,
+    "type": "line",
+    "raw": "// Sync with local auth storage"
+  },
+  {
+    "file": "src/services/userService.ts",
+    "line": 111,
+    "endLine": 114,
+    "type": "block",
+    "raw": "/**\n* Update user role via PATCH /api/v1/users/role\n* Default role_id for customer is 1\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 56,
+    "endLine": 56,
+    "type": "line",
+    "raw": "// Cart Badge Synchronization"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 65,
+    "endLine": 65,
+    "type": "line",
+    "raw": "// Consume centralized geolocation"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 73,
+    "endLine": 73,
+    "type": "line",
+    "raw": "// Dynamic Marketplace Products with Stale-While-Revalidate (instant 0ms render from cache)"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 85,
+    "endLine": 85,
+    "type": "line",
+    "raw": "// Search & Filter States"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 97,
+    "endLine": 97,
+    "type": "line",
+    "raw": "// Fetch products from backend GET /api/v1/products with coordinates and batch ratings"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 110,
+    "endLine": 110,
+    "type": "line",
+    "raw": "// Batch fetch real ratings for products to prevent N+1 queries"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 137,
+    "endLine": 137,
+    "type": "line",
+    "raw": "// Initial instant products fetch on mount & coordinates change"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 142,
+    "endLine": 142,
+    "type": "line",
+    "raw": "// Synchronize immediately whenever product stock or status updates"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 153,
+    "endLine": 153,
+    "type": "line",
+    "raw": "// Request browser live location"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 163,
+    "endLine": 163,
+    "type": "line",
+    "raw": "// Modal State"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 167,
+    "endLine": 167,
+    "type": "line",
+    "raw": "// Close dropdown on click outside or Escape"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 188,
+    "endLine": 188,
+    "type": "line",
+    "raw": "// Marketplace products (sourced from backend API & merchant store)"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 193,
+    "endLine": 193,
+    "type": "line",
+    "raw": "// Filtered & Sorted products list"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 197,
+    "endLine": 197,
+    "type": "line",
+    "raw": "// Search Query filter"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 209,
+    "endLine": 209,
+    "type": "line",
+    "raw": "// City filter (based on live loc or selected city)"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 214,
+    "endLine": 214,
+    "type": "line",
+    "raw": "// Price filter (Min - Max Range)"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 218,
+    "endLine": 218,
+    "type": "line",
+    "raw": "// Distance filter"
+  },
+  {
+    "file": "src/pages/customer/CustomerMarketplace.tsx",
+    "line": 731,
+    "endLine": 731,
+    "type": "block",
+    "raw": "/* Empty State */"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 53,
+    "endLine": 53,
+    "type": "line",
+    "raw": "// Use product prop or default to real store data"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 139,
+    "endLine": 139,
+    "type": "line",
+    "raw": "// Photos Gallery: Only use actual uploaded product images (no fake placeholder fallback photos)"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 156,
+    "endLine": 156,
+    "type": "line",
+    "raw": "// Reset selected image when product changes"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 163,
+    "endLine": 163,
+    "type": "line",
+    "raw": "// Reservation quantity state"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 168,
+    "endLine": 168,
+    "type": "line",
+    "raw": "// Synchronize quantity if stock changes"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 177,
+    "endLine": 177,
+    "type": "line",
+    "raw": "// Modals & Cart State"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 183,
+    "endLine": 183,
+    "type": "line",
+    "raw": "// DOM Refs for animation positioning"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 190,
+    "endLine": 190,
+    "type": "line",
+    "raw": "// Synchronize cart count with centralized cartService"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 213,
+    "endLine": 213,
+    "type": "line",
+    "raw": "// Navigate directly to checkout page"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 233,
+    "endLine": 233,
+    "type": "line",
+    "raw": "// Fly-to-Cart trigger when user clicks \"+ Keranjang\""
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 239,
+    "endLine": 239,
+    "type": "line",
+    "raw": "// Direct add without animation if reduced motion or elements missing"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 249,
+    "endLine": 249,
+    "type": "line",
+    "raw": "// Determine initial and target coordinates with getBoundingClientRect()"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 253,
+    "endLine": 253,
+    "type": "line",
+    "raw": "// Center target on floating cart button"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 276,
+    "endLine": 276,
+    "type": "line",
+    "raw": "// 1. Cleanup flying element"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 279,
+    "endLine": 279,
+    "type": "line",
+    "raw": "// 2. Persist in cartService and sync to backend API"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 286,
+    "endLine": 286,
+    "type": "line",
+    "raw": "// 3. Trigger bounce / scale animation on cart button"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 289,
+    "endLine": 289,
+    "type": "line",
+    "raw": "// 4. Show success toast"
+  },
+  {
+    "file": "src/pages/customer/CustomerProductDetail.tsx",
+    "line": 313,
+    "endLine": 313,
+    "type": "line",
+    "raw": "// Active mystery box representation for modal"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 31,
+    "endLine": 33,
+    "type": "block",
+    "raw": "/**\n* Generate smooth cubic bezier SVG path between consecutive points\n*/"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 51,
+    "endLine": 58,
+    "type": "block",
+    "raw": "/**\n* PerformanceChart Component\n* Integrated directly with backend orders API via the unified orderService mechanism:\n* - Total Pemasukan & Jumlah Pesanan\n* - Jumlah Pembeli (Unique Customers)\n* - Pesanan Selesai\n* - Interactive SVG trend lines and dynamic custom dropdown filter\n*/"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 65,
+    "endLine": 65,
+    "type": "line",
+    "raw": "// Custom Dropdown state"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 92,
+    "endLine": 92,
+    "type": "line",
+    "raw": "// Initial load and sync with storeName and period"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 114,
+    "endLine": 114,
+    "type": "line",
+    "raw": "// Close dropdown on outside click or escape key"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 173,
+    "endLine": 173,
+    "type": "line",
+    "raw": "// Safe defaults if loading or empty"
+  },
+  {
+    "file": "src/components/dashboard/PerformanceChart.tsx",
+    "line": 187,
+    "endLine": 187,
+    "type": "line",
+    "raw": "// Dynamic Y scale math: Grid lines are at 30, 70, 110, 150, 190, 230"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 7,
+    "endLine": 7,
+    "type": "line",
+    "raw": "// Default Store Location Coordinates (Jl. Veteran No. 10, Merjosari, Lowokwaru, Malang)"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 24,
+    "endLine": 29,
+    "type": "block",
+    "raw": "/**\n* StoreLocationMap Component\n* Interactive store location map powered by Leaflet, CartoCDN raster tiles,\n* draggable custom marker, GPS geolocation, and OSM reverse geocoding.\n* Complies with .agents/docs/architecture.md, .agents/docs/typescript.md, and .agents/docs/styling.md.\n*/"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 43,
+    "endLine": 43,
+    "type": "line",
+    "raw": "// Keep latest references inside useEffect to avoid updating refs during render"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 70,
+    "endLine": 70,
+    "type": "line",
+    "raw": "// Initialize Map"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 98,
+    "endLine": 98,
+    "type": "line",
+    "raw": "// Custom High-DPI Marker Pin"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 130,
+    "endLine": 130,
+    "type": "line",
+    "raw": "// Handle marker drag end"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 164,
+    "endLine": 164,
+    "type": "line",
+    "raw": "// Handle map click"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 196,
+    "endLine": 196,
+    "type": "line",
+    "raw": "// Force recalculate map size once loaded"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 212,
+    "endLine": 212,
+    "type": "line",
+    "raw": "// Synchronize map & marker when external coordinates change"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 231,
+    "endLine": 231,
+    "type": "line",
+    "raw": "// Handle GPS Location Button"
+  },
+  {
+    "file": "src/components/seller/StoreLocationMap.tsx",
+    "line": 282,
+    "endLine": 282,
+    "type": "line",
+    "raw": "// Handle Reset to Default Location"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 42,
+    "endLine": 47,
+    "type": "block",
+    "raw": "/**\n* StoreProfile Page View\n* Connects seller store profile to backend endpoint /api/v1/stores/me/profile.\n* Composes StoreInfoForm on the left, and OperationalCard + StoreLocationMap on the right.\n* Complies with .agents/docs/architecture.md, .agents/docs/typescript.md, and .agents/docs/styling.md.\n*/"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 58,
+    "endLine": 58,
+    "type": "line",
+    "raw": "// Form Fields"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 71,
+    "endLine": 71,
+    "type": "line",
+    "raw": "// Location Fields"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 94,
+    "endLine": 94,
+    "type": "line",
+    "raw": "// Operational Fields"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 101,
+    "endLine": 101,
+    "type": "line",
+    "raw": "// Fetch current store profile from /api/v1/stores/me/profile on mount"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 156,
+    "endLine": 156,
+    "type": "line",
+    "raw": "// If 404 (store not registered yet), fallback to user defaults"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 277,
+    "endLine": 277,
+    "type": "line",
+    "raw": "// Submit and save profile + operational details to /api/v1/stores/me/profile"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 325,
+    "endLine": 325,
+    "type": "line",
+    "raw": "// 1. Update basic store profile via PUT /api/v1/stores/me/profile"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 339,
+    "endLine": 339,
+    "type": "line",
+    "raw": "// 2. Update operational settings via PUT /api/v1/stores/me/operational"
+  },
+  {
+    "file": "src/pages/seller/StoreProfile.tsx",
+    "line": 362,
+    "endLine": 362,
+    "type": "line",
+    "raw": "// Create new store via POST /api/v1/stores"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 12,
+    "endLine": 14,
+    "type": "block",
+    "raw": "/**\n* Strip emoji and icons from product name, returning clean text only\n*/"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 24,
+    "endLine": 26,
+    "type": "block",
+    "raw": "/**\n* Render pickup schedule block with clean stopwatch icon and formatted timing\n*/"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 28,
+    "endLine": 28,
+    "type": "line",
+    "raw": "// Strip redundant \"Jadwal Ambil:\" or \"Ambil:\" prefix"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 30,
+    "endLine": 30,
+    "type": "line",
+    "raw": "// Strip parenthetical remaining time like (45 mnt lagi)"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 61,
+    "endLine": 64,
+    "type": "block",
+    "raw": "/**\n* Reusable Mystery Box Card for Customer Landing Page\n* Pixel-accurate implementation aligned with Design.md and Figma design.\n*/"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 71,
+    "endLine": 71,
+    "type": "line",
+    "raw": "// Check stock quantity for out-of-stock disabled button state"
+  },
+  {
+    "file": "src/components/customer/MysteryBoxCard.tsx",
+    "line": 83,
+    "endLine": 83,
+    "type": "line",
+    "raw": "// Calculate discount percentage mathematically if needed"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 6,
+    "endLine": 6,
+    "type": "block",
+    "raw": "/** Unique review ID */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 8,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/** Full name of reviewer */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 10,
+    "endLine": 10,
+    "type": "block",
+    "raw": "/** URL to reviewer's avatar image */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 12,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/** Rating score (1-5) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 14,
+    "endLine": 14,
+    "type": "block",
+    "raw": "/** Created timestamp (ISO string or formatted date) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 16,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/** Quoted review comment */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 18,
+    "endLine": 18,
+    "type": "block",
+    "raw": "/** Associated product title (optional) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 20,
+    "endLine": 20,
+    "type": "block",
+    "raw": "/** Associated product image (optional) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 22,
+    "endLine": 22,
+    "type": "block",
+    "raw": "/** Whether the current user is authorized to edit */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 24,
+    "endLine": 24,
+    "type": "block",
+    "raw": "/** Whether the current user is authorized to delete */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 26,
+    "endLine": 26,
+    "type": "block",
+    "raw": "/** Edit callback */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 28,
+    "endLine": 28,
+    "type": "block",
+    "raw": "/** Delete callback */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 30,
+    "endLine": 30,
+    "type": "block",
+    "raw": "/** Custom CSS classes */"
+  },
+  {
+    "file": "src/components/reviews/ReviewCard.tsx",
+    "line": 63,
+    "endLine": 63,
+    "type": "line",
+    "raw": "// If already formatted like \"28 Oktober 2026\", return as is"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 33,
+    "endLine": 37,
+    "type": "block",
+    "raw": "/**\n* Daganganku Page Component\n* Displays merchant active products list segmented by status tabs.\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 50,
+    "endLine": 50,
+    "type": "line",
+    "raw": "// Fetch real merchant products from backend API on mount"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 67,
+    "endLine": 67,
+    "type": "line",
+    "raw": "// Filtered & Sorted products"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 71,
+    "endLine": 71,
+    "type": "line",
+    "raw": "// 1. Tab status filter"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 82,
+    "endLine": 82,
+    "type": "line",
+    "raw": "// 2. Search query filter"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 90,
+    "endLine": 90,
+    "type": "line",
+    "raw": "// 3. Category / Preset filter"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 101,
+    "endLine": 101,
+    "type": "line",
+    "raw": "// 4. Sort order"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 103,
+    "endLine": 103,
+    "type": "line",
+    "raw": "// Keep default"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 146,
+    "endLine": 146,
+    "type": "line",
+    "raw": "// Sync to marketplace cache & notify"
+  },
+  {
+    "file": "src/pages/seller/Daganganku.tsx",
+    "line": 230,
+    "endLine": 230,
+    "type": "line",
+    "raw": "// Try backend API delete"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 44,
+    "endLine": 49,
+    "type": "block",
+    "raw": "/**\n* OrderHistory Page Component (Merchant View)\n* Displays store order history segmented by operational tabs matching Photo 2.\n* Includes interactive confirmation modal matching reference design.\n* Fully compliant with design.md and antislop guidelines.\n*/"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 69,
+    "endLine": 69,
+    "type": "line",
+    "raw": "// Modal State for order confirmation popup"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 103,
+    "endLine": 103,
+    "type": "line",
+    "raw": "// Filter & Search Logic"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 107,
+    "endLine": 107,
+    "type": "line",
+    "raw": "// Tab matching"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 112,
+    "endLine": 112,
+    "type": "line",
+    "raw": "// Search query matching (nomor pesanan, nama pembeli, nama produk)"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 123,
+    "endLine": 123,
+    "type": "line",
+    "raw": "// Category filter matching"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 140,
+    "endLine": 140,
+    "type": "line",
+    "raw": "// Default: terbaru"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 378,
+    "endLine": 378,
+    "type": "block",
+    "raw": "/* Empty State */"
+  },
+  {
+    "file": "src/pages/seller/OrderHistory.tsx",
+    "line": 393,
+    "endLine": 393,
+    "type": "block",
+    "raw": "/* Order Rows strictly matching Photo 2 UI */"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 32,
+    "endLine": 32,
+    "type": "line",
+    "raw": "// ignore"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 37,
+    "endLine": 41,
+    "type": "block",
+    "raw": "/**\n* SellerOrderDetailModal Component\n* Interactive order verification popup for all order statuses.\n* Displays real customer, store, and order details strictly from backend relations.\n*/"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 79,
+    "endLine": 79,
+    "type": "line",
+    "raw": "// Reset previous order details immediately on switch"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 98,
+    "endLine": 98,
+    "type": "line",
+    "raw": "// 1. Resolve Store details if available"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 112,
+    "endLine": 112,
+    "type": "line",
+    "raw": "// 2. Resolve Customer details if customer ID is available but phone/name is incomplete"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 187,
+    "endLine": 187,
+    "type": "line",
+    "raw": "// Resolved Customer Information"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 223,
+    "endLine": 223,
+    "type": "line",
+    "raw": "// Resolved Mitra Lokasi Information"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 255,
+    "endLine": 255,
+    "type": "line",
+    "raw": "// Resolved Schedule & Payment Information"
+  },
+  {
+    "file": "src/components/seller/SellerOrderDetailModal.tsx",
+    "line": 272,
+    "endLine": 272,
+    "type": "line",
+    "raw": "// Resolved Items List"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 102,
+    "endLine": 102,
+    "type": "line",
+    "raw": "// Customer Info State from current user or defaults"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 111,
+    "endLine": 111,
+    "type": "line",
+    "raw": "// Items State directly from checkout payload"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 119,
+    "endLine": 119,
+    "type": "line",
+    "raw": "// Keep items synced if payload changes"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 128,
+    "endLine": 128,
+    "type": "line",
+    "raw": "// Tanggal pickup sebagai tanggal pemesanan (hari ini)"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 131,
+    "endLine": 131,
+    "type": "line",
+    "raw": "// Data toko dari database backend"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 152,
+    "endLine": 152,
+    "type": "line",
+    "raw": "// Group items by store and resolve each store's address, avatar, and operational hours from database"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 161,
+    "endLine": 161,
+    "type": "line",
+    "raw": "// Find matching database store by id or name"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 237,
+    "endLine": 237,
+    "type": "line",
+    "raw": "// Payment Method: 'online' | 'cod'"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 241,
+    "endLine": 241,
+    "type": "line",
+    "raw": "// Stepper handlers"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 279,
+    "endLine": 279,
+    "type": "line",
+    "raw": "// Calculations"
+  },
+  {
+    "file": "src/pages/customer/CustomerCheckout.tsx",
+    "line": 397,
+    "endLine": 397,
+    "type": "line",
+    "raw": "// Backend checkout is the source of truth for stock; this only saves the order view/cache."
+  },
+  {
+    "file": "src/components/common/BrandLoadingOverlay.tsx",
+    "line": 15,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/**\n* 24-segment radial progress indicator:\n* Smooth gradient from deep forest green (#1B5E20) through brand primary (#2E7D32)\n* to luminous light mint (#EBFCEE), with delicately stepped opacities (1.00 down to 0.11).\n*/"
+  },
+  {
+    "file": "src/components/common/BrandLoadingOverlay.tsx",
+    "line": 47,
+    "endLine": 50,
+    "type": "block",
+    "raw": "/**\n* BrandLoadingOverlay Component\n* Styled with Tailwind CSS.\n*/"
+  },
+  {
+    "file": "src/components/common/BrandLoadingOverlay.tsx",
+    "line": 55,
+    "endLine": 55,
+    "type": "line",
+    "raw": "// Sync render state during render when isVisible changes (React recommended pattern)"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 33,
+    "endLine": 33,
+    "type": "line",
+    "raw": "// Reviews data fetched from real backend API"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 47,
+    "endLine": 47,
+    "type": "line",
+    "raw": "// Review mutations (create, update, delete)"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 55,
+    "endLine": 55,
+    "type": "line",
+    "raw": "// Modal states for Create & Edit"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 59,
+    "endLine": 59,
+    "type": "line",
+    "raw": "// Modal state for Delete confirmation"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 63,
+    "endLine": 63,
+    "type": "line",
+    "raw": "// Open Edit review modal"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 69,
+    "endLine": 69,
+    "type": "line",
+    "raw": "// Handle Review submission (create or update)"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 88,
+    "endLine": 88,
+    "type": "line",
+    "raw": "// Error is caught, logged, and toasted by useReviewMutations"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 92,
+    "endLine": 92,
+    "type": "line",
+    "raw": "// Open Delete confirmation dialog"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 98,
+    "endLine": 98,
+    "type": "line",
+    "raw": "// Confirm review deletion"
+  },
+  {
+    "file": "src/components/customer/product/ProductReviewsSection.tsx",
+    "line": 110,
+    "endLine": 110,
+    "type": "line",
+    "raw": "// Error handled by mutation hook"
+  },
+  {
+    "file": "src/components/layout/Sidebar.tsx",
+    "line": 13,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/**\n* Accessible Staggered Letter Text Component\n* Splits text into individual animated characters with CSS variable transition-delay\n* Screen readers consume aria-label while inner character spans remain aria-hidden\n*/"
+  },
+  {
+    "file": "src/components/layout/Sidebar.tsx",
+    "line": 51,
+    "endLine": 55,
+    "type": "block",
+    "raw": "/**\n* RescueBite Sidebar Navigation Component\n* Features store profile identity and grouped navigation links for Tokoku, Pesanan, and Dagangan.\n* Styled with Tailwind CSS classes matching exact original CSS layout, kinetic animations, and green buttons.\n*/"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 40,
+    "endLine": 44,
+    "type": "block",
+    "raw": "/**\n* StoreInfoForm Component\n* Manages store branding, contact info, and cascading location search (OSM, Kota, Kecamatan).\n* Complies with .agents/docs/architecture.md, .agents/docs/typescript.md, and .agents/docs/security.md.\n*/"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 69,
+    "endLine": 69,
+    "type": "line",
+    "raw": "// Autocomplete UI states"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 82,
+    "endLine": 82,
+    "type": "line",
+    "raw": "// Close dropdowns on outside click"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 100,
+    "endLine": 100,
+    "type": "line",
+    "raw": "// 1. Alamat OSM Live Search"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 144,
+    "endLine": 144,
+    "type": "line",
+    "raw": "// 2. Kota Autocomplete"
+  },
+  {
+    "file": "src/components/seller/StoreInfoForm.tsx",
+    "line": 171,
+    "endLine": 171,
+    "type": "line",
+    "raw": "// 3. Kecamatan Autocomplete"
+  },
+  {
+    "file": "src/services/productRatingService.ts",
+    "line": 10,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/**\n* Concurrently fetches product ratings and review counts for an array of product IDs.\n* Filters out already-cached product IDs to avoid duplicate network requests (prevents N+1 query problem).\n*/"
+  },
+  {
+    "file": "src/services/productRatingService.ts",
+    "line": 53,
+    "endLine": 55,
+    "type": "block",
+    "raw": "/**\n* Returns cached product rating if available.\n*/"
+  },
+  {
+    "file": "src/services/productRatingService.ts",
+    "line": 60,
+    "endLine": 62,
+    "type": "block",
+    "raw": "/**\n* Sets or updates a product's rating cache entry.\n*/"
+  },
+  {
+    "file": "src/components/dashboard/FinanceCard.tsx",
+    "line": 9,
+    "endLine": 15,
+    "type": "block",
+    "raw": "/**\n* FinanceCard Component\n* Displays real ongoing store transactions and available store balance\n* calculated dynamically from real store orders.\n\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/components/dashboard/FinanceCard.tsx",
+    "line": 31,
+    "endLine": 31,
+    "type": "line",
+    "raw": "// Transaksi Berjalan: pesanan yang sedang diproses / dikonfirmasi"
+  },
+  {
+    "file": "src/components/dashboard/FinanceCard.tsx",
+    "line": 36,
+    "endLine": 36,
+    "type": "line",
+    "raw": "// Saldo Toko: pesanan selesai (plus saldo dasar jika ada)"
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "line": 15,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/**\n* RescueBite Header Component\n* Contains the brand logo, mobile toggle, and store user dropdown menu.\n* Displays dynamic backend store logo and profile information.\n*/"
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "line": 56,
+    "endLine": 56,
+    "type": "line",
+    "raw": "// Sync with prop changes"
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "line": 68,
+    "endLine": 68,
+    "type": "line",
+    "raw": "// Fetch store profile from backend API and listen to updates"
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "line": 88,
+    "endLine": 88,
+    "type": "line",
+    "raw": "// Fetch live from backend endpoint /api/v1/stores/me/profile"
+  },
+  {
+    "file": "src/components/layout/Header.tsx",
+    "line": 124,
+    "endLine": 124,
+    "type": "line",
+    "raw": "// Close dropdown when clicking outside"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 7,
+    "endLine": 7,
+    "type": "block",
+    "raw": "/** Whether the modal is open */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 9,
+    "endLine": 9,
+    "type": "block",
+    "raw": "/** Callback to close the modal */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 11,
+    "endLine": 11,
+    "type": "block",
+    "raw": "/** Submit handler receiving rating (1-5) and content (string) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 13,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/** Initial rating if editing */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 15,
+    "endLine": 15,
+    "type": "block",
+    "raw": "/** Initial content if editing */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 17,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/** Modal header title */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 19,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/** Modal header description */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 21,
+    "endLine": 21,
+    "type": "block",
+    "raw": "/** Name of the product or store being reviewed */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSubmissionModal.tsx",
+    "line": 23,
+    "endLine": 23,
+    "type": "block",
+    "raw": "/** Loading state during submission */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 5,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/** Numerical rating score, can be integer or fractional (e.g. 4.8) */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 7,
+    "endLine": 7,
+    "type": "block",
+    "raw": "/** Maximum number of stars (default: 5) */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 9,
+    "endLine": 9,
+    "type": "block",
+    "raw": "/** Size variant for stars */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 11,
+    "endLine": 11,
+    "type": "block",
+    "raw": "/** Whether the user can click/hover to select a rating */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 13,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/** Callback fired when a rating is selected in interactive mode */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 15,
+    "endLine": 15,
+    "type": "block",
+    "raw": "/** Whether to render the numerical score text next to the stars */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 17,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/** Custom classes for score text */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 19,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/** Container CSS classes */"
+  },
+  {
+    "file": "src/components/reviews/StarRating.tsx",
+    "line": 108,
+    "endLine": 108,
+    "type": "line",
+    "raw": "// Non-interactive display mode with fractional fill support"
+  },
+  {
+    "file": "src/components/common/FormattedDescription.tsx",
+    "line": 8,
+    "endLine": 11,
+    "type": "block",
+    "raw": "/**\n* FormattedDescription Component\n* Renders paragraphs, bold, italics, and styled bullet lists.\n*/"
+  },
+  {
+    "file": "src/components/common/FormattedDescription.tsx",
+    "line": 31,
+    "endLine": 31,
+    "type": "line",
+    "raw": "// Check if line is a bullet item:"
+  },
+  {
+    "file": "src/components/common/FormattedDescription.tsx",
+    "line": 32,
+    "endLine": 32,
+    "type": "line",
+    "raw": "// - bullet symbol '•' (with optional space)"
+  },
+  {
+    "file": "src/components/common/FormattedDescription.tsx",
+    "line": 33,
+    "endLine": 33,
+    "type": "line",
+    "raw": "// - or '-' / '*' followed by REQUIRED whitespace (\\s+)"
+  },
+  {
+    "file": "src/components/common/FormattedDescription.tsx",
+    "line": 46,
+    "endLine": 46,
+    "type": "line",
+    "raw": "// Add gap if previous wasn't already a gap"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 11,
+    "endLine": 11,
+    "type": "block",
+    "raw": "/** Current search input query */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 13,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/** Search query change handler */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 15,
+    "endLine": 15,
+    "type": "block",
+    "raw": "/** Rating filter value (null = Semua Rating, 1-5 = specific rating) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 17,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/** Rating filter change handler */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 19,
+    "endLine": 19,
+    "type": "block",
+    "raw": "/** Current sort ordering option */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 21,
+    "endLine": 21,
+    "type": "block",
+    "raw": "/** Sort order change handler */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 23,
+    "endLine": 23,
+    "type": "block",
+    "raw": "/** Custom CSS classes */"
+  },
+  {
+    "file": "src/components/reviews/ReviewFilterBar.tsx",
+    "line": 58,
+    "endLine": 58,
+    "type": "line",
+    "raw": "// Close dropdowns on outside click"
+  },
+  {
+    "file": "src/components/customer/CustomerOrderModal.tsx",
+    "line": 13,
+    "endLine": 17,
+    "type": "block",
+    "raw": "/**\n* Interactive Customer Order Checkout Modal\n* Provides order preview, quantity adjustment, store notes, and instant confirmation.\n* Complies with .agents/docs/architecture.md, security.md, and accessibility standards.\n*/"
+  },
+  {
+    "file": "src/components/customer/CustomerOrderModal.tsx",
+    "line": 30,
+    "endLine": 30,
+    "type": "line",
+    "raw": "// Reset state when modal opens with new item"
+  },
+  {
+    "file": "src/components/customer/CustomerOrderModal.tsx",
+    "line": 39,
+    "endLine": 39,
+    "type": "line",
+    "raw": "// Handle ESC key press"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 55,
+    "endLine": 55,
+    "type": "line",
+    "raw": "// 1. Explicit Customer check: role_id 1/2, 'customer'/'user', stored 'customer'"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 66,
+    "endLine": 66,
+    "type": "line",
+    "raw": "// 2. Explicit Seller / Mitra Toko check: role_id 3, seller keywords, stored 'seller'"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 108,
+    "endLine": 108,
+    "type": "line",
+    "raw": "// Fetch store profile if seller and listen to profile updates from seller dashboard"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 168,
+    "endLine": 168,
+    "type": "line",
+    "raw": "// Strip generic Dicebear avatar placeholder (cartoon girl)"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 171,
+    "endLine": 171,
+    "type": "line",
+    "raw": "// If user is seller, prioritize store logo from dashboard/backend"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 276,
+    "endLine": 276,
+    "type": "block",
+    "raw": "/* Restoran / Mitra Toko: Hanya Dashboard Restoran dan Log Out */"
+  },
+  {
+    "file": "src/components/customer/CustomerProfileDropdown.tsx",
+    "line": 290,
+    "endLine": 290,
+    "type": "block",
+    "raw": "/* Customer: Hanya Akun Saya, Pesanan Saya, dan Log Out */"
+  },
+  {
+    "file": "src/components/dashboard/ActivityCards.tsx",
+    "line": 17,
+    "endLine": 22,
+    "type": "block",
+    "raw": "/**\n* ActivityCards Component\n* Displays live summary cards for store activities calculated directly from real store orders.\n* Clicking any card navigates to the corresponding tab in Riwayat Pesanan.\n* Complies with design.md and antislop guidelines.\n*/"
+  },
+  {
+    "file": "src/components/dashboard/ActivityCards.tsx",
+    "line": 47,
+    "endLine": 47,
+    "type": "line",
+    "raw": "// fallback"
+  },
+  {
+    "file": "src/pages/customer/CustomerContact.tsx",
+    "line": 23,
+    "endLine": 27,
+    "type": "block",
+    "raw": "/**\n* CustomerContact Page View\n* Halaman Kontak & Kirim Saran untuk RescueBite.\n* Menggunakan Gmail Compose URL untuk mengirim masukan langsung ke fahmimuhammad2626@gmail.com.\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerContact.tsx",
+    "line": 95,
+    "endLine": 95,
+    "type": "line",
+    "raw": "// Buka Gmail Compose di tab baru"
+  },
+  {
+    "file": "src/pages/customer/CustomerContact.tsx",
+    "line": 98,
+    "endLine": 98,
+    "type": "line",
+    "raw": "// Jangan mengosongkan form setelah Gmail terbuka"
+  },
+  {
+    "file": "src/services/storageService.ts",
+    "line": 21,
+    "endLine": 27,
+    "type": "block",
+    "raw": "/**\n* Upload an image file (JPEG, PNG, WebP) to Supabase Storage via backend API.\n* Uses extended 60s timeout to allow large file transfers and storage roundtrip.\n* @param file The image file object to upload\n* @param folder Target folder: 'avatars', 'products', or 'stores' (default: 'avatars')\n* @returns Promise resolving to UploadResponsePayload with the public URL\n*/"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 54,
+    "endLine": 54,
+    "type": "line",
+    "raw": "// Live reviews hook when storeId is provided"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 63,
+    "endLine": 63,
+    "type": "line",
+    "raw": "// Effective store reviews"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 88,
+    "endLine": 88,
+    "type": "line",
+    "raw": "// Effective product reviews"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 96,
+    "endLine": 96,
+    "type": "line",
+    "raw": "// Combined all reviews"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 101,
+    "endLine": 101,
+    "type": "line",
+    "raw": "// Filtered reviews based on active tab"
+  },
+  {
+    "file": "src/components/customer/store/StoreReviewsList.tsx",
+    "line": 108,
+    "endLine": 108,
+    "type": "line",
+    "raw": "// Total review count displayed in header"
+  },
+  {
+    "file": "src/components/products/ProductDescriptionModal.tsx",
+    "line": 35,
+    "endLine": 39,
+    "type": "block",
+    "raw": "/**\n* ProductDescriptionModal\n* Rich modal editor for product description with quick presets, formatting helpers, and character counter.\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/components/products/ProductDescriptionModal.tsx",
+    "line": 57,
+    "endLine": 57,
+    "type": "line",
+    "raw": "// Handle escape key"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 18,
+    "endLine": 18,
+    "type": "line",
+    "raw": "// Pill geometry with accessible contrast conforming to WCAG AA"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 23,
+    "endLine": 23,
+    "type": "line",
+    "raw": "// Halal Verified: soft leaf container with deep emerald text (6.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 25,
+    "endLine": 25,
+    "type": "line",
+    "raw": "// Urgent Stock: soft blush container with urgent vermilion text (4.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 27,
+    "endLine": 27,
+    "type": "line",
+    "raw": "// Discount Ratio: deep botanical green with white text (5.8:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 29,
+    "endLine": 29,
+    "type": "line",
+    "raw": "// Mystery Package: warm marigold container with amber text (4.9:1 contrast)"
+  },
+  {
+    "file": "src/components/ui/Badge.tsx",
+    "line": 31,
+    "endLine": 31,
+    "type": "line",
+    "raw": "// Neutral: light surface container with charcoal text (7.2:1 contrast)"
+  },
+  {
+    "file": "src/services/orders/checkoutService.ts",
+    "line": 82,
+    "endLine": 84,
+    "type": "block",
+    "raw": "/**\n* Fetch customer orders from GET /api/v1/orders\n*/"
+  },
+  {
+    "file": "src/services/orders/checkoutService.ts",
+    "line": 85,
+    "endLine": 87,
+    "type": "block",
+    "raw": "/**\n* Fetch single order detail from GET /api/v1/orders/{id}\n*/"
+  },
+  {
+    "file": "src/components/common/ConfirmDeleteModal.tsx",
+    "line": 15,
+    "endLine": 18,
+    "type": "block",
+    "raw": "/**\n* ConfirmDeleteModal\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/components/common/ConfirmDeleteModal.tsx",
+    "line": 31,
+    "endLine": 31,
+    "type": "line",
+    "raw": "// Handle escape key & autofocus"
+  },
+  {
+    "file": "src/components/customer/order/OrderReviewModal.tsx",
+    "line": 127,
+    "endLine": 127,
+    "type": "line",
+    "raw": "// Store review state"
+  },
+  {
+    "file": "src/components/customer/order/OrderReviewModal.tsx",
+    "line": 131,
+    "endLine": 131,
+    "type": "line",
+    "raw": "// Product review state"
+  },
+  {
+    "file": "src/components/customer/order/OrderReviewModal.tsx",
+    "line": 138,
+    "endLine": 138,
+    "type": "line",
+    "raw": "// Sync initial store rating when opened from prompt card stars"
+  },
+  {
+    "file": "src/components/customer/order/OrderReviewModal.tsx",
+    "line": 163,
+    "endLine": 163,
+    "type": "line",
+    "raw": "// Validation checks"
+  },
+  {
+    "file": "src/components/customer/order/OrderReviewModal.tsx",
+    "line": 195,
+    "endLine": 195,
+    "type": "line",
+    "raw": "// Keep legacy state updated"
+  },
+  {
+    "file": "src/components/reviews/ReviewPagination.tsx",
+    "line": 5,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/** 1-based current page number */"
+  },
+  {
+    "file": "src/components/reviews/ReviewPagination.tsx",
+    "line": 7,
+    "endLine": 7,
+    "type": "block",
+    "raw": "/** Total available pages */"
+  },
+  {
+    "file": "src/components/reviews/ReviewPagination.tsx",
+    "line": 9,
+    "endLine": 9,
+    "type": "block",
+    "raw": "/** Page selection callback */"
+  },
+  {
+    "file": "src/components/reviews/ReviewPagination.tsx",
+    "line": 11,
+    "endLine": 11,
+    "type": "block",
+    "raw": "/** Custom CSS classes */"
+  },
+  {
+    "file": "src/components/reviews/ReviewPagination.tsx",
+    "line": 23,
+    "endLine": 23,
+    "type": "line",
+    "raw": "// Generate page numbers with ellipsis support"
+  },
+  {
+    "file": "src/components/reviews/ReviewSummaryCards.tsx",
+    "line": 6,
+    "endLine": 6,
+    "type": "block",
+    "raw": "/** Average rating score out of 5.0 */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSummaryCards.tsx",
+    "line": 8,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/** Total number of reviews received */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSummaryCards.tsx",
+    "line": 10,
+    "endLine": 10,
+    "type": "block",
+    "raw": "/** Distribution of reviews mapped by star count (1-5) */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSummaryCards.tsx",
+    "line": 12,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/** Loading state indicator */"
+  },
+  {
+    "file": "src/components/reviews/ReviewSummaryCards.tsx",
+    "line": 14,
+    "endLine": 14,
+    "type": "block",
+    "raw": "/** Container CSS classes */"
+  },
+  {
+    "file": "src/components/seller/OperationalCard.tsx",
+    "line": 41,
+    "endLine": 45,
+    "type": "block",
+    "raw": "/**\n* OperationalCard Component\n* Manages store active status, operational hours, and working days.\n* Styled with Tailwind CSS classes adhering to RescueByte Design Tokens.\n*/"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 36,
+    "endLine": 36,
+    "type": "line",
+    "raw": "// Keyboard trap and Escape listener"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 73,
+    "endLine": 73,
+    "type": "line",
+    "raw": "// Save previous active element to restore focus on close"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 76,
+    "endLine": 76,
+    "type": "line",
+    "raw": "// Lock body scrolling"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 80,
+    "endLine": 80,
+    "type": "line",
+    "raw": "// Attach key listener"
+  },
+  {
+    "file": "src/components/ui/Modal.tsx",
+    "line": 83,
+    "endLine": 83,
+    "type": "line",
+    "raw": "// Initial focus on dialog"
+  },
+  {
+    "file": "src/pages/auth/AuthRoleSelection.tsx",
+    "line": 12,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/**\n* AuthRoleSelection Page\n* Role gateway directing users to Customer (role_id: 1) or Mitra Toko (role_id: 3) authentication.\n* Complies with AGENTS.md, design.md, and antislop guidelines.\n*/"
+  },
+  {
+    "file": "src/pages/seller/Dashboard.tsx",
+    "line": 12,
+    "endLine": 16,
+    "type": "block",
+    "raw": "/**\n* Dashboard (Beranda) Page View\n* Composes live activity indicators, financial balance, and graphical performance.\n* Styled with Tailwind CSS classes.\n*/"
+  },
+  {
+    "file": "src/pages/shared/PlaceholderPage.tsx",
+    "line": 8,
+    "endLine": 12,
+    "type": "block",
+    "raw": "/**\n* PlaceholderPage Component\n* Displays a friendly under-construction screen for secondary menu items.\n* Complies with .agents/docs/architecture.md and .agents/docs/typescript.md.\n*/"
+  },
+  {
+    "file": "src/services/api.ts",
+    "line": 1,
+    "endLine": 5,
+    "type": "block",
+    "raw": "/**\n* Legacy API Service Adapter:\n* Delegates to the centralized Axios client in src/api/client.ts\n* with automatic token refresh, response unwrapping, and error normalization.\n*/"
+  },
+  {
+    "file": "src/components/common/Toast.tsx",
+    "line": 10,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/**\n* Toast Notification Component - Obsolete / Disabled\n* Floating toasts globally removed per requirement R1.\n*/"
+  },
+  {
+    "file": "src/components/ui/index.ts",
+    "line": 1,
+    "endLine": 4,
+    "type": "block",
+    "raw": "/**\n* RescueByte Atomic UI Design System Primitives\n* Conforms to RescueByte design system tokens and WCAG AA accessibility standards.\n*/"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderDetail.tsx",
+    "line": 53,
+    "endLine": 53,
+    "type": "line",
+    "raw": "// formatRupiah imported from currency.ts"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderDetail.tsx",
+    "line": 261,
+    "endLine": 261,
+    "type": "line",
+    "raw": "// Active step in tracking timeline (1 to 5) determined purely by live database status"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderDetail.tsx",
+    "line": 563,
+    "endLine": 563,
+    "type": "line",
+    "raw": "// 1. Submit store review to POST /api/v1/stores/{store_id}/reviews"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderDetail.tsx",
+    "line": 573,
+    "endLine": 573,
+    "type": "line",
+    "raw": "// 2. Submit product review to POST /api/v1/products/{product_id}/reviews"
+  },
+  {
+    "file": "src/components/customer/CustomerFooter.tsx",
+    "line": 25,
+    "endLine": 25,
+    "type": "line",
+    "raw": "// Handle ESC key for modal dismissal"
+  },
+  {
+    "file": "src/components/customer/CustomerFooter.tsx",
+    "line": 52,
+    "endLine": 52,
+    "type": "line",
+    "raw": "// Compact footer for transactional and operational pages (Cart, Checkout, Orders, Profile, Product Detail)"
+  },
+  {
+    "file": "src/components/customer/CustomerFooter.tsx",
+    "line": 99,
+    "endLine": 99,
+    "type": "line",
+    "raw": "// Full footer for discovery pages (Beranda & Marketplace)"
+  },
+  {
+    "file": "src/components/reviews/RatingDistribution.tsx",
+    "line": 4,
+    "endLine": 4,
+    "type": "block",
+    "raw": "/** Record of star count to number of reviews, e.g. { 5: 104, 4: 16, 3: 6, 2: 2, 1: 0 } */"
+  },
+  {
+    "file": "src/components/reviews/RatingDistribution.tsx",
+    "line": 6,
+    "endLine": 6,
+    "type": "block",
+    "raw": "/** Total count of all reviews */"
+  },
+  {
+    "file": "src/components/reviews/RatingDistribution.tsx",
+    "line": 8,
+    "endLine": 8,
+    "type": "block",
+    "raw": "/** Container CSS classes */"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 27,
+    "endLine": 27,
+    "type": "line",
+    "raw": "// Base interactive styles with accessible focus indicator"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 33,
+    "endLine": 33,
+    "type": "line",
+    "raw": "// Botanical Rescue variants"
+  },
+  {
+    "file": "src/components/ui/Button.tsx",
+    "line": 47,
+    "endLine": 47,
+    "type": "line",
+    "raw": "// Standard touch and responsive sizes"
+  },
+  {
+    "file": "src/services/orders/sellerOrders.ts",
+    "line": 112,
+    "endLine": 112,
+    "type": "line",
+    "raw": "// Use the server response as the seller history source, including an empty list."
+  },
+  {
+    "file": "src/services/orders/sellerOrders.ts",
+    "line": 113,
+    "endLine": 113,
+    "type": "line",
+    "raw": "// This replaces stale browser-cached orders instead of silently retaining them."
+  },
+  {
+    "file": "src/services/orders/sellerOrders.ts",
+    "line": 114,
+    "endLine": 114,
+    "type": "line",
+    "raw": "// The seller endpoint is already scoped to the authenticated seller's store."
+  },
+  {
+    "file": "src/components/common/DatePicker.tsx",
+    "line": 22,
+    "endLine": 22,
+    "type": "line",
+    "raw": "// Parse initial date from value or fallback to today"
+  },
+  {
+    "file": "src/components/common/DatePicker.tsx",
+    "line": 34,
+    "endLine": 34,
+    "type": "line",
+    "raw": "// Close calendar popover on click outside"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderHistory.tsx",
+    "line": 211,
+    "endLine": 211,
+    "type": "line",
+    "raw": "// Filter logic"
+  },
+  {
+    "file": "src/pages/customer/CustomerOrderHistory.tsx",
+    "line": 247,
+    "endLine": 247,
+    "type": "line",
+    "raw": "// Tab count calculations"
+  },
+  {
+    "file": "src/services/locationData.ts",
+    "line": 35,
+    "endLine": 35,
+    "type": "line",
+    "raw": "// Popular points of interest in Malang & East Java (Instant local search)"
+  },
+  {
+    "file": "src/services/locationData.ts",
+    "line": 149,
+    "endLine": 149,
+    "type": "line",
+    "raw": "// Comprehensive Indonesian Cities & Regencies with their Kecamatans and Centers"
+  },
+  {
+    "file": "src/services/orders/paymentService.ts",
+    "line": 13,
+    "endLine": 13,
+    "type": "block",
+    "raw": "/** Fetch the current payment record, including the reusable Snap token when available. */"
+  },
+  {
+    "file": "src/services/orders/paymentService.ts",
+    "line": 37,
+    "endLine": 37,
+    "type": "block",
+    "raw": "/** Read the authoritative payment state for a backend order UUID. */"
+  },
+  {
+    "file": "src/components/common/ProfileAvatar.tsx",
+    "line": 79,
+    "endLine": 79,
+    "type": "line",
+    "raw": "// Keep optimistic local preview active for display"
+  },
+  {
+    "file": "src/components/customer/store/StoreDaganganGrid.tsx",
+    "line": 25,
+    "endLine": 25,
+    "type": "line",
+    "raw": "// Close dropdown when clicking outside"
+  },
+  {
+    "file": "src/components/payment/MidtransPaymentModal.tsx",
+    "line": 45,
+    "endLine": 45,
+    "type": "line",
+    "raw": "// Attempt to invoke real Midtrans Snap JS popup if token is present"
+  },
+  {
+    "file": "src/pages/customer/CustomerCart.tsx",
+    "line": 101,
+    "endLine": 101,
+    "type": "block",
+    "raw": "/* Empty State */"
+  },
+  {
+    "file": "src/services/midtransService.ts",
+    "line": 29,
+    "endLine": 29,
+    "type": "block",
+    "raw": "/** Open Midtrans Snap in a popup. Never navigate the current page to the hosted checkout. */"
+  },
+  {
+    "file": "src/services/orders/customerOrders.ts",
+    "line": 98,
+    "endLine": 98,
+    "type": "line",
+    "raw": "// Merge backend orders with active customer orders"
+  }
+]

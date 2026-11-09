@@ -14,6 +14,73 @@ export const ACCESS_TOKEN_KEY = 'access_token';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const AUTH_STORAGE_KEY = 'rescuebyte_auth';
 export const ROLES_BY_EMAIL_KEY = 'rescuebyte_roles_by_email';
+export const LOGIN_AT_KEY = 'rescuebyte_login_at';
+export const MAX_SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 jam
+
+/** Parse timestamp kedaluwarsa JWT (claim exp dalam milidetik). */
+export function parseJwtExp(token?: string | null): number | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload?.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Hitung batas kedaluwarsa sesi efektif berdasarkan exp JWT dan batas maksimal 24 jam. */
+export function calculateSessionExpiresAt(): number | null {
+  if (typeof window === 'undefined') return null;
+  const loginAtStr = localStorage.getItem(LOGIN_AT_KEY);
+  const loginAt = loginAtStr ? parseInt(loginAtStr, 10) : null;
+  const maxExp = loginAt ? loginAt + MAX_SESSION_DURATION_MS : null;
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const tokenExp = parseJwtExp(token);
+
+  if (tokenExp && maxExp) return Math.min(tokenExp, maxExp);
+  return tokenExp || maxExp;
+}
+
+/** Bersihkan seluruh data autentikasi sensitif dan sesi toko dari storage. */
+export function clearAllSensitiveSessionData(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(LOGIN_AT_KEY);
+  localStorage.removeItem('rescuebyte_user_role');
+  localStorage.removeItem('rescuebyte_customer_cart');
+  localStorage.removeItem('rescuebyte_selected_store');
+  localStorage.removeItem('rescuebyte_store_logo');
+  localStorage.removeItem('rescuebyte_store_name');
+  localStorage.removeItem('rescuebyte_store_email');
+  localStorage.removeItem('rescuebyte_store_address');
+  localStorage.removeItem('rescuebyte_store_coordinates');
+}
+
+let sessionTimerId: ReturnType<typeof setTimeout> | null = null;
+
+function clearSessionTimer() {
+  if (sessionTimerId) {
+    clearTimeout(sessionTimerId);
+    sessionTimerId = null;
+  }
+}
+
+function scheduleSessionCheck(onExpire: () => void) {
+  clearSessionTimer();
+  const expiresAt = calculateSessionExpiresAt();
+  if (!expiresAt) return;
+
+  const remaining = expiresAt - Date.now();
+  if (remaining <= 0) {
+    onExpire();
+    return;
+  }
+  sessionTimerId = setTimeout(onExpire, remaining);
+}
 
 export interface AuthContextValue {
   user: UserResponse | null;
@@ -55,6 +122,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const clearAuthSession = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    clearSessionTimer();
+    clearAllSensitiveSessionData();
+    setUser(null);
+    window.dispatchEvent(new CustomEvent('rescuebyte_auth_update', { detail: null }));
+  }, []);
+
   const saveAuthSession = useCallback((authData: AuthResponse) => {
     if (typeof window === 'undefined') return;
     if (authData.access_token) {
@@ -62,6 +137,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     if (authData.refresh_token) {
       localStorage.setItem(REFRESH_TOKEN_KEY, authData.refresh_token);
+    }
+    // Record login timestamp if not present
+    if (!localStorage.getItem(LOGIN_AT_KEY)) {
+      localStorage.setItem(LOGIN_AT_KEY, String(Date.now()));
     }
     if (authData.user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
@@ -81,17 +160,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
 
-    window.dispatchEvent(new CustomEvent('rescuebyte_auth_update', { detail: authData.user }));
-  }, []);
+    scheduleSessionCheck(() => {
+      clearAuthSession();
+      window.dispatchEvent(new CustomEvent('rescuebyte_auth_expired'));
+    });
 
-  const clearAuthSession = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    setUser(null);
-    window.dispatchEvent(new CustomEvent('rescuebyte_auth_update', { detail: null }));
-  }, []);
+    window.dispatchEvent(new CustomEvent('rescuebyte_auth_update', { detail: authData.user }));
+  }, [clearAuthSession]);
 
   const refreshUser = useCallback(async (): Promise<UserResponse | null> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
@@ -131,20 +206,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Initialize session on mount
+  // Inisialisasi sesi saat komponen mount
   useEffect(() => {
-    void refreshUser();
-
-    // Listen for auth-expiration event broadcast by client.ts
     const handleExpired = () => {
       clearAuthSession();
       setError('Sesi login telah berakhir. Silakan masuk kembali.');
     };
 
+    // Pengecekan instan apakah sesi sudah kedaluwarsa saat aplikasi dibuka
+    const expiresAt = calculateSessionExpiresAt();
+    if (expiresAt && expiresAt - Date.now() <= 0) {
+      handleExpired();
+      setIsLoading(false);
+      return;
+    }
+
+    void refreshUser();
+
+    // Jadwalkan pengecekan sesi tunggal
+    scheduleSessionCheck(handleExpired);
+
+    // Listener visibility dan focus untuk pemulihan token saat tab browser aktif kembali
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        const exp = calculateSessionExpiresAt();
+        if (exp && exp - Date.now() <= 0) {
+          handleExpired();
+        } else {
+          scheduleSessionCheck(handleExpired);
+        }
+      }
+    };
+
+    // Sinkronisasi lintas tab browser via storage event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === AUTH_STORAGE_KEY && !e.newValue) {
+        clearAuthSession();
+      }
+    };
+
     window.addEventListener('rescuebyte_auth_expired', handleExpired);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('storage', handleStorage);
 
     return () => {
+      clearSessionTimer();
       window.removeEventListener('rescuebyte_auth_expired', handleExpired);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('storage', handleStorage);
     };
   }, [refreshUser, clearAuthSession]);
 

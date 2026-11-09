@@ -1,10 +1,9 @@
 /**
- * Utility functions for operational time handling and formatting.
- * Complies with RescueByte design tokens and backend API specifications.
+ * Utilitas penanganan dan pemformatan jam operasional toko sesuai spesifikasi API backend.
  */
 
 /**
- * Validates if time string conforms to 24-hour clock (00.00 - 23.59 or 00:00 - 23:59).
+ * Validasi format jam 24 jam (00.00 - 23.59 atau 00:00 - 23:59).
  */
 export function isValidTimeFormat(timeStr?: string): boolean {
   if (!timeStr) return false;
@@ -17,8 +16,7 @@ export function isValidTimeFormat(timeStr?: string): boolean {
 }
 
 /**
- * Converts backend time format (e.g. "07:00:00", "07:00", "07.00") to Indonesian dot format ("07.00").
- * Preserves raw value if parsing is not applicable, without silently rewriting hour values.
+ * Konversi format jam backend ("07:00:00", "07:00") ke format titik standar Indonesia ("07.00").
  */
 export function toIndoTime(timeStr?: string): string {
   if (!timeStr) return '08.00';
@@ -33,9 +31,7 @@ export function toIndoTime(timeStr?: string): string {
 }
 
 /**
- * Converts Indonesian time format (e.g. "22.00", "22:00") to API format ("22:00" or "08:00").
- * Backend expects HH:mm or HH.mm format (rejects HH:mm:ss with seconds).
- * Does not overwrite invalid hours (validation must occur before calling this).
+ * Konversi format jam Indonesia ("22.00") ke format yang diterima backend ("22:00", tanpa detik).
  */
 export function toApiTime(timeStr?: string): string {
   if (!timeStr) return '08:00';

@@ -71,3 +71,27 @@ Status context:
 - Milestone 1 (Foundation, Design Tokens, & Core UI Primitives) was fully implemented and passed both Reviewer and Auditor gates.
 - Milestone 2 (Centralized API Client, Swagger Types, & Custom Hooks) was dispatched with Worker M2.
 - Please review active subagents and resume execution.
+
+
+## 2026-11-09T14:18:22Z
+
+Use a team with Lead Architect, Frontend Developer, UI/UX Specialist, Refactoring Specialist, API Integration Specialist, QA & Code Reviewer, and Bug Fixer. Perform final homepage adjustments (limiting "Mystery Box di Sekitar" and "Mystery Box Terlaris" to 3 cards with "Lihat Selengkapnya" navigation to Marketplace) and global language localization across user-facing text in RescueByte.
+
+Working directory: c:\Users\fahmi\Documents\Lomba\rescuebyte-fe
+Integrity mode: development
+
+## 2026-11-09T14:19:11Z
+
+CRITICAL USER CLARIFICATION RECEIVED:
+The user explicitly clarified:
+"eh itu yang kumaksud tuh command pada kode loh ya, kek dokumentasi nya! bukan pada UI FrontEnd nya oke."
+
+TRANSLATION & SCOPE ADJUSTMENT:
+- DO NOT change user-facing UI copy/text across components/pages. The UI text is already established.
+- The localization / natural Indonesian instruction applies to CODE COMMENTS, JSDoc, and CODEBASE DOCUMENTATION (antislop-code guidelines).
+- Keep technical terms in English (API, Backend, Dashboard, Marketplace, etc.).
+- Ensure code comments and documentation sound natural and clean (no generic AI slop comments).
+
+HOMEPAGE REQUIREMENTS REMAIN ACTIVE:
+- Mystery Box di Sekitar: maximum 3 cards, nearby dynamic query, with "Lihat Selengkapnya" link navigating to Marketplace.
+- Mystery Box Terlaris: maximum 3 cards, popularity query, with "Lihat Selengkapnya" link navigating to Marketplace.

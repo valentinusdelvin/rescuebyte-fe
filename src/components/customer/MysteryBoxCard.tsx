@@ -64,19 +64,21 @@ function renderPickupSchedule(pickupTimeStr: string) {
  */
 export function MysteryBoxCard({
   item,
-  variant = 'popular',
+  variant: _variant = 'popular',
   onOrderClick,
   onStoreClick,
 }: MysteryBoxCardProps) {
-  const isPopular = variant === 'popular';
-
-  // Check stock quantity from text (e.g. "Sisa 4 Box" -> 4, "Sisa 2 Box!" -> 2, "Hanya 1 Box Tersisa!" -> 1)
-  const stockMatch = item.remainingBoxesText.match(/\d+/);
-  const stockCount = stockMatch ? parseInt(stockMatch[0], 10) : 1;
-  const isOutOfStock = stockCount === 0 || item.remainingBoxesText.toLowerCase().includes('0 box');
-  const isAboveTwo = stockCount > 2;
-  const isSingleLast = stockCount === 1 || item.remainingBoxesText.toLowerCase().includes('1 box') || item.remainingBoxesText.toLowerCase().includes('terakhir');
-  const cleanStockText = item.remainingBoxesText.replace(/^[!\s]+/, '').replace(/[!\s]+$/, '');
+  // Check stock quantity for out-of-stock disabled button state
+  const rawStockText = item.remainingBoxesText || '';
+  const stockMatch = rawStockText.match(/\d+/);
+  const stockCount = stockMatch
+    ? parseInt(stockMatch[0], 10)
+    : (typeof item.stock === 'number' ? item.stock : 1);
+  const isOutOfStock =
+    (typeof item.stock === 'number' && item.stock <= 0) ||
+    stockCount === 0 ||
+    /\b0\s*box\b/i.test(rawStockText) ||
+    /\bhabis\b/i.test(rawStockText);
 
   // Calculate discount percentage mathematically if needed
   const calculatedDiscount = item.originalPrice > 0
@@ -114,130 +116,82 @@ export function MysteryBoxCard({
           }}
         />
 
-        {/* Top Badges Overlay (Stock, Distance / Rating, Discount) */}
+        {/* Top Badges Overlay (Distance, Discount) */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-10">
           <div className="flex items-center gap-1.5">
-            {isPopular ? (
-              <>
-                {/* Stock Badge: Abu-abu jika Habis, Merah Muda jika > 2, Merah Tebal jika <= 2 */}
-                {isOutOfStock ? (
-                  <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-gray-500 shrink-0"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <polyline points="12 6 12 12 15 14" />
-                    </svg>
-                    <span>Sisa 0 Box</span>
-                  </span>
-                ) : isAboveTwo ? (
-                  <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="shrink-0"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <polyline points="12 6 12 12 15 14" />
-                    </svg>
-                    <span>{cleanStockText}</span>
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
-                    {isSingleLast ? (
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="shrink-0"
-                        aria-hidden="true"
-                      >
-                        <line x1="12" y1="4.5" x2="12" y2="13.5" />
-                        <line x1="12" y1="19" x2="12.01" y2="19" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="shrink-0"
-                        aria-hidden="true"
-                      >
-                        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                      </svg>
-                    )}
-                    <span>{cleanStockText}</span>
-                  </span>
-                )}
-
-                {/* Popular Distance Pill */}
-                <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs">
-                  {item.distanceText}
-                </span>
-              </>
-            ) : (
-              /* Radius Variant Location Pill with Green Pin */
-              <span className="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs flex items-center gap-1">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-brand-green shrink-0"
-                  aria-hidden="true"
-                >
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span>{item.distanceText}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Discount Ratio Pill (Green for Both Popular and Radius) */}
-          <div>
-            <span className="px-2.5 py-1 text-[11px] font-black shadow-xs rounded-full bg-brand-green text-white">
-              -{displayDiscount}%
+            <span className="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs flex items-center gap-1">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-brand-green shrink-0"
+                aria-hidden="true"
+              >
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>{item.distanceText}</span>
             </span>
           </div>
+
+          {/* Discount Ratio Pill */}
+          {displayDiscount > 0 && (
+            <div>
+              <span className="px-2.5 py-1 text-[11px] font-black shadow-xs rounded-full bg-brand-green text-white">
+                -{displayDiscount}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Bottom Dark Gradient with Overlay Information */}
         <div className="absolute inset-x-0 bottom-0 pt-12 pb-3.5 px-4 bg-linear-to-t from-black/85 via-black/45 to-transparent flex flex-col justify-end pointer-events-none z-10">
-          {!isPopular && (
-            /* Radius Variant: Star Rating & Review Count */
-            <div className="flex items-center gap-1 text-white/90 text-xs font-semibold drop-shadow-xs mb-0.5">
-              <span className="text-amber-400">★</span>
-              <span>{item.rating?.toFixed(1) || '4.9'}</span>
-              <span className="text-white/70 font-normal">({item.reviewCount || '1.2k'} ulasan)</span>
-            </div>
-          )}
+          {/* Star Rating & Review Count (Rendered on all cards) */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Lihat ulasan toko"
+            className="flex items-center gap-1 text-white/90 text-xs font-semibold drop-shadow-xs mb-0.5 pointer-events-auto cursor-pointer hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 rounded w-fit"
+            onClick={(e) => {
+              e.stopPropagation();
+              const query = new URLSearchParams();
+              if (item.storeName) query.set('name', item.storeName);
+              if (item.storeId) query.set('id', item.storeId);
+              query.set('section', 'ulasan-pelanggan');
+              window.location.hash = `#toko?${query.toString()}`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                const query = new URLSearchParams();
+                if (item.storeName) query.set('name', item.storeName);
+                if (item.storeId) query.set('id', item.storeId);
+                query.set('section', 'ulasan-pelanggan');
+                window.location.hash = `#toko?${query.toString()}`;
+              }
+            }}
+          >
+            {(() => {
+              const r = item.rating;
+              const hasRating = typeof r === 'number' && r > 0;
+              const numReviews = typeof item.reviewCount === 'number' ? item.reviewCount : Number(item.reviewCount) || 0;
+              return (
+                <>
+                  <span className="text-amber-400">★</span>
+                  <span>{hasRating && typeof r === 'number' ? r.toFixed(1) : '-'}</span>
+                  <span className="text-white/70 font-normal">
+                    ({numReviews > 0 ? `${numReviews} ulasan` : 'Belum ada ulasan'})
+                  </span>
+                </>
+              );
+            })()}
+          </div>
 
           {/* Product Name (Text Only, No Emotes) above Store Name */}
           <span className="text-xs sm:text-[13px] font-bold text-[#b7e472] uppercase tracking-wide drop-shadow-sm truncate mb-0.5">

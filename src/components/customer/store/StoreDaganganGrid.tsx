@@ -190,31 +190,6 @@ export function StoreDaganganGrid({
                 {/* Top Row Badges */}
                 <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {(() => {
-                      const stockVal = item.remainingBoxes ?? item.stock ?? 0;
-                      if (stockVal === 0) {
-                        return (
-                          <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold flex items-center gap-1 shadow-xs border border-gray-200">
-                            <Clock className="w-3 h-3 shrink-0 text-gray-500" aria-hidden="true" />
-                            <span>Sisa 0 Box</span>
-                          </span>
-                        );
-                      }
-                      if (stockVal > 2) {
-                        return (
-                          <span className="px-2.5 py-1 rounded-full bg-[#FDECEB] text-[#D94A38] text-[11px] font-bold flex items-center gap-1 shadow-xs border border-[#FCA5A5]/30">
-                            <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
-                            <span>Sisa {stockVal} Box</span>
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="px-2.5 py-1 rounded-full bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs">
-                          <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
-                          <span>Sisa {stockVal} Box</span>
-                        </span>
-                      );
-                    })()}
                     <span className="px-2.5 py-1 rounded-full bg-white text-[#1b1c1c] text-[11px] font-bold border border-black/5 shadow-xs">
                       {distanceText}
                     </span>

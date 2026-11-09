@@ -92,7 +92,7 @@ export async function searchOpenStreetMap(
   const cleanQuery = query.trim();
   const results: OSMSearchResult[] = [];
 
-  // 1. Check local POI matches first (instant response)
+  // Cek kecocokan POI lokal terlebih dahulu untuk respons instan
   const localMatches = LOCAL_POPULAR_POIS.filter(
     (poi) =>
       poi.name.toLowerCase().includes(cleanQuery.toLowerCase()) ||
@@ -114,7 +114,7 @@ export async function searchOpenStreetMap(
     });
   });
 
-  // 2. Fetch Photon by Komoot (Fast autocomplete OSM search)
+  // Query pencarian autocomplete via Photon Komoot
   try {
     let photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=5`;
     if (nearCoords && nearCoords.lat && nearCoords.lng) {
@@ -162,7 +162,7 @@ export async function searchOpenStreetMap(
     console.warn('Photon autocomplete query failed or timed out:', err);
   }
 
-  // 3. Fetch Nominatim OpenStreetMap (Comprehensive Indonesian address search)
+  // Fallback pencarian alamat komprehensif via Nominatim OpenStreetMap
   try {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       cleanQuery,

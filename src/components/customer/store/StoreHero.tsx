@@ -6,6 +6,7 @@ import heroBannerImg from '../../../assets/customer/hero-full-banner.jpg';
 export interface StoreHeroProps {
   storeData: StoreDetailInfo;
   onOpenGoogleMaps: () => void;
+  onScrollToReviews?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -23,7 +24,7 @@ function getShortName(name: string): string {
   return firstWord.length > 9 ? firstWord.slice(0, 8) + '…' : firstWord;
 }
 
-export function StoreHero({ storeData, onOpenGoogleMaps }: StoreHeroProps) {
+export function StoreHero({ storeData, onOpenGoogleMaps, onScrollToReviews }: StoreHeroProps) {
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -80,11 +81,24 @@ export function StoreHero({ storeData, onOpenGoogleMaps }: StoreHeroProps) {
               </div>
 
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-slate-500 mb-2">
-                <span className="font-semibold text-slate-800 flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  {storeData.rating}
-                  <span className="text-slate-500 font-normal">({storeData.reviewCount} ulasan)</span>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onScrollToReviews) {
+                      onScrollToReviews();
+                    } else {
+                      document.getElementById('ulasan-pelanggan')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="font-semibold text-slate-800 flex items-center gap-1 hover:underline cursor-pointer group focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-600 rounded px-1 -mx-1"
+                  aria-label={`Rating ${storeData.rating > 0 ? storeData.rating.toFixed(1) : 'Belum ada rating'} dari ${storeData.reviewCount} ulasan. Klik untuk melihat ulasan.`}
+                >
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>{storeData.rating > 0 ? storeData.rating.toFixed(1) : '-'}</span>
+                  <span className="text-slate-500 font-normal group-hover:text-emerald-700 transition-colors">
+                    ({storeData.reviewCount > 0 ? `${storeData.reviewCount} ulasan` : 'Belum ada ulasan'})
+                  </span>
+                </button>
               </div>
             </div>
           </div>

@@ -149,37 +149,50 @@ export function StoreInfoCard({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3 lg:gap-4 items-center pt-0.5">
             {/* Rating Toko */}
-            <div className="flex items-center gap-3 sm:gap-3.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#fef8ea] flex items-center justify-center shrink-0">
+            <button
+              type="button"
+              onClick={onNavigateToReviews}
+              className="flex items-center gap-3 sm:gap-3.5 text-left p-1.5 -m-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+              aria-label={`Rating Toko: ${storeData.rating > 0 ? storeData.rating.toFixed(1) : 'Belum ada rating'} dari ${storeData.reviewCount || 0} ulasan. Klik untuk melihat ulasan.`}
+            >
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#fef8ea] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
               </div>
               <div className="min-w-0">
-                <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block">
-                  {storeData.rating}
+                <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block group-hover:text-emerald-800 transition-colors">
+                  {storeData.rating > 0 ? storeData.rating.toFixed(1) : '-'}
                 </span>
                 <span className="text-xs text-slate-500 font-medium leading-tight block mt-0.5">
                   Rating Toko
                 </span>
-                <span className="text-[11px] text-slate-400 font-normal leading-tight block mt-0.5">
-                  ({storeData.reviewCount} ulasan)
+                <span className="text-[11px] text-slate-400 font-normal leading-tight block mt-0.5 group-hover:underline">
+                  ({storeData.reviewCount > 0 ? `${storeData.reviewCount} ulasan` : 'Belum ada ulasan'})
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Total Ulasan */}
-            <div className="flex items-center gap-3 sm:gap-3.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#ecfdf3] flex items-center justify-center shrink-0">
+            <button
+              type="button"
+              onClick={onNavigateToReviews}
+              className="flex items-center gap-3 sm:gap-3.5 text-left p-1.5 -m-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+              aria-label={`Total Ulasan: ${storeData.reviewCount || 0}. Klik untuk melihat ulasan.`}
+            >
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#ecfdf3] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <MessageSquare className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="min-w-0">
-                <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block">
-                  {storeData.reviewCount}
+                <span className="text-base sm:text-lg font-bold text-slate-900 leading-tight block group-hover:text-emerald-800 transition-colors">
+                  {storeData.reviewCount || 0}
                 </span>
                 <span className="text-xs text-slate-500 font-medium leading-tight block mt-0.5">
                   Total Ulasan
                 </span>
+                <span className="text-[11px] text-emerald-600 font-semibold leading-tight block mt-0.5 group-hover:underline">
+                  Lihat ulasan &rarr;
+                </span>
               </div>
-            </div>
+            </button>
 
             {/* Jarak Lokasi */}
             <div className="flex items-center gap-3 sm:gap-3.5">

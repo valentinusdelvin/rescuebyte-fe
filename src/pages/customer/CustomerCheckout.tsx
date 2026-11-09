@@ -213,8 +213,8 @@ export function CustomerCheckout({
           storeAvatar: avatarUrl,
           storeAddress: fullAddress,
           operationalHours,
-          rating: item.rating || 4.9,
-          reviewCount: item.reviewCount || 42,
+          rating: item.rating ?? 0,
+          reviewCount: item.reviewCount ?? 0,
           distanceText: (() => {
             if (item.distanceText) return item.distanceText;
             if (matchedStore?.latitude && matchedStore?.longitude) {

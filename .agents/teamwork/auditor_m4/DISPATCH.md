@@ -1,44 +1,34 @@
-# Dispatch — Forensic Auditor M4 (Final Integrity Audit)
+# DISPATCH — Forensic Integrity Auditor: Milestone 4
 
-## Task Description
-Perform final forensic integrity verification of Milestone M4 and the completed RescueByte project.
+## Objective
+Perform forensic integrity audit on Milestone 4 implementation (`ProductReviewsSection.tsx` and `CustomerProductDetail.tsx`).
 
-### Scope to Audit
-1. **Zero Facades & Authentic Logic**:
-   - Verify that all newly created and refactored components implement authentic React rendering, styling, and business logic without dummy facades or test mocks.
-   - Verify that all 43 Swagger endpoints in `src/api/` are genuine network callers to `VITE_API_BASE_URL`.
-   - Verify that the 10 Final Deliverables Report in `worker_m4/handoff.md` faithfully reflects verified reality.
-2. **Build and Typecheck Validation**:
-   - Independently run `npm run typecheck` (`tsc -b`).
-   - Independently run `npm run build` and verify bundle outputs (< 500 kB).
-   - Independently run `npm run lint` (`oxlint`).
-3. **Safety & Zero Disruption Check**:
-   - Confirm zero changes to backend, database, server, or production infrastructure.
-   - Confirm zero destructive Git operations (`git reset`, force push, branch deletion).
-   - Confirm zero exposed secrets or sensitive credentials.
+## Integrity Audit Checks
+1. Hardcoded Statistics: Verify NO hardcoded ratings (e.g. 4.8 or 128) exist in production JSX/TSX.
+2. Authentic Backend Integration: Verify reviews are fetched via `useProductReviews` from `/api/v1/products/{product_id}/reviews` and mutations go through `useReviewMutations`.
+3. Dummy / Facade Detection: Ensure no mock reviews arrays or dummy review author objects are hardcoded into production components.
+4. Authorization & Security: Verify delete/edit actions authentically check current user credentials.
 
-### Reference Documents
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md`
-- `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md`
-
-### Output Requirements
-Deliver your forensic audit report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\handoff.md` with explicit verdict: `CLEAN` or `INTEGRITY VIOLATION`.
+## Deliverables
+Write forensic report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\handoff.md` with binary verdict: CLEAN or INTEGRITY VIOLATION.
 
 
-## 2026-11-03T21:00:52Z
-You are Auditor M4 (Forensic Integrity Auditor).
-Your working directory is c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\
-Your dispatch instructions are at c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\DISPATCH.md
-Read c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md
-Read c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator\PROJECT.md
-Read c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md
+## 2026-11-09T05:01:55Z
+Perform forensic integrity audit on Milestone 4 implementation (`ProductReviewsSection.tsx` and `CustomerProductDetail.tsx`).
 
-Perform final forensic integrity audit on the entire RescueByte frontend:
-1. Static and runtime integrity: Confirm zero facade stubs, zero mocked bypasses, and 100% genuine implementations across all created/refactored files.
-2. Build & Verification: Independently execute `npm run typecheck`, `npm run build`, and `npm run lint`. Verify bundle size (< 500 kB) and 0 errors.
-3. Safety Audit: Confirm zero modifications to backend/database/server infrastructure, zero destructive git operations, zero leaked credentials.
-4. Verify the fidelity and truthfulness of the 10 Final Deliverables Report in worker_m4/handoff.md.
+Read before starting:
+1. `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\ORIGINAL_REQUEST.md`
+2. `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\orchestrator_2\SCOPE.md`
+3. `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\DISPATCH.md`
+4. `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\worker_m4\handoff.md`
+5. `src/components/customer/product/ProductReviewsSection.tsx`
+6. `src/pages/customer/CustomerProductDetail.tsx`
 
-Write your audit report to c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\handoff.md with an explicit verdict: CLEAN or INTEGRITY VIOLATION.
-Notify parent (59a4cfaf-061f-42fa-9551-4492d1892343) via send_message when done.
+Run full forensic integrity analysis:
+1. Check for hardcoded statistics or mock review data.
+2. Check for authentic backend callers (`useProductReviews`, `useReviewMutations`).
+3. Check for dummy or facade implementations.
+4. Verify genuine user ownership and authorization checks for edit/delete actions.
+
+Write audit report to `c:\Users\fahmi\Documents\Lomba\rescuebyte-fe\.agents\teamwork\auditor_m4\handoff.md` with binary verdict: CLEAN or INTEGRITY VIOLATION.
+Message orchestrator when done.

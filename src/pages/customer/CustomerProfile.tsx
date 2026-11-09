@@ -134,11 +134,7 @@ export function CustomerProfile({
   };
 
   const handleLogout = async () => {
-    if (onNavigateHome) {
-      onNavigateHome();
-    } else {
-      window.location.hash = '#beranda-customer';
-    }
+    window.location.hash = '#auth';
     try {
       await logoutUser();
       onShowToast?.('Berhasil keluar dari akun.', 'success');

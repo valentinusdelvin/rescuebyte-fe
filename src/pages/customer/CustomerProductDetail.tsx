@@ -3,10 +3,12 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ShoppingCart, Plus, ChevronLeft, ChevronUp, ChevronDown, Package, Clock, User } from 'lucide-react';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
+import { ProductReviewsSection } from '../../components/customer/product/ProductReviewsSection';
 import { FormattedDescription } from '../../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../../types';
 import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../../services/cartService';
 import { getAllStores } from '../../services/storeService';
+import { useStoreReviews } from '../../hooks/useReviews';
 import { formatRupiah } from '../../utils/currency';
 
 export interface CustomerProductDetailProps {
@@ -18,7 +20,7 @@ export interface CustomerProductDetailProps {
   onNavigateCheckout?: (product: CustomerMysteryBox, quantity: number) => void;
   onNavigateSeller?: () => void;
   onNavigateAuth?: () => void;
-  onNavigateStore?: (storeName: string, storeId?: string) => void;
+  onNavigateStore?: (storeName: string, storeId?: string, section?: string) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -51,27 +53,63 @@ export function CustomerProductDetail({
   // Use product prop or default to real store data
   const storeName = product?.storeName || 'Toko Mitra';
 
+  const hashStoreId = useMemo(() => {
+    try {
+      const rawHash = window.location.hash || '';
+      const queryPart = rawHash.includes('?') ? rawHash.split('?')[1] : '';
+      const params = new URLSearchParams(queryPart);
+      return params.get('storeId') || params.get('store_id') || undefined;
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const [resolvedStoreId, setResolvedStoreId] = useState<string | undefined>(
+    product?.storeId || hashStoreId
+  );
+
   const [storeAvatarUrl, setStoreAvatarUrl] = useState<string | null>(() => {
     return product?.storeAvatar || null;
   });
 
   useEffect(() => {
+    if (product?.storeId) {
+      setResolvedStoreId(product.storeId);
+    } else if (hashStoreId) {
+      setResolvedStoreId(hashStoreId);
+    }
+  }, [product?.storeId, hashStoreId]);
+
+  useEffect(() => {
     let isCancelled = false;
     getAllStores().then((stores) => {
       if (isCancelled || !stores) return;
+      const currentId = product?.storeId || hashStoreId;
       const matched = stores.find(
         (s) =>
-          (s.id && product?.storeId && (s.id === product.storeId || product.storeId.includes(s.id))) ||
+          (s.id && currentId && (s.id === currentId || currentId.includes(s.id))) ||
           (s.name && storeName && s.name.toLowerCase() === storeName.toLowerCase())
       );
-      if (matched?.profile_picture_url) {
-        setStoreAvatarUrl(matched.profile_picture_url);
+      if (matched) {
+        if (matched.id && matched.id !== resolvedStoreId) {
+          setResolvedStoreId(matched.id);
+        }
+        if (matched.profile_picture_url) {
+          setStoreAvatarUrl(matched.profile_picture_url);
+        }
       }
     }).catch(() => {});
     return () => {
       isCancelled = true;
     };
-  }, [product?.storeId, storeName]);
+  }, [product?.storeId, hashStoreId, storeName, resolvedStoreId]);
+
+  const {
+    averageRating: storeAverageRating,
+    totalReviews: storeTotalReviews,
+    isLoading: isStoreRatingLoading,
+  } = useStoreReviews(resolvedStoreId, undefined, { autoFetch: Boolean(resolvedStoreId) });
+
   const title = product?.category ? product.category.replace(/^[^\w\s]+/, '').trim() : (product?.name || 'Paket Makanan Surplus');
   const description =
     product?.description ||
@@ -79,8 +117,17 @@ export function CustomerProductDetail({
   const rescuePrice = product?.rescuePrice ?? 0;
   const originalPrice = product?.originalPrice ?? rescuePrice;
   const discountPercent = product?.discountPercent ?? (originalPrice > rescuePrice ? Math.round(((originalPrice - rescuePrice) / originalPrice) * 100) : 0);
-  const rating = product?.rating ?? 5.0;
+  const rating = product?.rating ?? 0;
   const reviewCount = product?.reviewCount ?? 0;
+  const reviewCountNum = typeof reviewCount === 'number' ? reviewCount : Number(reviewCount) || 0;
+
+  const displayRating = storeTotalReviews > 0
+    ? storeAverageRating
+    : (rating > 0 ? rating : storeAverageRating);
+
+  const displayReviewCount = storeTotalReviews > 0
+    ? storeTotalReviews
+    : (reviewCountNum > 0 ? reviewCountNum : storeTotalReviews);
   const distanceText = product?.distanceText ?? '';
   const remainingBoxes = product?.remainingBoxesText?.match(/\d+/)?.[0]
     ? parseInt(product.remainingBoxesText.match(/\d+/)![0], 10)
@@ -132,7 +179,6 @@ export function CustomerProductDetail({
   const [cartCount, setCartCount] = useState<number>(getCartCount);
   const [isCartBouncing, setIsCartBouncing] = useState(false);
   const [flyingItems, setFlyingItems] = useState<FlyingCartItem[]>([]);
-  const [localToast, setLocalToast] = useState<string | null>(null);
 
   // DOM Refs for animation positioning
   const heroImageRef = useRef<HTMLImageElement>(null);
@@ -173,16 +219,14 @@ export function CustomerProductDetail({
   };
 
   const handleStoreClick = () => {
+    const targetStoreId = resolvedStoreId || product?.storeId;
     if (onNavigateStore) {
-      onNavigateStore(storeName, product?.storeId);
+      onNavigateStore(storeName, targetStoreId);
     } else {
-      const msg = `Halaman toko "${storeName}" sedang dalam tahap perancangan desain.`;
-      if (onShowToast) {
-        onShowToast(msg);
-      } else {
-        setLocalToast(msg);
-        setTimeout(() => setLocalToast(null), 3500);
-      }
+      const query = new URLSearchParams();
+      if (storeName) query.set('name', storeName);
+      if (targetStoreId) query.set('id', targetStoreId);
+      window.location.hash = `#toko?${query.toString()}`;
     }
   };
 
@@ -280,10 +324,13 @@ export function CustomerProductDetail({
       pickupTime,
       description,
       tags: ['Sisa Stok Harian'],
-      rating,
-      reviewCount,
+      rating: displayRating,
+      reviewCount: displayReviewCount,
       imageSrc: galleryImages[selectedImageIndex] || '',
     }),
+    rating: displayRating,
+    reviewCount: displayReviewCount,
+    storeId: resolvedStoreId || product?.storeId,
     storeAvatar: storeAvatarUrl || product?.storeAvatar,
   };
 
@@ -440,10 +487,52 @@ export function CustomerProductDetail({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mt-0.5">
-                      <span className="flex items-center text-amber-500">
-                        ★ <span className="text-gray-700 font-bold ml-1">{rating.toFixed(1)}</span>
-                        <span className="text-gray-400 font-normal ml-0.5">({reviewCount} ulasan)</span>
-                      </span>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Lihat ulasan toko"
+                        className="flex items-center text-amber-500 cursor-pointer hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green rounded select-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const targetStoreId = resolvedStoreId || product?.storeId;
+                          if (onNavigateStore) {
+                            onNavigateStore(storeName, targetStoreId, 'ulasan-pelanggan');
+                          } else {
+                            const query = new URLSearchParams();
+                            if (storeName) query.set('name', storeName);
+                            if (targetStoreId) query.set('id', targetStoreId);
+                            query.set('section', 'ulasan-pelanggan');
+                            window.location.hash = `#toko?${query.toString()}`;
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const targetStoreId = resolvedStoreId || product?.storeId;
+                            if (onNavigateStore) {
+                              onNavigateStore(storeName, targetStoreId, 'ulasan-pelanggan');
+                            } else {
+                              const query = new URLSearchParams();
+                              if (storeName) query.set('name', storeName);
+                              if (targetStoreId) query.set('id', targetStoreId);
+                              query.set('section', 'ulasan-pelanggan');
+                              window.location.hash = `#toko?${query.toString()}`;
+                            }
+                          }
+                        }}
+                      >
+                        ★ <span className="text-gray-700 font-bold ml-1">
+                          {displayRating > 0 ? displayRating.toFixed(1) : '-'}
+                        </span>
+                        <span className="text-gray-400 font-normal ml-0.5">
+                          {isStoreRatingLoading && displayReviewCount === 0
+                            ? '(Memuat...)'
+                            : displayReviewCount > 0
+                            ? `(${displayReviewCount} ulasan)`
+                            : '(Belum ada ulasan)'}
+                        </span>
+                      </div>
                       <span className="text-gray-300">•</span>
                       <span className="flex items-center text-gray-500">
                         {distanceText}
@@ -618,6 +707,21 @@ export function CustomerProductDetail({
               {description}
             </p>
           </article>
+
+          {/* Product Reviews Section: Ulasan Pengguna */}
+          <ProductReviewsSection
+            productId={product?.id}
+            productName={title}
+            productImage={currentImage}
+            onShowToast={onShowToast}
+            onRequireAuth={() => {
+              if (onNavigateAuth) {
+                onNavigateAuth();
+              } else {
+                setIsAuthModalOpen(true);
+              }
+            }}
+          />
         </main>
       </div>
 
@@ -764,7 +868,6 @@ export function CustomerProductDetail({
                 className="w-full py-2.5 px-4 bg-[#0b1510] text-white rounded-xl font-semibold text-sm hover:bg-[#202a24] transition-colors cursor-pointer"
                 onClick={() => {
                   setIsAuthModalOpen(false);
-                  if (onShowToast) onShowToast('Selamat datang kembali, Reza Akbar!');
                 }}
               >
                 Masuk sebagai Reza Akbar
@@ -780,21 +883,6 @@ export function CustomerProductDetail({
           </div>
         </div>
       )}
-
-      {/* Fallback Local Toast */}
-      <AnimatePresence>
-        {localToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1b1c1c] text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full shadow-lg border border-white/10 flex items-center gap-2"
-          >
-            <span>ℹ️</span>
-            <span>{localToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

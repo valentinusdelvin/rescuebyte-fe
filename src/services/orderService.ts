@@ -180,10 +180,7 @@ export function saveCustomerOrders(orders: CustomerOrderItem[]): void {
 }
 
 /**
- * Create a new customer order from checkout payment data.
- * - Saves order to customer order history
- * - Clears cart if order originated from cart
- * - Syncs to merchant order queue
+ * Buat pesanan baru dari data pembayaran checkout, bersihkan keranjang, dan masukkan ke antrean merchant.
  */
 export function createCustomerOrder(
   paymentData: PaymentOrderData,
@@ -234,12 +231,12 @@ export function createCustomerOrder(
     },
   };
 
-  // 1. Prepend new order to customer list
+  // Sisipkan pesanan baru di posisi terdepan riwayat pesanan pelanggan
   const existingOrders = getCustomerOrders();
   const updatedOrders = [newOrder, ...existingOrders.filter((o) => o.orderNumber !== paymentData.orderId)];
   saveCustomerOrders(updatedOrders);
 
-  // 2. Also register in merchant order queue if already paid / waiting confirmation
+  // Daftarkan ke antrean pesanan masuk merchant jika sudah terbayar atau menunggu konfirmasi
   if (initialStatus !== 'menunggu-pembayaran') {
     try {
       const rawMerchant = localStorage.getItem(MERCHANT_ORDERS_STORAGE_KEY);
@@ -287,7 +284,7 @@ export function createCustomerOrder(
     }
   }
 
-  // 3. Clear cart if order originated from cart
+  // Bersihkan keranjang jika pesanan berasal dari keranjang belanja
   if (paymentData.source === 'cart') {
     try {
       clearCart();

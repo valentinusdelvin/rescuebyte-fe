@@ -20,6 +20,8 @@ import { CustomerMysteryBox } from '../../types';
 import { getCartCount, subscribeToCart } from '../../services/cartService';
 import { formatRupiah, formatPriceInput, parsePriceInput } from '../../utils/currency';
 import { getPublicProducts } from '../../services/productService';
+import { useGeolocation } from '../../hooks';
+import { batchFetchProductRatings } from '../../services/productRatingService';
 import {
   CITY_COORDINATES, DEFAULT_COORDS, MarketplaceBoxItem, MARKETPLACE_CACHE_KEY,
   getInitialMarketplaceProducts, mapPublicProductToItem, CITIES, DISTANCE_OPTIONS,
@@ -60,14 +62,13 @@ export function CustomerMarketplace({
     return unsubscribe;
   }, []);
 
-  // Coordinates State (reads cached coordinates if present)
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(() => {
-    try {
-      const saved = localStorage.getItem('rescuebyte_user_coords');
-      if (saved) return JSON.parse(saved);
-    } catch { }
-    return DEFAULT_COORDS;
-  });
+  // Consume centralized geolocation
+  const {
+    coordinates: userCoords,
+    isLoading: isLoadingLoc,
+    requestLocation,
+    setManualLocation,
+  } = useGeolocation();
 
   // Dynamic Marketplace Products with Stale-While-Revalidate (instant 0ms render from cache)
   const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(getInitialMarketplaceProducts);
@@ -84,17 +85,16 @@ export function CustomerMarketplace({
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('Lokasi Saat Ini');
-  const [isLoadingLoc, setIsLoadingLoc] = useState(false);
   const [appliedMinPrice, setAppliedMinPrice] = useState<number | null>(null);
   const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | null>(null);
   const [minPriceInput, setMinPriceInput] = useState('');
   const [maxPriceInput, setMaxPriceInput] = useState('');
   const [distanceFilter, setDistanceFilter] = useState('semua');
-  const [sortField, setSortField] = useState<SortField>('jam_ambil');
+  const [sortField, setSortField] = useState<SortField>('lokasi');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [openDropdown, setOpenDropdown] = useState<'harga' | 'jarak' | 'urutkan' | 'kota' | null>(null);
 
-  // Fetch products from backend GET /api/v1/products with coordinates
+  // Fetch products from backend GET /api/v1/products with coordinates and batch ratings
   const fetchMarketplaceProducts = useCallback(
     async (coords: { lat: number; lng: number }, query?: string) => {
       if (!hasProductsRef.current) {
@@ -107,7 +107,19 @@ export function CustomerMarketplace({
           search: query?.trim() ? query.trim() : undefined,
         });
 
-        const mappedApi = publicItems.map((p) => mapPublicProductToItem(p, 'Malang'));
+        // Batch fetch real ratings for products to prevent N+1 queries
+        const ratingMap = await batchFetchProductRatings(publicItems.map((p) => p.id));
+
+        const enriched = publicItems.map((p) => {
+          const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
+          return {
+            ...p,
+            rating: summary.rating,
+            reviewCount: summary.reviewCount,
+          };
+        });
+
+        const mappedApi = enriched.map((p) => mapPublicProductToItem(p, 'Malang'));
 
         setApiProducts(mappedApi);
         try {
@@ -122,7 +134,7 @@ export function CustomerMarketplace({
     []
   );
 
-  // Initial instant products fetch on mount
+  // Initial instant products fetch on mount & coordinates change
   useEffect(() => {
     fetchMarketplaceProducts(userCoords);
   }, [fetchMarketplaceProducts, userCoords]);
@@ -138,37 +150,15 @@ export function CustomerMarketplace({
     };
   }, [fetchMarketplaceProducts, userCoords]);
 
-  // Request browser live location (quick non-blocking 3s timeout)
-  const handleRequestLiveLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      if (onShowToast) onShowToast('Browser tidak mendukung geolokasi');
-      setSelectedCity('Malang');
-      return;
+  // Request browser live location
+  const handleRequestLiveLocation = useCallback(async () => {
+    setOpenDropdown(null);
+    const coords = await requestLocation(true);
+    if (coords) {
+      setSelectedCity('Lokasi Saat Ini');
+      fetchMarketplaceProducts(coords);
     }
-    setIsLoadingLoc(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsLoadingLoc(false);
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserCoords(coords);
-        try {
-          localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
-        } catch { }
-        setSelectedCity('Lokasi Saat Ini');
-        setOpenDropdown(null);
-        if (onShowToast) onShowToast('📍 Lokasi terdeteksi, menampilkan Mystery Box terdekat');
-      },
-      (err) => {
-        setIsLoadingLoc(false);
-        console.warn('Geolocation permission:', err.message);
-        if (onShowToast) onShowToast('Izin lokasi belum diberikan, default: Malang');
-        setSelectedCity('Malang');
-        const fallback = CITY_COORDINATES['Malang'];
-        setUserCoords(fallback);
-      },
-      { enableHighAccuracy: false, timeout: 3000 }
-    );
-  }, [onShowToast]);
+  }, [requestLocation, fetchMarketplaceProducts]);
 
   // Modal State
   const [selectedBox, setSelectedBox] = useState<CustomerMysteryBox | null>(null);
@@ -242,13 +232,13 @@ export function CustomerMarketplace({
           return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
         }
         if (sortField === 'lokasi') {
-          const distA = parseFloat(a.distanceText) || 0;
-          const distB = parseFloat(b.distanceText) || 0;
+          const distA = typeof a.distanceKm === 'number' ? a.distanceKm : (parseFloat(a.distanceText) || 9999);
+          const distB = typeof b.distanceKm === 'number' ? b.distanceKm : (parseFloat(b.distanceText) || 9999);
           return sortOrder === 'asc' ? distA - distB : distB - distA;
         }
         if (sortField === 'ulasan') {
-          const ratingA = a.rating || 4.8;
-          const ratingB = b.rating || 4.8;
+          const ratingA = Number(a.rating) || 0;
+          const ratingB = Number(b.rating) || 0;
           return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
         }
         return 0;
@@ -432,10 +422,7 @@ export function CustomerMarketplace({
                           setSelectedCity(city);
                           setOpenDropdown(null);
                           const coords = CITY_COORDINATES[city] || DEFAULT_COORDS;
-                          setUserCoords(coords);
-                          try {
-                            localStorage.setItem('rescuebyte_user_coords', JSON.stringify(coords));
-                          } catch {}
+                          setManualLocation(coords, city);
                           fetchMarketplaceProducts(coords);
                         }}
                         className={`w-full px-4 py-2 text-left text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${

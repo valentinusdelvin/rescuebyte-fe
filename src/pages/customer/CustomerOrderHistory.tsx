@@ -5,7 +5,6 @@ import {
   Check,
   CheckCircle2,
   ShoppingBag,
-  Star,
   MapPin,
   ChevronRight,
   ChevronLeft,
@@ -120,13 +119,6 @@ export function CustomerOrderHistory({
     };
   }, []);
 
-  // Review modal state
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [reviewOrder, setReviewOrder] = useState<CustomerOrderItem | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-
   const userName = currentUser?.name || 'Pengguna';
   const userEmail = currentUser?.email || '';
   const userAvatar = currentUser?.avatar_url || '';
@@ -211,6 +203,8 @@ export function CustomerOrderHistory({
 
     if (onNavigateOrderDetail) {
       onNavigateOrderDetail(paymentData);
+    } else {
+      window.location.hash = `#detail-pesanan?id=${order.id || order.orderNumber}`;
     }
   };
 
@@ -261,23 +255,6 @@ export function CustomerOrderHistory({
       selesai: validOrders.filter((o) => o.status === 'selesai').length,
     };
   }, [orders]);
-
-  const handleOpenReview = (order: CustomerOrderItem) => {
-    setReviewOrder(order);
-    setReviewRating(5);
-    setReviewText('');
-    setIsReviewOpen(true);
-  };
-
-  const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmittingReview(true);
-    setTimeout(() => {
-      setIsSubmittingReview(false);
-      setIsReviewOpen(false);
-      onShowToast?.(`Ulasan untuk ${reviewOrder?.storeName} berhasil dikirim!`, 'success');
-    }, 500);
-  };
 
   return (
     <div className="min-h-screen bg-[#fcf9f8] flex flex-col justify-between selection:bg-brand-green/20 selection:text-[#0b1510]">
@@ -644,36 +621,25 @@ export function CustomerOrderHistory({
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-                            {order.status === 'selesai' ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => (onNavigateStore ? onNavigateStore(order.storeName) : onNavigateMarketplace?.())}
-                                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs font-bold px-3.5 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer shadow-xs"
-                                >
-                                  <ShoppingBag className="w-3.5 h-3.5" />
-                                  <span>Beli Lagi</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenReview(order)}
-                                  className="border border-slate-200 hover:border-slate-400 bg-white text-slate-800 text-xs font-semibold px-3.5 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
-                                >
-                                  <Star className="w-3.5 h-3.5 text-amber-500" />
-                                  <span>Beri Ulasan</span>
-                                </button>
-                              </>
-                            ) : (
+                          <div className="flex items-center gap-2 w-full lg:w-auto justify-end flex-wrap sm:flex-nowrap">
+                            {order.status === 'selesai' && (
                               <button
                                 type="button"
-                                onClick={() => handleOpenOrderDetail(order)}
-                                className="border border-slate-200 hover:border-slate-400 bg-white text-slate-800 text-xs font-semibold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
+                                onClick={() => (onNavigateStore ? onNavigateStore(order.storeName) : onNavigateMarketplace?.())}
+                                className="bg-[#1b1c1c] hover:bg-black text-white text-xs font-bold px-3.5 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                               >
-                                <span>Lihat Detail</span>
-                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <span>Beli Lagi</span>
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenOrderDetail(order)}
+                              className="border border-slate-200 hover:border-slate-400 bg-white text-slate-800 text-xs font-semibold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <span>Lihat Detail</span>
+                              <ExternalLink className="w-3 h-3 text-slate-400" />
+                            </button>
                           </div>
                         </div>
                       </article>
@@ -722,100 +688,6 @@ export function CustomerOrderHistory({
           </div>
         </main>
       </div>
-
-      {/* Review Modal */}
-      {isReviewOpen && reviewOrder && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="review-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setIsReviewOpen(false);
-          }}
-        >
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-xl border border-slate-100 relative">
-            <button
-              type="button"
-              onClick={() => setIsReviewOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 rounded-full transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 id="review-title" className="text-xl font-bold text-[#1b1c1c] mb-1">
-              Beri Ulasan untuk {reviewOrder.storeName}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed">
-              Pesanan: <span className="font-semibold text-slate-800">{reviewOrder.productName}</span> (#{reviewOrder.orderNumber})
-            </p>
-
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                  Penilaian
-                </label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setReviewRating(star)}
-                      className="text-amber-400 hover:scale-110 transition p-1 cursor-pointer"
-                    >
-                      <Star
-                        className={`w-7 h-7 ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-amber-200'
-                          }`}
-                      />
-                    </button>
-                  ))}
-                  <span className="text-xs font-semibold text-slate-600 ml-2">
-                    {reviewRating === 5 && 'Sangat Puas!'}
-                    {reviewRating === 4 && 'Puas'}
-                    {reviewRating === 3 && 'Cukup'}
-                    {reviewRating === 2 && 'Kurang'}
-                    {reviewRating === 1 && 'Kecewa'}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="review-input"
-                  className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2"
-                >
-                  Ulasan Kamu
-                </label>
-                <textarea
-                  id="review-input"
-                  rows={3}
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Ceritakan pengalamanmu menikmati makanan surplus ini..."
-                  className="w-full text-xs sm:text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsReviewOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingReview}
-                  className="bg-[#1b1c1c] hover:bg-black text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
-                >
-                  {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Customer Footer */}
       <CustomerFooter variant="compact" onNavigateSeller={onNavigateSeller} />
