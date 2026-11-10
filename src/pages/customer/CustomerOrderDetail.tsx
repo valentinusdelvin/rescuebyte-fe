@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { extractErrorMessage } from '../../api/client';
 import {
   Check,
@@ -9,7 +9,6 @@ import {
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { formatRupiah } from '../../utils/currency';
-import { reviewApi } from '../../api/services/reviewApi';
 import {
   OrderStepper,
   OrderItemsList,
@@ -19,26 +18,12 @@ import {
   OrderReviewModal,
   OrderItemDetail,
 } from '../../components/customer/order';
-import { DualReviewSubmitPayload } from '../../components/customer/order/OrderReviewModal';
-import { PaymentOrderData, CustomerOrderStatus } from '../../types';
-import {
-  fetchOrderDetailApi,
-  fetchPaymentDetailsApi,
-  fetchPaymentStatusApi,
-  mapBackendStatusToCustomerStatus,
-  updateCustomerOrderStatus,
-  createCustomerOrder,
-  subscribeToCustomerOrders,
-  getCustomerOrders,
-} from '../../services/orderService';
-import { getPublicProducts, PublicProductItem } from '../../services/productService';
-import { getUserCoordinates } from '../../services/locationService';
+import { PaymentOrderData } from '../../types';
 import { getCurrentUser } from '../../services/authService';
 import { launchMidtransPayment } from '../../services/midtransService';
-import { getStoreById, StoreProfileData } from '../../services/storeService';
-import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
-
 import saladStopCard from '../../assets/customer/card-saladstop.jpg';
+import { useCustomerOrderDetail } from '../../hooks/useCustomerOrderDetail';
+import { useCustomerOrderReviews } from '../../hooks/useCustomerOrderReviews';
 
 export interface CustomerOrderDetailProps {
   orderData?: PaymentOrderData | null;
@@ -59,15 +44,6 @@ function formatPickupDate(value?: string): string {
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function hasConfirmedPayment(orderStatus: unknown): boolean {
-  const status = String(orderStatus || '').toUpperCase();
-  return [
-    'PAID', 'SETTLEMENT', 'CAPTURE', 'PAYMENT_SUCCESS', 'SUCCESS',
-    'WAITING_CONFIRMATION', 'WAITING_FOR_CONFIRMATION', 'IN_PROCESS', 'PROCESSING',
-    'READY_FOR_PICKUP', 'COMPLETED', 'FINISHED',
-  ].includes(status);
-}
-
 export function CustomerOrderDetail({
   orderData,
   onNavigateHome,
@@ -77,289 +53,22 @@ export function CustomerOrderDetail({
   onNavigateSeller,
   onShowToast,
 }: CustomerOrderDetailProps) {
-  const [selectedRating, setSelectedRating] = useState<number>(5);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewComment, setReviewComment] = useState('');
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [isReviewSubmitted, setIsReviewSubmitted] = useState(false);
-  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
-  const [isSnapPopupOpen, setIsSnapPopupOpen] = useState(false);
-  const [isPaymentSessionLoading, setIsPaymentSessionLoading] = useState(false);
-  const [retrievedPayment, setRetrievedPayment] = useState<{
-    backendOrderId: string;
-    snapToken?: string;
-  } | null>(null);
-  const [storeProfile, setStoreProfile] = useState<StoreProfileData | null>(null);
-  const [recommendations, setRecommendations] = useState<PublicProductItem[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const coords = getUserCoordinates();
-    getPublicProducts({ latitude: coords.lat, longitude: coords.lng })
-      .then((items) => {
-        if (!isMounted || !items) return;
-        setRecommendations(items.slice(0, 3));
-      })
-      .catch(() => { });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-
-  const effectiveOrderData = useMemo<PaymentOrderData | null>(() => {
-    if (orderData) return orderData;
-    const all = getCustomerOrders();
-    if (all.length > 0) {
-      const latest = all[0];
-      if (latest.orderData) return latest.orderData;
-      return {
-        orderId: latest.orderNumber,
-        items: [
-          {
-            id: latest.id,
-            name: latest.productName,
-            storeName: latest.storeName,
-            storeAddress: latest.storeAddress,
-            rescuePrice: latest.finalPrice,
-            quantity: latest.productBoxCount,
-            categoryTags: ['Penyelamatan Pangan'],
-            imageSrc: latest.imageUrl || cardMonsieurSpoon,
-          },
-        ],
-        primaryStore: {
-          storeId: latest.storeId,
-          storeName: latest.storeName,
-          storeAddress: latest.storeAddress,
-        },
-        pickupDate: latest.pickupDate,
-        pickupTimeSlot: latest.pickupTime,
-        customerInfo: {
-          name: getCurrentUser()?.name || 'Pelanggan RescueByte',
-          phone: getCurrentUser()?.phone_number || '081234567890',
-          email: getCurrentUser()?.email || 'customer@rescuebyte.com',
-        },
-        totalBoxes: latest.productBoxCount,
-        subtotal: latest.finalPrice,
-        grandTotal: latest.finalPrice,
-        status: latest.status,
-        createdAt: latest.createdAt,
-      } as PaymentOrderData;
-    }
-    return null;
-  }, [orderData]);
-
-  const profileStoreId = effectiveOrderData?.primaryStore?.storeId;
-  useEffect(() => {
-    let isMounted = true;
-    setStoreProfile(null);
-    if (!profileStoreId) return () => { isMounted = false; };
-
-    getStoreById(profileStoreId).then((profile) => {
-      if (isMounted) setStoreProfile(profile);
-    });
-    return () => { isMounted = false; };
-  }, [profileStoreId]);
-
-  const [backendOrderDetail, setBackendOrderDetail] = useState<any | null>(null);
-
-  const resolvedStoreId = useMemo(() => {
-    return (
-      backendOrderDetail?.store_id ||
-      effectiveOrderData?.primaryStore?.storeId ||
-      profileStoreId ||
-      storeProfile?.id ||
-      ''
-    );
-  }, [backendOrderDetail?.store_id, effectiveOrderData?.primaryStore?.storeId, profileStoreId, storeProfile?.id]);
-
-  const [currentStatus, setCurrentStatus] = useState<CustomerOrderStatus>(() => {
-    const s = effectiveOrderData?.status || orderData?.status;
-    if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
-      return s;
-    }
-    if (effectiveOrderData?.snapRedirectUrl || effectiveOrderData?.snapToken) {
-      return 'menunggu-pembayaran';
-    }
-    return 'menunggu-konfirmasi';
-  });
-
-  useEffect(() => {
-    const data = effectiveOrderData || orderData;
-    if (data?.status) {
-      const s = data.status;
-      if (s === 'menunggu-pembayaran' || s === 'menunggu-konfirmasi' || s === 'diproses' || s === 'siap-diambil' || s === 'selesai' || s === 'dibatalkan') {
-        setCurrentStatus(s);
-      }
-    }
-    const backendOrderId = data?.backendOrderId;
-    if (!backendOrderId) return;
-
-    const needsSnapToken = !data.snapToken;
-    if (needsSnapToken) setIsPaymentSessionLoading(true);
-    let cancelled = false;
-    let statusPollId: number | undefined;
-
-    const refreshOrderStatus = async (includePaymentDetails: boolean) => {
-      const latest = await fetchOrderDetailApi(backendOrderId);
-      if (latest) {
-        setBackendOrderDetail(latest);
-      }
-      const payment = includePaymentDetails
-        ? await fetchPaymentDetailsApi(backendOrderId)
-        : null;
-      if (cancelled) return null;
-
-      const snapToken = payment?.snap_token || latest?.payment?.snap_token || latest?.snap_token;
-      if (snapToken) {
-        setRetrievedPayment({ backendOrderId, snapToken });
-      }
-
-      if (!latest?.status) return null;
-
-      const backendStatus = mapBackendStatusToCustomerStatus(latest.status);
-      if (!(data.paymentConfirmedByGateway && backendStatus === 'menunggu-pembayaran')) {
-        setCurrentStatus(backendStatus);
-      }
-      return backendStatus;
-    };
-
-    const loadInitialStatus = async () => {
-      const attempts = data.paymentConfirmedByGateway ? 6 : 1;
-      let latestStatus: CustomerOrderStatus | null = null;
-      try {
-        for (let attempt = 0; attempt < attempts; attempt++) {
-          latestStatus = await refreshOrderStatus(true);
-          if (cancelled || (latestStatus && latestStatus !== 'menunggu-pembayaran')) break;
-          if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-      } finally {
-        if (!cancelled && needsSnapToken) setIsPaymentSessionLoading(false);
-      }
-
-      const pollOrderStatus = async () => {
-        const status = await refreshOrderStatus(false);
-        if (!cancelled && status !== 'selesai' && status !== 'dibatalkan') {
-          statusPollId = window.setTimeout(() => void pollOrderStatus(), 5000);
-        }
-      };
-
-      if (!cancelled && latestStatus !== 'selesai' && latestStatus !== 'dibatalkan') {
-        statusPollId = window.setTimeout(() => void pollOrderStatus(), 5000);
-      }
-    };
-
-    void loadInitialStatus();
-    return () => {
-      cancelled = true;
-      if (statusPollId) window.clearTimeout(statusPollId);
-    };
-  }, [effectiveOrderData, orderData]);
-
-  const orderId = effectiveOrderData?.orderId || orderData?.orderId || 'RB261030-001';
-
-  // Active step in tracking timeline (1 to 5) determined purely by live database status
-  useEffect(() => {
-    return subscribeToCustomerOrders((orders) => {
-      const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
-      if (!targetId) return;
-      const found = orders.find((o) => o.orderNumber === targetId || o.id === targetId);
-      if (found?.status) {
-        setCurrentStatus(found.status);
-      }
-    });
-  }, [orderId, effectiveOrderData?.orderId, orderData?.orderId]);
-
-  const activeStep = useMemo(() => {
-    if (currentStatus === 'menunggu-pembayaran') return 1;
-    if (currentStatus === 'menunggu-konfirmasi') return 2;
-    if (currentStatus === 'diproses') return 3;
-    if (currentStatus === 'siap-diambil') return 4;
-    if (currentStatus === 'selesai') return 5;
-    if (currentStatus === 'dibatalkan') return 1;
-    return 2;
-  }, [currentStatus]);
-
-  const handlePaymentSuccess = async () => {
-    const targetData = effectiveOrderData || orderData;
-    const backendOrderId = targetData?.backendOrderId;
-    if (!backendOrderId) {
-      onShowToast?.('Pesanan ini belum memiliki ID backend, jadi status pembayaran belum bisa diverifikasi.', 'error');
-      return;
-    }
-
-    setIsVerifyingPayment(true);
-    try {
-      let verifiedStatus: CustomerOrderStatus = 'menunggu-konfirmasi';
-      let paymentVerified = false;
-      let latestPaymentState: Awaited<ReturnType<typeof fetchPaymentStatusApi>> = 'unknown';
-      for (let attempt = 0; attempt < 6; attempt++) {
-        const [paymentState, latestOrder] = await Promise.all([
-          fetchPaymentStatusApi(backendOrderId),
-          fetchOrderDetailApi(backendOrderId),
-        ]);
-        latestPaymentState = paymentState;
-        if (paymentState === 'paid' || hasConfirmedPayment(latestOrder?.status)) {
-          paymentVerified = true;
-          if (latestOrder?.status && hasConfirmedPayment(latestOrder.status)) {
-            verifiedStatus = mapBackendStatusToCustomerStatus(latestOrder.status);
-          }
-          break;
-        }
-        if (paymentState === 'failed') break;
-        if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-
-      if (!paymentVerified) {
-        setCurrentStatus('menunggu-pembayaran');
-        if (latestPaymentState === 'failed') {
-          onShowToast?.('Midtrans melaporkan pembayaran gagal atau kedaluwarsa. Pesanan tetap menunggu pembayaran; silakan coba lagi.', 'warning');
-        } else if (latestPaymentState === 'pending') {
-          onShowToast?.('Pembayaran masih diproses Midtrans. Status pesanan tetap menunggu pembayaran sampai backend mengonfirmasi.', 'info');
-        } else {
-          onShowToast?.('Backend belum mengonfirmasi pembayaran. Status pesanan tetap menunggu pembayaran; coba periksa lagi sebentar.', 'info');
-        }
-        return;
-      }
-
-      setCurrentStatus(verifiedStatus);
-      if (targetData) {
-        createCustomerOrder(
-          { ...targetData, status: verifiedStatus, paymentConfirmedByGateway: true },
-          verifiedStatus
-        );
-      }
-      onShowToast?.('Pembayaran berhasil diverifikasi oleh backend. Menunggu konfirmasi toko mitra.', 'success');
-    } finally {
-      setIsVerifyingPayment(false);
-    }
-  };
-
-  useEffect(() => {
-    if (currentStatus === 'menunggu-konfirmasi') {
-      const targetId = orderId || effectiveOrderData?.orderId || orderData?.orderId;
-      const targetData = effectiveOrderData || orderData;
-      if (targetId && targetData) {
-        const updated = updateCustomerOrderStatus(targetId, 'menunggu-konfirmasi');
-        if (!updated) {
-          createCustomerOrder(
-            {
-              ...targetData,
-              status: 'menunggu-konfirmasi',
-            },
-            'menunggu-konfirmasi'
-          );
-        }
-      }
-    }
-  }, [currentStatus, orderId, effectiveOrderData, orderData]);
-
-  const activeData = effectiveOrderData || orderData;
-  const paymentSnapToken = activeData?.snapToken || (
-    retrievedPayment?.backendOrderId === activeData?.backendOrderId
-      ? retrievedPayment?.snapToken
-      : undefined
-  );
+  const {
+    activeData,
+    activeStep,
+    backendOrderDetail,
+    currentStatus,
+    handlePaymentSuccess,
+    isPaymentSessionLoading,
+    isSnapPopupOpen,
+    isVerifyingPayment,
+    orderId,
+    paymentSnapToken,
+    recommendations,
+    resolvedStoreId,
+    setIsSnapPopupOpen,
+    storeProfile,
+  } = useCustomerOrderDetail({ orderData, onShowToast });
   const items = activeData?.items && activeData.items.length > 0 ? activeData.items : null;
   const primaryItem = items?.[0];
 
@@ -543,74 +252,11 @@ export function CustomerOrderDetail({
 
   const isOrderCompleted = currentStatus === 'selesai' || activeStep === 5;
 
-  const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmittingReview(true);
-    setTimeout(() => {
-      setIsSubmittingReview(false);
-      setIsReviewModalOpen(false);
-      setIsReviewSubmitted(true);
-      onShowToast?.('Terima kasih! Ulasan kamu berhasil dikirim.', 'success');
-    }, 600);
-  };
-
-  const handleSubmitDualReview = async (payload: DualReviewSubmitPayload) => {
-    setIsSubmittingReview(true);
-    try {
-      const { storeReview, productReview } = payload;
-      const apiCalls: Promise<any>[] = [];
-
-      // 1. Submit store review to POST /api/v1/stores/{store_id}/reviews
-      if (resolvedStoreId && storeReview.rating > 0) {
-        apiCalls.push(
-          reviewApi.createStoreReview(resolvedStoreId, {
-            rating: storeReview.rating,
-            content: storeReview.content,
-          })
-        );
-      }
-
-      // 2. Submit product review to POST /api/v1/products/{product_id}/reviews
-      const targetProductId =
-        productReview.productId && productReview.productId !== 'default-product'
-          ? productReview.productId
-          : orderItemsList[0]?.productId || orderItemsList[0]?.id;
-
-      if (targetProductId && productReview.rating > 0) {
-        apiCalls.push(
-          reviewApi.createProductReview(targetProductId, {
-            rating: productReview.rating,
-            content: productReview.content,
-          })
-        );
-      }
-
-      if (apiCalls.length === 0) {
-        onShowToast?.('Mohon lengkapi ulasan toko dan produk terlebih dahulu.', 'warning');
-        return;
-      }
-
-      await Promise.all(apiCalls);
-      setIsReviewSubmitted(true);
-      setIsReviewModalOpen(false);
-      onShowToast?.('Terima kasih! Ulasan toko dan produk berhasil dikirim.', 'success');
-    } catch (err) {
-      const errorMsg = extractErrorMessage(err, 'Gagal mengirim ulasan. Silakan coba lagi.');
-      onShowToast?.(errorMsg, 'error');
-    } finally {
-      setIsSubmittingReview(false);
-    }
-  };
-
   const orderItemsList: OrderItemDetail[] = useMemo(() => {
     if (items && items.length > 0) {
       return items.map((it, idx) => ({
         id: it?.id || String(idx),
-        productId:
-          (it as any)?.productId ||
-          (it as any)?.product_id ||
-          backendOrderDetail?.items?.[idx]?.product_id ||
-          it?.id,
+        productId: it?.productId || backendOrderDetail?.items?.[idx]?.product_id || it?.id,
         name: it?.name || itemName,
         imageSrc: it?.imageSrc || saladStopCard,
         originalPrice: it?.originalPrice || originalUnitPrice,
@@ -623,11 +269,7 @@ export function CustomerOrderDetail({
     return [
       {
         id: primaryItem?.id || '1',
-        productId:
-          (primaryItem as any)?.productId ||
-          (primaryItem as any)?.product_id ||
-          backendOrderDetail?.items?.[0]?.product_id ||
-          primaryItem?.id,
+        productId: primaryItem?.productId || backendOrderDetail?.items?.[0]?.product_id || primaryItem?.id,
         name: primaryItem?.name || itemName,
         imageSrc: primaryItem?.imageSrc || saladStopCard,
         originalPrice: primaryItem?.originalPrice || originalUnitPrice,
@@ -638,6 +280,23 @@ export function CustomerOrderDetail({
       },
     ];
   }, [items, itemName, originalUnitPrice, rescueUnitPrice, discountPercent, storeName, primaryItem, totalBoxes, backendOrderDetail]);
+
+  const {
+    handleSubmitDualReview,
+    handleSubmitReview,
+    isReviewModalOpen,
+    isReviewSubmitted,
+    isSubmittingReview,
+    reviewComment,
+    selectedRating,
+    setIsReviewModalOpen,
+    setReviewComment,
+    setSelectedRating,
+  } = useCustomerOrderReviews({
+    resolvedStoreId,
+    orderItems: orderItemsList,
+    onShowToast,
+  });
 
   const handlePayNow = () => {
     if (isVerifyingPayment || isSnapPopupOpen || isPaymentSessionLoading) return;
@@ -857,7 +516,7 @@ export function CustomerOrderDetail({
                             {rec.name}
                           </p>
                           <p className="text-xs text-slate-500 truncate mt-0.5">
-                            {rec.store_name || 'Toko Mitra'} • {(rec as any).city || 'Malang'}
+                            {rec.store_name || 'Toko Mitra'} • {rec.city || 'Malang'}
                           </p>
                         </div>
                         <div className="text-right shrink-0">

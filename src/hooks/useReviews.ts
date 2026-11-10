@@ -416,6 +416,7 @@ export interface StoreProductReviewItem {
   avatar: string;
   comment: string;
   date: string;
+  createdAt: string;
   productId: string;
   productName: string;
   productImage?: string;
@@ -454,7 +455,7 @@ export function useStoreProductReviews(
     try {
       const results = await Promise.allSettled(
         products.map(async (prod) => {
-          const res = await reviewApi.getProductReviews(prod.id);
+          const res = await reviewApi.getProductReviews(prod.id, { limit: 100 });
           const reviews = res.reviews || [];
           return reviews.map((r): StoreProductReviewItem => {
             const rawDate = r.created_at ? new Date(r.created_at) : new Date();
@@ -474,6 +475,7 @@ export function useStoreProductReviews(
               avatar: r.author?.avatar_url || '',
               comment: r.content,
               date: formattedDate,
+              createdAt: r.created_at || '',
               productId: prod.id,
               productName: prod.name || 'Produk RescueByte',
               productImage: prod.imageSrc || prod.imageUrl || '',
@@ -482,6 +484,13 @@ export function useStoreProductReviews(
           });
         })
       );
+
+      if (results.length > 0 && results.every((res) => res.status === 'rejected')) {
+        setIsError(true);
+        setError('Gagal memuat ulasan produk toko.');
+        setProductReviews([]);
+        return;
+      }
 
       const combined: StoreProductReviewItem[] = [];
       for (const res of results) {

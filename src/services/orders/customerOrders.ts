@@ -1,19 +1,26 @@
 import { api } from '../api';
+import { OrderDetailResponse } from '../../api/types';
 import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 import { getOrderStatusLabel, mapBackendStatusToCustomerStatus } from './orderStatus';
 import {
-  CustomerOrderItem, PLACEHOLDER_ORDER_IDS, PLACEHOLDER_STORE_NAMES,
+  PLACEHOLDER_ORDER_IDS, PLACEHOLDER_STORE_NAMES,
   getCustomerOrders, saveCustomerOrders,
-} from '../orderService';
+} from './orderStorage';
+import { CustomerOrderItem } from './orderTypes';
 
-export async function fetchOrderDetailApi(orderId: string): Promise<any | null> {
+type OrderDetailApiResponse = OrderDetailResponse & {
+  order?: OrderDetailResponse;
+  payload?: (OrderDetailResponse & { order?: OrderDetailResponse }) | null;
+};
+
+export async function fetchOrderDetailApi(orderId: string): Promise<OrderDetailResponse | null> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   if (!token || !orderId) return null;
 
   try {
-    const response = await api.get('/api/v1/orders/' + orderId);
+    const response = await api.get<OrderDetailApiResponse>('/api/v1/orders/' + orderId);
     const payload = response.data?.payload;
-    return payload?.order || payload || null;
+    return payload?.order || payload || response.data?.order || response.data || null;
   } catch (err) {
     console.warn('fetchOrderDetailApi failed:', err);
     return null;

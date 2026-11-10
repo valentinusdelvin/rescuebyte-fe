@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { User, ChevronRight } from 'lucide-react';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { MysteryBoxCard } from '../../components/customer/MysteryBoxCard';
@@ -6,10 +6,8 @@ import { CustomerOrderModal } from '../../components/customer/CustomerOrderModal
 import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { CustomerMysteryBox, TestimonialItem } from '../../types';
 import { getCurrentUser } from '../../services/authService';
-import { getPublicProducts, PublicProductItem } from '../../services/productService';
-import { formatDistanceKm } from '../../services/locationService';
 import { useGeolocation } from '../../hooks';
-import { batchFetchProductRatings } from '../../services/productRatingService';
+import { useCustomerHomeProducts } from '../../hooks/useCustomerHomeProducts';
 
 import heroFullBanner from '../../assets/Kotak Misteri Hidangan Segar 1 (1).svg';
 import aboutUsTopImg from '../../assets/customer/about-us-top.svg';
@@ -19,7 +17,6 @@ import bgShapeCircle from '../../assets/customer/bg-shape-circle.svg';
 import bgShapeBottomLeft from '../../assets/customer/bg-shape-bottom-left.svg';
 import bgShapeBottom from '../../assets/customer/bg-shape-bottom.svg';
 import bgShapeAccent from '../../assets/customer/bg-shape-accent.svg';
-import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 import avatarReza from '../../assets/customer/avatar-reza.jpg';
 import avatarFahmi from '../../assets/customer/avatar-fahmi.jpg';
 
@@ -32,65 +29,6 @@ export interface CustomerHomeProps {
   onNavigateDetail?: (item: CustomerMysteryBox) => void;
   onNavigateStore?: (storeName: string) => void;
   onShowToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
-}
-
-function mapPublicProductToCustomerBox(p: PublicProductItem, isRadius = false): CustomerMysteryBox {
-  const normalPrice = p.normal_price || 0;
-  const rescuePrice = p.rescue_price || 0;
-  const discount =
-    typeof p.discount_percentage === 'number' && p.discount_percentage > 0
-      ? p.discount_percentage
-      : normalPrice > 0
-        ? Math.round(((normalPrice - rescuePrice) / normalPrice) * 100)
-        : 0;
-
-  let pickup = p.pickup_time;
-  if (!pickup && p.operational_start && p.operational_end) {
-    pickup = `Ambil: ${p.operational_start} – ${p.operational_end} WIB`;
-  } else if (!pickup) {
-    pickup = 'Ambil: 19:00 – 21:00 WIB';
-  }
-
-  const dist = formatDistanceKm(p.distance_km);
-  const realProductName = p.name || 'Surprise Box';
-  let realStoreName = p.store_name || '';
-  if (!realStoreName) {
-    try {
-      realStoreName = localStorage.getItem('rescuebyte_store_name') || 'Toko Mitra';
-    } catch {
-      realStoreName = 'Toko Mitra';
-    }
-  }
-
-  let imageSrc = cardMonsieurSpoon;
-  if (p.main_image_url && typeof p.main_image_url === 'string') {
-    const url = p.main_image_url.trim();
-    if (url.startsWith('http') && !url.includes('pinterest.com/search')) {
-      imageSrc = url;
-    }
-  }
-
-  return {
-    id: p.id,
-    storeId: p.store_id,
-    storeName: realStoreName,
-    category: realProductName,
-    categoryBadge: realProductName,
-    remainingBoxesText: `Sisa ${p.stock ?? 1} Box`,
-    distanceText: dist,
-    discountPercent: discount,
-    originalPrice: normalPrice,
-    rescuePrice: rescuePrice,
-    pickupTime: pickup,
-    description:
-      p.description ||
-      'Berisi 1 porsi makanan surplus berkualitas dan higienis yang disiapkan langsung oleh merchant mitra.',
-    tags: [realStoreName, realProductName, 'Halal MUI', 'Surplus Harian'],
-    imageSrc,
-    rating: (p as any).rating ?? 0,
-    reviewCount: (p as any).review_count ?? (p as any).reviewCount ?? 0,
-    isRadiusItem: isRadius,
-  };
 }
 
 function BoxCardSkeleton() {
@@ -119,31 +57,6 @@ function BoxEmptyState({ message }: { message: string }) {
     </div>
   );
 }
-
-function getCachedBoxes(): { nearby: CustomerMysteryBox[]; bestSeller: CustomerMysteryBox[] } {
-  try {
-    const raw = localStorage.getItem('rescuebyte_cached_marketplace_products');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const mappedNearby = parsed.slice(0, 3).map((item) => ({
-          ...item,
-          isRadiusItem: false,
-        }));
-        const mappedBestSeller = [...parsed]
-          .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0))
-          .slice(0, 3)
-          .map((item) => ({
-            ...item,
-            isRadiusItem: true,
-          }));
-        return { nearby: mappedNearby, bestSeller: mappedBestSeller };
-      }
-    }
-  } catch {}
-  return { nearby: [], bestSeller: [] };
-}
-
 
 /**
  * Testimonials Mock Data
@@ -243,128 +156,7 @@ export function CustomerHome({
 
   const { coordinates, permissionStatus, requestLocation } = useGeolocation();
 
-  // Produk dinamis dari API backend
-  const cached = getCachedBoxes();
-  const [nearbyBoxes, setNearbyBoxes] = useState<CustomerMysteryBox[]>(cached.nearby);
-  const [bestSellerBoxes, setBestSellerBoxes] = useState<CustomerMysteryBox[]>(cached.bestSeller);
-  const [isLoadingNearby, setIsLoadingNearby] = useState<boolean>(cached.nearby.length === 0);
-  const [isLoadingBestSeller, setIsLoadingBestSeller] = useState<boolean>(cached.bestSeller.length === 0);
-
-  // Query 1: Mystery Box di Sekitar (berdasarkan koordinat lokasi pelanggan)
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadNearbyBoxes() {
-      try {
-        setIsLoadingNearby(true);
-        const products = await getPublicProducts({
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          limit: 10,
-        });
-
-        if (!isMounted) return;
-
-        if (products && products.length > 0) {
-          // Deduplikasi produk berdasarkan id
-          const uniqueProducts = Array.from(new Map(products.map((p) => [p.id, p])).values());
-
-          const ratingMap = await batchFetchProductRatings(uniqueProducts.map((p) => p.id));
-          if (!isMounted) return;
-
-          const enriched = uniqueProducts.map((p) => {
-            const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
-            return {
-              ...p,
-              rating: summary.rating,
-              reviewCount: summary.reviewCount,
-            };
-          });
-
-          // Urutkan terdekat lebih dulu dan batasi maksimal 3 kartu
-          const sortedByDistance = [...enriched]
-            .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
-            .slice(0, 3)
-            .map((p) => mapPublicProductToCustomerBox(p, false));
-
-          setNearbyBoxes(sortedByDistance);
-        } else {
-          setNearbyBoxes([]);
-        }
-      } catch (err) {
-        console.warn('Gagal memuat produk sekitar untuk CustomerHome:', err);
-      } finally {
-        if (isMounted) {
-          setIsLoadingNearby(false);
-        }
-      }
-    }
-
-    void loadNearbyBoxes();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [coordinates.lat, coordinates.lng]);
-
-  // Query 2: Mystery Box Terlaris (berdasarkan ulasan & diskon)
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadBestSellerBoxes() {
-      try {
-        setIsLoadingBestSeller(true);
-        const products = await getPublicProducts({
-          limit: 10,
-        });
-
-        if (!isMounted) return;
-
-        if (products && products.length > 0) {
-          // Deduplikasi produk berdasarkan id
-          const uniqueProducts = Array.from(new Map(products.map((p) => [p.id, p])).values());
-
-          const ratingMap = await batchFetchProductRatings(uniqueProducts.map((p) => p.id));
-          if (!isMounted) return;
-
-          const enriched = uniqueProducts.map((p) => {
-            const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
-            return {
-              ...p,
-              rating: summary.rating,
-              reviewCount: summary.reviewCount,
-            };
-          });
-
-          // Urutkan berdasarkan ulasan terbanyak & persentase diskon, batasi maksimal 3 kartu
-          const sortedByPopularity = [...enriched]
-            .sort(
-              (a, b) =>
-                (b.reviewCount || 0) - (a.reviewCount || 0) ||
-                (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0)
-            )
-            .slice(0, 3)
-            .map((p) => mapPublicProductToCustomerBox(p, true));
-
-          setBestSellerBoxes(sortedByPopularity);
-        } else {
-          setBestSellerBoxes([]);
-        }
-      } catch (err) {
-        console.warn('Gagal memuat produk terlaris untuk CustomerHome:', err);
-      } finally {
-        if (isMounted) {
-          setIsLoadingBestSeller(false);
-        }
-      }
-    }
-
-    void loadBestSellerBoxes();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { nearbyBoxes, bestSellerBoxes, isLoadingNearby, isLoadingBestSeller } = useCustomerHomeProducts(coordinates);
 
   const handleOpenOrder = (box: CustomerMysteryBox) => {
     const user = getCurrentUser();
@@ -766,6 +558,7 @@ export function CustomerHome({
         variant="full"
         onNavigateSeller={onNavigateSeller}
         onNavigateMarketplace={onNavigateMarketplace}
+        onNavigateAuth={onNavigateAuth}
       />
 
       {/* Interactive Order Checkout Modal */}
