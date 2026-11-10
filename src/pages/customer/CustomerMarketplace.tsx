@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Search,
   MapPin,
@@ -19,13 +19,11 @@ import { MysteryBoxCard } from '../../components/customer/MysteryBoxCard';
 import { CustomerMysteryBox } from '../../types';
 import { getCartCount, subscribeToCart } from '../../services/cartService';
 import { formatRupiah, formatPriceInput, parsePriceInput } from '../../utils/currency';
-import { getPublicProducts } from '../../services/productService';
 import { useGeolocation } from '../../hooks';
-import { batchFetchProductRatings } from '../../services/productRatingService';
+import { useMarketplaceProducts } from '../../hooks/useMarketplaceProducts';
 import {
-  CITY_COORDINATES, DEFAULT_COORDS, MarketplaceBoxItem, MARKETPLACE_CACHE_KEY,
-  getInitialMarketplaceProducts, mapPublicProductToItem, CITIES, DISTANCE_OPTIONS,
-  SORT_OPTIONS, SortField, SortOrder, parsePickupMinutes,
+  CITY_COORDINATES, DEFAULT_COORDS, CITIES, DISTANCE_OPTIONS,
+  SORT_OPTIONS, SortField, SortOrder, filterAndSortMarketplaceProducts,
 } from '../../features/customer/marketplace/model';
 
 export type { MarketplaceBoxItem, SortField, SortOrder } from '../../features/customer/marketplace/model';
@@ -70,17 +68,9 @@ export function CustomerMarketplace({
     setManualLocation,
   } = useGeolocation();
 
-  // Dynamic Marketplace Products with Stale-While-Revalidate (instant 0ms render from cache)
-  const [apiProducts, setApiProducts] = useState<MarketplaceBoxItem[]>(getInitialMarketplaceProducts);
-  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
-    const initial = getInitialMarketplaceProducts();
-    return initial.length === 0;
-  });
-
-  const hasProductsRef = useRef(apiProducts.length > 0);
-  useEffect(() => {
-    hasProductsRef.current = apiProducts.length > 0;
-  }, [apiProducts.length]);
+  // Products load from cache first, then refresh from the public API.
+  const { products: apiProducts, isLoading: isLoadingProducts, fetchProducts: fetchMarketplaceProducts } =
+    useMarketplaceProducts(userCoords);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,62 +83,6 @@ export function CustomerMarketplace({
   const [sortField, setSortField] = useState<SortField>('lokasi');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [openDropdown, setOpenDropdown] = useState<'harga' | 'jarak' | 'urutkan' | 'kota' | null>(null);
-
-  // Fetch products from backend GET /api/v1/products with coordinates and batch ratings
-  const fetchMarketplaceProducts = useCallback(
-    async (coords: { lat: number; lng: number }, query?: string) => {
-      if (!hasProductsRef.current) {
-        setIsLoadingProducts(true);
-      }
-      try {
-        const publicItems = await getPublicProducts({
-          latitude: coords.lat,
-          longitude: coords.lng,
-          search: query?.trim() ? query.trim() : undefined,
-        });
-
-        // Batch fetch real ratings for products to prevent N+1 queries
-        const ratingMap = await batchFetchProductRatings(publicItems.map((p) => p.id));
-
-        const enriched = publicItems.map((p) => {
-          const summary = ratingMap.get(p.id) || { rating: 0, reviewCount: 0 };
-          return {
-            ...p,
-            rating: summary.rating,
-            reviewCount: summary.reviewCount,
-          };
-        });
-
-        const mappedApi = enriched.map((p) => mapPublicProductToItem(p, 'Malang'));
-
-        setApiProducts(mappedApi);
-        try {
-          localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(mappedApi));
-        } catch {}
-      } catch (err) {
-        console.warn('Gagal mengambil produk marketplace:', err);
-      } finally {
-        setIsLoadingProducts(false);
-      }
-    },
-    []
-  );
-
-  // Initial instant products fetch on mount & coordinates change
-  useEffect(() => {
-    fetchMarketplaceProducts(userCoords);
-  }, [fetchMarketplaceProducts, userCoords]);
-
-  // Synchronize immediately whenever product stock or status updates
-  useEffect(() => {
-    const handleProductUpdated = () => {
-      fetchMarketplaceProducts(userCoords);
-    };
-    window.addEventListener('rescuebyte_product_updated', handleProductUpdated);
-    return () => {
-      window.removeEventListener('rescuebyte_product_updated', handleProductUpdated);
-    };
-  }, [fetchMarketplaceProducts, userCoords]);
 
   // Request browser live location
   const handleRequestLiveLocation = useCallback(async () => {
@@ -185,66 +119,19 @@ export function CustomerMarketplace({
     };
   }, []);
 
-  // Marketplace products (sourced from backend API & merchant store)
-  const allProducts = useMemo(() => {
-    return apiProducts;
-  }, [apiProducts]);
-
-  // Filtered & Sorted products list
+  // Keep search, stock, city, price, distance, and sort rules in the marketplace model.
   const filteredProducts = useMemo(() => {
-    return allProducts
-      .filter((item) => {
-        // Search Query filter
-        if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          const matchName =
-            item.storeName.toLowerCase().includes(query) ||
-            (item.productName && item.productName.toLowerCase().includes(query));
-          const matchDesc = item.description.toLowerCase().includes(query);
-          const matchCat = item.category.toLowerCase().includes(query);
-          const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
-          if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
-        }
-
-        // City filter (based on live loc or selected city)
-        if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini') {
-          if (item.city !== selectedCity) return false;
-        }
-
-        // Price filter (Min - Max Range)
-        if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
-        if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
-
-        // Distance filter
-        if (distanceFilter !== 'semua') {
-          const dist = parseFloat(item.distanceText) || 0;
-          if (distanceFilter === '<1km' && dist >= 1.0) return false;
-          if (distanceFilter === '<5km' && dist >= 5.0) return false;
-          if (distanceFilter === '<10km' && dist >= 10.0) return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortField === 'jam_ambil') {
-          const timeA = parsePickupMinutes(a.pickupTime);
-          const timeB = parsePickupMinutes(b.pickupTime);
-          return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
-        }
-        if (sortField === 'lokasi') {
-          const distA = typeof a.distanceKm === 'number' ? a.distanceKm : (parseFloat(a.distanceText) || 9999);
-          const distB = typeof b.distanceKm === 'number' ? b.distanceKm : (parseFloat(b.distanceText) || 9999);
-          return sortOrder === 'asc' ? distA - distB : distB - distA;
-        }
-        if (sortField === 'ulasan') {
-          const ratingA = Number(a.rating) || 0;
-          const ratingB = Number(b.rating) || 0;
-          return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
-        }
-        return 0;
-      });
+    return filterAndSortMarketplaceProducts(apiProducts, {
+      searchQuery,
+      selectedCity,
+      appliedMinPrice,
+      appliedMaxPrice,
+      distanceFilter,
+      sortField,
+      sortOrder,
+    });
   }, [
-    allProducts,
+    apiProducts,
     searchQuery,
     selectedCity,
     appliedMinPrice,
@@ -785,7 +672,11 @@ export function CustomerMarketplace({
       </button>
 
       {/* 4. Customer Footer */}
-      <CustomerFooter variant="full" onNavigateSeller={onNavigateSeller} />
+      <CustomerFooter
+        variant="full"
+        onNavigateSeller={onNavigateSeller}
+        onNavigateAuth={onNavigateAuth}
+      />
 
       {/* Order Modal Component */}
       {selectedBox && (

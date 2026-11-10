@@ -262,6 +262,7 @@ ${suggestion.trim()}`;
         variant="full"
         onNavigateSeller={onNavigateSeller}
         onNavigateMarketplace={onNavigateMarketplace}
+        onNavigateAuth={onNavigateAuth}
       />
     </div>
   );

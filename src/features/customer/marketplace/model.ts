@@ -152,3 +152,76 @@ export function parsePickupMinutes(pickupTimeStr?: string): number {
   return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
 }
 
+export interface MarketplaceFilters {
+  appliedMaxPrice: number | null;
+  appliedMinPrice: number | null;
+  distanceFilter: string;
+  searchQuery: string;
+  selectedCity: string;
+  sortField: SortField;
+  sortOrder: SortOrder;
+}
+
+export function filterAndSortMarketplaceProducts(
+  products: MarketplaceBoxItem[],
+  filters: MarketplaceFilters,
+): MarketplaceBoxItem[] {
+  const {
+    appliedMaxPrice,
+    appliedMinPrice,
+    distanceFilter,
+    searchQuery,
+    selectedCity,
+    sortField,
+    sortOrder,
+  } = filters;
+  const query = searchQuery.trim().toLowerCase();
+
+  return products
+    .filter((item) => {
+      if ((item.stock ?? 0) <= 0) return false;
+
+      if (query) {
+        const matchName = item.storeName.toLowerCase().includes(query) ||
+          Boolean(item.productName?.toLowerCase().includes(query));
+        const matchDesc = item.description.toLowerCase().includes(query);
+        const matchCat = item.category.toLowerCase().includes(query);
+        const matchTags = item.tags.some((tag) => tag.toLowerCase().includes(query));
+        if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
+      }
+
+      if (selectedCity && selectedCity !== 'Semua Kota' && selectedCity !== 'Lokasi Saat Ini' && item.city !== selectedCity) {
+        return false;
+      }
+      if (appliedMinPrice !== null && item.rescuePrice < appliedMinPrice) return false;
+      if (appliedMaxPrice !== null && item.rescuePrice > appliedMaxPrice) return false;
+
+      if (distanceFilter !== 'semua') {
+        const distance = Number.parseFloat(item.distanceText) || 0;
+        if (distanceFilter === '<1km' && distance >= 1) return false;
+        if (distanceFilter === '<5km' && distance >= 5) return false;
+        if (distanceFilter === '<10km' && distance >= 10) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortField === 'jam_ambil') {
+        const timeA = parsePickupMinutes(a.pickupTime);
+        const timeB = parsePickupMinutes(b.pickupTime);
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+      if (sortField === 'lokasi') {
+        const distanceA = typeof a.distanceKm === 'number' ? a.distanceKm : Number.parseFloat(a.distanceText) || 9999;
+        const distanceB = typeof b.distanceKm === 'number' ? b.distanceKm : Number.parseFloat(b.distanceText) || 9999;
+        return sortOrder === 'asc' ? distanceA - distanceB : distanceB - distanceA;
+      }
+      if (sortField === 'ulasan') {
+        const ratingA = Number(a.rating) || 0;
+        const ratingB = Number(b.rating) || 0;
+        return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
+      }
+      return 0;
+    });
+}
+

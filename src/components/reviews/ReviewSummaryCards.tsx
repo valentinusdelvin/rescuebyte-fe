@@ -9,6 +9,12 @@ export interface ReviewSummaryCardsProps {
   totalReviews: number;
   /** Distribution of reviews mapped by star count (1-5) */
   distribution: Record<number, number>;
+  /** Custom label for card 1 (defaults to RATING TOKO) */
+  ratingLabel?: string;
+  /** Custom helper description for card 1 */
+  ratingDescription?: string;
+  /** Custom helper description for card 2 */
+  totalDescription?: string;
   /** Loading state indicator */
   isLoading?: boolean;
   /** Container CSS classes */
@@ -19,6 +25,9 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
   averageRating,
   totalReviews,
   distribution,
+  ratingLabel = 'RATING TOKO',
+  ratingDescription = 'Berdasarkan ulasan pembeli',
+  totalDescription = 'Ulasan dari pesanan yang telah selesai',
   isLoading = false,
   className = '',
 }) => {
@@ -41,11 +50,11 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${className}`}>
-      {/* Card 1: Rating Toko */}
+      {/* Card 1: Rating Summary */}
       <div className="bg-white rounded-2xl border border-[#e2e6df] p-6 shadow-level-1 flex flex-col justify-between min-h-[168px]">
         <div>
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
-            RATING TOKO
+            {ratingLabel}
           </span>
 
           <div className="flex items-baseline mt-2 mb-2">
@@ -63,7 +72,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
         </div>
 
         <p className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100/80">
-          Berdasarkan ulasan pembeli
+          {ratingDescription}
         </p>
       </div>
 
@@ -85,7 +94,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
         </div>
 
         <p className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100/80 leading-tight max-w-[220px]">
-          Ulasan dari pesanan yang telah selesai
+          {totalDescription}
         </p>
       </div>
 

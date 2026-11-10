@@ -5,6 +5,7 @@ import rescueBiteLogo from '../../assets/logo_new.svg';
 export interface CustomerFooterProps {
   variant?: 'full' | 'compact';
   onNavigateSeller?: () => void;
+  onNavigateAuth?: () => void;
   onNavigateMarketplace?: () => void;
   onContactSupport?: () => void;
 }
@@ -13,7 +14,7 @@ type PolicyTab = 'terms' | 'privacy' | 'surplus';
 
 export function CustomerFooter({
   variant = 'full',
-  onNavigateSeller,
+  onNavigateAuth,
   onNavigateMarketplace,
   onContactSupport,
 }: CustomerFooterProps) {
@@ -154,11 +155,15 @@ export function CustomerFooter({
               <ul className="flex flex-col gap-2.5">
                 <li>
                   <a
-                    href="#daftar-mitra"
+                    href="#auth"
                     onClick={(e) => {
-                      if (onNavigateSeller) {
-                        e.preventDefault();
-                        onNavigateSeller();
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                      e.preventDefault();
+                      if (onNavigateAuth) {
+                        onNavigateAuth();
+                      } else {
+                        window.location.hash = '#auth';
+                        window.scrollTo({ top: 0, behavior: 'instant' });
                       }
                     }}
                     className="text-xs sm:text-[13px] text-slate-500 hover:text-emerald-700 transition-colors"

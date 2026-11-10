@@ -20,6 +20,8 @@ export interface ReviewFilterBarProps {
   sortBy: ReviewSortOption;
   /** Sort order change handler */
   onSortChange: (sort: ReviewSortOption) => void;
+  /** Optional custom placeholder text for the search input */
+  searchPlaceholder?: string;
   /** Custom CSS classes */
   className?: string;
 }
@@ -47,6 +49,7 @@ export const ReviewFilterBar: React.FC<ReviewFilterBarProps> = ({
   onRatingFilterChange,
   sortBy,
   onSortChange,
+  searchPlaceholder = 'Cari produk atau ulasan...',
   className = '',
 }) => {
   const [isRatingOpen, setIsRatingOpen] = useState(false);
@@ -96,9 +99,9 @@ export const ReviewFilterBar: React.FC<ReviewFilterBarProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Cari produk atau ulasan..."
+          placeholder={searchPlaceholder}
           className="w-full pl-10 pr-9 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 shadow-2xs transition-colors focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-          aria-label="Cari produk atau ulasan"
+          aria-label={searchPlaceholder}
         />
         {searchQuery && (
           <button

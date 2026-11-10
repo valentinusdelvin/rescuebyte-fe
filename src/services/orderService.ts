@@ -1,8 +1,18 @@
 import { PaymentOrderData, CustomerOrderStatus } from '../types';
 import { api } from './api';
-import { extractApiErrorMessage, getCurrentUser } from './authService';
+import { extractApiErrorMessage } from './authService';
 import cardMonsieurSpoon from '../assets/customer/card-monsieur-spoon.jpg';
 import { clearCart } from './cartService';
+import {
+  MERCHANT_ORDERS_STORAGE_KEY,
+  ORDERS_UPDATE_EVENT,
+  PLACEHOLDER_ORDER_IDS,
+  PLACEHOLDER_STORE_NAMES,
+  getCustomerOrders,
+  getCustomerOrdersStorageKey,
+  saveCustomerOrders,
+} from './orders/orderStorage';
+import { CustomerOrderItem, MerchantOrderItem } from './orders/orderTypes';
 export { fetchMerchantOrdersApi } from './orders/sellerOrders';
 export { fetchOrderDetailApi, fetchCustomerOrdersApi } from './orders/customerOrders';
 export { checkoutOrderApi } from './orders/checkoutService';
@@ -12,61 +22,15 @@ export { getOrderStatusLabel } from './orders/orderStatus';
 export { mapBackendStatusToCustomerStatus } from './orders/orderStatus';
 export { fetchPaymentDetailsApi, fetchPaymentStatusApi } from './orders/paymentService';
 export type { BackendPaymentState, BackendPaymentDetails } from './orders/paymentService';
-
-export interface CustomerOrderItem {
-  id: string;
-  orderNumber: string;
-  storeId?: string;
-  createdAt?: string;
-  status: CustomerOrderStatus;
-  statusLabel: string;
-  storeName: string;
-  storeAddress?: string;
-  storeRating?: number;
-  storeReviewCount?: number;
-  storeDistance?: string;
-  storeTags?: string[];
-  productName: string;
-  productBoxCount: number;
-  productDescription: string;
-  pickupDate: string;
-  pickupTime: string;
-  originalPrice?: number;
-  finalPrice: number;
-  category?: 'bakery' | 'meal' | 'snack' | 'fresh' | 'deli';
-  orderData?: PaymentOrderData;
-  imageUrl?: string;
-}
-
-const CUSTOMER_ORDERS_STORAGE_KEY = 'rescuebyte_customer_orders';
-export const MERCHANT_ORDERS_STORAGE_KEY = 'rescuebyte_merchant_orders';
-const ORDERS_UPDATE_EVENT = 'rescuebyte_orders_update';
-
-export const PLACEHOLDER_ORDER_IDS = new Set([
-  'ord-1',
-  'ord-2',
-  'ord-3',
-  'ord-4',
-  'ord-5',
-  'RB261029-65056-1',
-  'RB261029-65056-2',
-  'RB261029-81118-2',
-]);
-export const PLACEHOLDER_STORE_NAMES = new Set([
-  'TerasRasa Bakery',
-  'GreenBowl',
-  'SnackTime',
-  'SayurKita',
-  'DailyDeli',
-]);
-
-export const INITIAL_CUSTOMER_ORDERS: CustomerOrderItem[] = [];
-
-function getCustomerOrdersStorageKey(): string | null {
-  const user = getCurrentUser();
-  const userKey = user?.id || user?.email?.trim().toLowerCase();
-  return userKey ? `${CUSTOMER_ORDERS_STORAGE_KEY}:${encodeURIComponent(userKey)}` : null;
-}
+export type { CustomerOrderItem, MerchantOrderItem } from './orders/orderTypes';
+export {
+  INITIAL_CUSTOMER_ORDERS,
+  MERCHANT_ORDERS_STORAGE_KEY,
+  PLACEHOLDER_ORDER_IDS,
+  PLACEHOLDER_STORE_NAMES,
+  getCustomerOrders,
+  saveCustomerOrders,
+} from './orders/orderStorage';
 
 
 export function inferItemCategory(
@@ -112,71 +76,6 @@ export function inferItemCategory(
     return 'deli';
   }
   return 'meal';
-}
-
-/**
- * Retrieve all customer orders from localStorage, filtering out legacy placeholder dummy orders.
- */
-export function getCustomerOrders(): CustomerOrderItem[] {
-  try {
-    const storageKey = getCustomerOrdersStorageKey();
-    if (!storageKey) return [];
-
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      const realOrders = parsed
-        .filter(
-          (o) =>
-            o &&
-            o.id &&
-            !PLACEHOLDER_ORDER_IDS.has(o.id) &&
-            !PLACEHOLDER_STORE_NAMES.has(o.storeName) &&
-            !PLACEHOLDER_ORDER_IDS.has(o.orderNumber) &&
-            !o.orderNumber?.startsWith('RB25102')
-        )
-        .map((o) => {
-          const cleaned = { ...o };
-          delete cleaned.storeRating;
-          delete cleaned.storeReviewCount;
-          delete cleaned.storeDistance;
-          delete cleaned.storeTags;
-          if (cleaned.originalPrice && cleaned.originalPrice === cleaned.finalPrice + 20000) {
-            delete cleaned.originalPrice;
-          }
-          return cleaned;
-        });
-      localStorage.setItem(storageKey, JSON.stringify(realOrders));
-      return realOrders;
-
-    }
-    return [];
-  } catch (err) {
-    console.warn('Failed to read customer orders from localStorage:', err);
-    return [];
-  }
-}
-
-/**
- * Save customer orders to localStorage and notify listeners.
- */
-export function saveCustomerOrders(orders: CustomerOrderItem[]): void {
-  try {
-    const storageKey = getCustomerOrdersStorageKey();
-    if (!storageKey) return;
-
-    localStorage.setItem(storageKey, JSON.stringify(orders));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent(ORDERS_UPDATE_EVENT, { detail: orders })
-      );
-    }
-  } catch (err) {
-    console.warn('Failed to save customer orders to localStorage:', err);
-  }
 }
 
 /**
@@ -450,46 +349,6 @@ async function updateMerchantOrderStatus(
   return true;
 }
 
-/**
- * Call backend checkout endpoint POST /api/v1/orders/checkout
- */
-export interface MerchantOrderItem {
-  id: string;
-  orderNumber: string;
-  status: 'perlu-konfirmasi' | 'diproses' | 'siap-diambil' | 'selesai' | 'batal';
-  storeId?: string;
-  storeName: string;
-  storeAddress?: string;
-  storeCity?: string;
-  storeDistrict?: string;
-  customerId?: string;
-  customerName: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  customerAvatar?: string;
-  productName: string;
-  productImage?: string;
-  totalBoxes: number;
-  rescuePrice: number;
-  originalPrice: number;
-  discountPercent: number;
-  grandTotal: number;
-  pickupDate: string;
-  pickupTime: string;
-  paymentMethod?: string;
-  paymentStatus?: string;
-  notes?: string;
-  items?: Array<{
-    id?: string;
-    productName: string;
-    quantity: number;
-    price: number;
-    originalPrice?: number;
-    imageUrl?: string;
-    variantName?: string;
-  }>;
-  createdAt: string;
-}
 export const INITIAL_MERCHANT_ORDERS: MerchantOrderItem[] = [];
 
 export function getMerchantOrders(currentStoreName?: string): MerchantOrderItem[] {

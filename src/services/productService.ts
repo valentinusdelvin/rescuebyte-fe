@@ -438,6 +438,7 @@ export interface PublicProductItem {
   id: string;
   store_id?: string;
   store_name?: string;
+  city?: string;
   name: string;
   description?: string;
   main_image_url?: string;
@@ -449,6 +450,9 @@ export interface PublicProductItem {
   operational_end?: string;
   pickup_time?: string;
   distance_km?: number;
+  rating?: number;
+  review_count?: number;
+  reviewCount?: number;
 }
 
 export interface GetPublicProductsParams {

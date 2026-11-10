@@ -1,9 +1,8 @@
 import { api } from '../api';
 import cardMonsieurSpoon from '../../assets/customer/card-monsieur-spoon.jpg';
 import { mapBackendStatusToCustomerStatus } from './orderStatus';
-import {
-  MERCHANT_ORDERS_STORAGE_KEY, PLACEHOLDER_ORDER_IDS, MerchantOrderItem,
-} from '../orderService';
+import { MERCHANT_ORDERS_STORAGE_KEY, PLACEHOLDER_ORDER_IDS } from './orderStorage';
+import { MerchantOrderItem } from './orderTypes';
 
 export async function fetchMerchantOrdersApi(
   _storeName?: string,

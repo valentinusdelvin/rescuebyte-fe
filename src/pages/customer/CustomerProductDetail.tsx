@@ -7,8 +7,8 @@ import { ProductReviewsSection } from '../../components/customer/product/Product
 import { FormattedDescription } from '../../components/common/FormattedDescription';
 import { CustomerMysteryBox } from '../../types';
 import { getCartCount, addToCart, addToCartApi, subscribeToCart } from '../../services/cartService';
-import { getAllStores } from '../../services/storeService';
 import { useStoreReviews } from '../../hooks/useReviews';
+import { useProductStoreContext } from '../../hooks/useProductStoreContext';
 import { formatRupiah } from '../../utils/currency';
 
 export interface CustomerProductDetailProps {
@@ -53,56 +53,11 @@ export function CustomerProductDetail({
   // Use product prop or default to real store data
   const storeName = product?.storeName || 'Toko Mitra';
 
-  const hashStoreId = useMemo(() => {
-    try {
-      const rawHash = window.location.hash || '';
-      const queryPart = rawHash.includes('?') ? rawHash.split('?')[1] : '';
-      const params = new URLSearchParams(queryPart);
-      return params.get('storeId') || params.get('store_id') || undefined;
-    } catch {
-      return undefined;
-    }
-  }, []);
-
-  const [resolvedStoreId, setResolvedStoreId] = useState<string | undefined>(
-    product?.storeId || hashStoreId
-  );
-
-  const [storeAvatarUrl, setStoreAvatarUrl] = useState<string | null>(() => {
-    return product?.storeAvatar || null;
+  const { resolvedStoreId, storeAvatarUrl } = useProductStoreContext({
+    productStoreId: product?.storeId,
+    productStoreAvatar: product?.storeAvatar,
+    storeName,
   });
-
-  useEffect(() => {
-    if (product?.storeId) {
-      setResolvedStoreId(product.storeId);
-    } else if (hashStoreId) {
-      setResolvedStoreId(hashStoreId);
-    }
-  }, [product?.storeId, hashStoreId]);
-
-  useEffect(() => {
-    let isCancelled = false;
-    getAllStores().then((stores) => {
-      if (isCancelled || !stores) return;
-      const currentId = product?.storeId || hashStoreId;
-      const matched = stores.find(
-        (s) =>
-          (s.id && currentId && (s.id === currentId || currentId.includes(s.id))) ||
-          (s.name && storeName && s.name.toLowerCase() === storeName.toLowerCase())
-      );
-      if (matched) {
-        if (matched.id && matched.id !== resolvedStoreId) {
-          setResolvedStoreId(matched.id);
-        }
-        if (matched.profile_picture_url) {
-          setStoreAvatarUrl(matched.profile_picture_url);
-        }
-      }
-    }).catch(() => {});
-    return () => {
-      isCancelled = true;
-    };
-  }, [product?.storeId, hashStoreId, storeName, resolvedStoreId]);
 
   const {
     averageRating: storeAverageRating,

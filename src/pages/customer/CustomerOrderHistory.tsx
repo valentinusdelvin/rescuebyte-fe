@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Search,
   Copy,
@@ -19,14 +19,9 @@ import { CustomerFooter } from '../../components/customer/CustomerFooter';
 import { CustomerProfileSidebar } from '../../components/customer/CustomerProfileSidebar';
 import { getCurrentUser, logoutUser, clearAuth } from '../../services/authService';
 import { PaymentOrderData, UserPayload, CustomerOrderStatus } from '../../types';
-import {
-  CustomerOrderItem,
-  getCustomerOrders,
-  subscribeToOrders,
-  fetchCustomerOrdersApi,
-} from '../../services/orderService';
-import { getAllStores } from '../../services/storeService';
+import { CustomerOrderItem } from '../../services/orderService';
 import { formatRupiah } from '../../utils/currency';
+import { useCustomerOrderHistoryData } from '../../hooks/useCustomerOrderHistoryData';
 
 export type OrderHistoryFilterTab = 'all' | CustomerOrderStatus;
 
@@ -52,72 +47,11 @@ export function CustomerOrderHistory({
   onShowToast,
 }: CustomerOrderHistoryProps) {
   const [currentUser] = useState<UserPayload | null>(() => getCurrentUser());
-  const [orders, setOrders] = useState<CustomerOrderItem[]>(() => getCustomerOrders());
-  const [storeAvatars, setStoreAvatars] = useState<Record<string, string>>({});
-  const [storeAddresses, setStoreAddresses] = useState<Record<string, string>>({});
+  const { orders, storeAvatars, storeAddresses } = useCustomerOrderHistoryData();
   const [activeStatus, setActiveStatus] = useState<OrderHistoryFilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    return subscribeToOrders((latest) => {
-      setOrders(latest);
-    });
-  }, []);
-
-  useEffect(() => {
-    let isCancelled = false;
-    getAllStores()
-      .then((backendStores) => {
-        if (isCancelled || !backendStores) return;
-        const avatarMap: Record<string, string> = {};
-        const addressMap: Record<string, string> = {};
-        backendStores.forEach((store) => {
-          if (store.profile_picture_url) {
-            if (store.name) avatarMap[store.name.trim().toLowerCase()] = store.profile_picture_url;
-            if (store.id) avatarMap[store.id] = store.profile_picture_url;
-          }
-          const fullAddr = [store.address, store.district, store.city].filter(Boolean).join(', ');
-          if (fullAddr) {
-            if (store.name) addressMap[store.name.trim().toLowerCase()] = fullAddr;
-            if (store.id) addressMap[store.id] = fullAddr;
-          }
-        });
-        setStoreAvatars(avatarMap);
-        setStoreAddresses(addressMap);
-      })
-      .catch(() => {});
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isCancelled = false;
-    let refreshTimer: number | undefined;
-    async function loadBackendOrders() {
-      try {
-        const backendOrders = await fetchCustomerOrdersApi();
-        if (!isCancelled && backendOrders !== null) {
-          setOrders(backendOrders);
-        }
-      } catch (err) {
-        console.warn('Gagal memuat pesanan dari backend:', err);
-      } finally {
-        if (!isCancelled) {
-          refreshTimer = window.setTimeout(() => {
-            void loadBackendOrders();
-          }, 15000);
-        }
-      }
-    }
-    void loadBackendOrders();
-    return () => {
-      isCancelled = true;
-      if (refreshTimer) window.clearTimeout(refreshTimer);
-    };
-  }, []);
 
   const userName = currentUser?.name || 'Pengguna';
   const userEmail = currentUser?.email || '';

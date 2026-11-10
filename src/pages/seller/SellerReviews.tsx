@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Store, Package } from 'lucide-react';
 import {
   ReviewSummaryCards,
   ReviewFilterBar,
@@ -6,7 +7,11 @@ import {
   ReviewPagination,
   ReviewSortOption,
 } from '../../components/reviews';
-import { useStoreReviews } from '../../hooks/useReviews';
+import {
+  useStoreReviews,
+  useStoreProductReviews,
+  RatingDistribution,
+} from '../../hooks/useReviews';
 import { useStoreProfile } from '../../hooks/useStoreProfile';
 import { getMerchantProducts } from '../../services/productService';
 import { ProductItem } from '../../types';
@@ -18,7 +23,31 @@ export interface SellerReviewsProps {
   onShowToast?: (message: string) => void;
 }
 
+type ReviewScope = 'toko' | 'produk';
+
+interface NormalizedSellerReview {
+  id: string;
+  reviewerName: string;
+  reviewerAvatar?: string;
+  rating: number;
+  createdAtRaw: string;
+  createdAtFormatted: string;
+  comment: string;
+  productName?: string;
+  productImage?: string;
+}
+
+interface ReviewWithOptionalProduct {
+  product_name?: string;
+  product_image?: string;
+  product?: {
+    name?: string;
+    image?: string;
+  };
+}
+
 const REVIEWS_PER_PAGE = 5;
+const STORE_REVIEWS_PARAMS = { limit: 100 };
 
 /**
  * Format ISO date string into Indonesian readable format e.g. "28 Oktober 2026"
@@ -39,11 +68,34 @@ function formatDate(dateStr?: string): string {
   }
 }
 
+function computeAverageFromItems(items: NormalizedSellerReview[]): number {
+  const valid = items.filter((r) => typeof r.rating === 'number' && !isNaN(r.rating));
+  if (valid.length === 0) return 0;
+  const sum = valid.reduce((acc, r) => acc + r.rating, 0);
+  return Math.round((sum / valid.length) * 10) / 10;
+}
+
+function computeDistributionFromItems(items: NormalizedSellerReview[]): RatingDistribution {
+  const distribution: RatingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const item of items) {
+    const raw = Number(item.rating);
+    if (!isNaN(raw)) {
+      const star = Math.max(1, Math.min(5, Math.round(raw)));
+      distribution[star] = (distribution[star] || 0) + 1;
+    }
+  }
+  return distribution;
+}
+
 /**
  * Seller Dashboard - Ulasan Pembeli Page
- * Faithful to reference design: 3 summary cards, filter/search bar, review card list, client pagination.
+ * Supports switching between Ulasan Toko and Ulasan Produk, with summary cards, filtering, sorting, and pagination.
  */
 export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviewsProps) {
+  const [reviewScope, setReviewScope] = useState<ReviewScope>('toko');
+  const tokoTabRef = useRef<HTMLButtonElement>(null);
+  const produkTabRef = useRef<HTMLButtonElement>(null);
+
   // Stored seller store ID from localStorage
   const storedSellerStoreId = useMemo(() => {
     try {
@@ -61,20 +113,34 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
 
   // Real store review data and rating summary from backend API
   const {
-    reviews,
-    averageRating,
-    totalReviews,
-    ratingDistribution,
-    isLoading: isReviewsLoading,
-    isError,
-    error,
-    refetch,
-  } = useStoreReviews(effectiveStoreId, undefined, {
+    reviews: storeReviews,
+    averageRating: storeAverageRating,
+    totalReviews: storeTotalReviews,
+    ratingDistribution: storeRatingDistribution,
+    isLoading: isStoreReviewsLoading,
+    isError: isStoreError,
+    error: storeError,
+    refetch: refetchStoreReviews,
+  } = useStoreReviews(effectiveStoreId, STORE_REVIEWS_PARAMS, {
     autoFetch: Boolean(effectiveStoreId),
   });
 
-  // Fetch merchant products for product mapping (e.g. Mystery Box titles & thumbnails)
+  // Fetch merchant products for product reviews and product metadata mapping
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(true);
+
+  const loadProducts = useCallback(async () => {
+    setIsProductsLoading(true);
+    try {
+      const items = await getMerchantProducts();
+      setProducts(items);
+    } catch (err) {
+      console.warn('Gagal memuat produk merchant untuk pemetaan ulasan:', err);
+    } finally {
+      setIsProductsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     getMerchantProducts()
@@ -83,11 +149,23 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
       })
       .catch((err) => {
         console.warn('Gagal memuat produk merchant untuk pemetaan ulasan:', err);
+      })
+      .finally(() => {
+        if (isMounted) setIsProductsLoading(false);
       });
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // Real product review aggregation across all merchant products
+  const {
+    productReviews,
+    isLoading: isProductReviewsLoading,
+    isError: isProductReviewsError,
+    error: productReviewsError,
+    refetch: refetchProductReviews,
+  } = useStoreProductReviews(products);
 
   const productsMap = useMemo(() => {
     const map = new Map<string, { name: string; image?: string }>();
@@ -99,11 +177,72 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
     return map;
   }, [products]);
 
+  const storeReviewItems = useMemo<NormalizedSellerReview[]>(() => {
+    return storeReviews.map((r) => {
+      const productInfo = r.product_id ? productsMap.get(r.product_id) : undefined;
+      const ext = r as unknown as ReviewWithOptionalProduct;
+      return {
+        id: r.id,
+        reviewerName: r.author?.name || 'Pembeli',
+        reviewerAvatar: r.author?.avatar_url,
+        rating: r.rating,
+        createdAtRaw: r.created_at,
+        createdAtFormatted: formatDate(r.created_at),
+        comment: r.content,
+        productName: ext.product_name || ext.product?.name || productInfo?.name,
+        productImage: ext.product_image || ext.product?.image || productInfo?.image,
+      };
+    });
+  }, [storeReviews, productsMap]);
+
+  const productReviewItems = useMemo<NormalizedSellerReview[]>(() => {
+    return productReviews.map((pr) => ({
+      id: `${pr.productId}-${pr.id}`,
+      reviewerName: pr.name || 'Pembeli',
+      reviewerAvatar: pr.avatar || undefined,
+      rating: pr.rating,
+      createdAtRaw: pr.createdAt || pr.date,
+      createdAtFormatted: formatDate(pr.createdAt) || pr.date,
+      comment: pr.comment,
+      productName: pr.productName,
+      productImage: pr.productImage,
+    }));
+  }, [productReviews]);
+
+  const productAverageRating = useMemo(
+    () => computeAverageFromItems(productReviewItems),
+    [productReviewItems]
+  );
+  const productTotalReviews = productReviewItems.length;
+  const productRatingDistribution = useMemo(
+    () => computeDistributionFromItems(productReviewItems),
+    [productReviewItems]
+  );
+
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('terbaru');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const handleScopeChange = (scope: ReviewScope) => {
+    if (scope === reviewScope) return;
+    setReviewScope(scope);
+    setCurrentPage(1);
+  };
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, scope: ReviewScope) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const nextScope: ReviewScope = scope === 'toko' ? 'produk' : 'toko';
+      handleScopeChange(nextScope);
+      if (nextScope === 'toko') {
+        tokoTabRef.current?.focus();
+      } else {
+        produkTabRef.current?.focus();
+      }
+    }
+  };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -120,9 +259,11 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
     setCurrentPage(1);
   };
 
-  // Filter and sort reviews
+  const activeSourceReviews = reviewScope === 'toko' ? storeReviewItems : productReviewItems;
+
+  // Filter and sort active scope reviews
   const filteredReviews = useMemo(() => {
-    let result = [...reviews];
+    let result = [...activeSourceReviews];
 
     // 1. Rating filter (Semua Rating = null, or 1 - 5)
     if (ratingFilter !== null) {
@@ -133,15 +274,9 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
     const query = searchQuery.trim().toLowerCase();
     if (query) {
       result = result.filter((r) => {
-        const authorName = (r.author?.name || '').toLowerCase();
-        const content = (r.content || '').toLowerCase();
-        const productInfo = r.product_id ? productsMap.get(r.product_id) : undefined;
-        const productName = (
-          (r as unknown as { product_name?: string }).product_name ||
-          (r as unknown as { product?: { name?: string } }).product?.name ||
-          productInfo?.name ||
-          ''
-        ).toLowerCase();
+        const authorName = r.reviewerName.toLowerCase();
+        const content = r.comment.toLowerCase();
+        const productName = (r.productName || '').toLowerCase();
 
         return (
           authorName.includes(query) ||
@@ -154,8 +289,8 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
     // 3. Sorting logic
     result.sort((a, b) => {
       if (sortBy === 'terlama') {
-        const timeA = new Date(a.created_at).getTime() || 0;
-        const timeB = new Date(b.created_at).getTime() || 0;
+        const timeA = new Date(a.createdAtRaw).getTime() || 0;
+        const timeB = new Date(b.createdAtRaw).getTime() || 0;
         return timeA - timeB;
       }
       if (sortBy === 'rating-tinggi') {
@@ -165,13 +300,13 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
         return a.rating - b.rating;
       }
       // Default: 'terbaru'
-      const timeA = new Date(a.created_at).getTime() || 0;
-      const timeB = new Date(b.created_at).getTime() || 0;
+      const timeA = new Date(a.createdAtRaw).getTime() || 0;
+      const timeB = new Date(b.createdAtRaw).getTime() || 0;
       return timeB - timeA;
     });
 
     return result;
-  }, [reviews, ratingFilter, searchQuery, sortBy, productsMap]);
+  }, [activeSourceReviews, ratingFilter, searchQuery, sortBy]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredReviews.length / REVIEWS_PER_PAGE));
@@ -180,7 +315,25 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
     return filteredReviews.slice(start, start + REVIEWS_PER_PAGE);
   }, [filteredReviews, currentPage]);
 
-  const isLoading = (isProfileLoading && !propStoreId) || isReviewsLoading;
+  const isStoreTabLoading = (isProfileLoading && !effectiveStoreId) || isStoreReviewsLoading;
+  const isProductTabLoading = isProductsLoading || isProductReviewsLoading;
+  const isLoading = reviewScope === 'toko' ? isStoreTabLoading : isProductTabLoading;
+
+  const isError = reviewScope === 'toko' ? isStoreError : isProductReviewsError;
+  const error = reviewScope === 'toko' ? storeError : productReviewsError;
+
+  const activeAverageRating = reviewScope === 'toko' ? storeAverageRating : productAverageRating;
+  const activeTotalReviews = reviewScope === 'toko' ? storeTotalReviews : productTotalReviews;
+  const activeDistribution =
+    reviewScope === 'toko' ? storeRatingDistribution : productRatingDistribution;
+
+  const handleRetry = () => {
+    if (reviewScope === 'toko') {
+      void refetchStoreReviews();
+    } else {
+      void loadProducts().then(() => refetchProductReviews());
+    }
+  };
 
   return (
     <section
@@ -188,21 +341,104 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
       id="view-ulasan"
       aria-labelledby="heading-ulasan-pembeli"
     >
-      {/* Header & Summary Cards Section */}
+      {/* Header, Review Type Switcher & Summary Cards Section */}
       <header>
-        <h1
-          id="heading-ulasan-pembeli"
-          className="font-display font-bold text-2xl text-gray-900 mb-6 sm:mb-8 tracking-tight"
-          aria-label={`Ulasan Pembeli${storeName ? ` - ${storeName}` : ''}`}
-        >
-          Ulasan Pembeli
-        </h1>
-        {storeName && <span className="sr-only">Toko {storeName}</span>}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+          <div>
+            <h1
+              id="heading-ulasan-pembeli"
+              className="font-display font-bold text-2xl text-gray-900 tracking-tight"
+              aria-label={`Ulasan Pembeli${storeName ? ` - ${storeName}` : ''}`}
+            >
+              Ulasan Pembeli
+            </h1>
+            {storeName && <span className="sr-only">Toko {storeName}</span>}
+          </div>
+
+          <div
+            role="tablist"
+            aria-label="Jenis ulasan pembeli"
+            className="inline-flex w-full sm:w-auto items-center gap-1.5 p-1 bg-white border border-[#e2e6df] rounded-2xl shadow-level-1"
+          >
+            <button
+              ref={tokoTabRef}
+              type="button"
+              role="tab"
+              id="tab-ulasan-toko"
+              aria-selected={reviewScope === 'toko'}
+              aria-controls="panel-ulasan-pembeli"
+              tabIndex={reviewScope === 'toko' ? 0 : -1}
+              onClick={() => handleScopeChange('toko')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'toko')}
+              className={`flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1F2A24] ${
+                reviewScope === 'toko'
+                  ? 'bg-[#1F2A24] text-white shadow-xs'
+                  : 'text-[#252525] hover:bg-[#F8F7F2] hover:text-[#1F2A24]'
+              }`}
+            >
+              <Store className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Ulasan Toko</span>
+              {!isStoreTabLoading && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums ${
+                    reviewScope === 'toko'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-[#f0eded] text-[#252525]'
+                  }`}
+                >
+                  {storeTotalReviews.toLocaleString('id-ID')}
+                </span>
+              )}
+            </button>
+
+            <button
+              ref={produkTabRef}
+              type="button"
+              role="tab"
+              id="tab-ulasan-produk"
+              aria-selected={reviewScope === 'produk'}
+              aria-controls="panel-ulasan-pembeli"
+              tabIndex={reviewScope === 'produk' ? 0 : -1}
+              onClick={() => handleScopeChange('produk')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'produk')}
+              className={`flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1F2A24] ${
+                reviewScope === 'produk'
+                  ? 'bg-[#1F2A24] text-white shadow-xs'
+                  : 'text-[#252525] hover:bg-[#F8F7F2] hover:text-[#1F2A24]'
+              }`}
+            >
+              <Package className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Ulasan Produk</span>
+              {!isProductTabLoading && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums ${
+                    reviewScope === 'produk'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-[#f0eded] text-[#252525]'
+                  }`}
+                >
+                  {productTotalReviews.toLocaleString('id-ID')}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
 
         <ReviewSummaryCards
-          averageRating={averageRating}
-          totalReviews={totalReviews}
-          distribution={ratingDistribution}
+          averageRating={activeAverageRating}
+          totalReviews={activeTotalReviews}
+          distribution={activeDistribution}
+          ratingLabel={reviewScope === 'toko' ? 'RATING TOKO' : 'RATING PRODUK'}
+          ratingDescription={
+            reviewScope === 'toko'
+              ? 'Berdasarkan ulasan toko dari pembeli'
+              : 'Berdasarkan ulasan produk dari pembeli'
+          }
+          totalDescription={
+            reviewScope === 'toko'
+              ? 'Ulasan toko dari pesanan yang telah selesai'
+              : 'Ulasan produk dari pesanan yang telah selesai'
+          }
           isLoading={isLoading}
         />
       </header>
@@ -216,7 +452,7 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => void refetch()}
+            onClick={handleRetry}
             className="text-xs font-semibold text-rose-900 underline hover:no-underline cursor-pointer ml-3 shrink-0"
           >
             Coba Lagi
@@ -224,8 +460,13 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
         </div>
       )}
 
-      {/* Search & Filter Controls */}
-      <div className="space-y-4 sm:space-y-6">
+      {/* Search & Filter Controls + Active Tab Panel */}
+      <div
+        id="panel-ulasan-pembeli"
+        role="tabpanel"
+        aria-labelledby={reviewScope === 'toko' ? 'tab-ulasan-toko' : 'tab-ulasan-produk'}
+        className="space-y-4 sm:space-y-6"
+      >
         <ReviewFilterBar
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
@@ -233,6 +474,11 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
           onRatingFilterChange={handleRatingFilterChange}
           sortBy={sortBy}
           onSortChange={handleSortChange}
+          searchPlaceholder={
+            reviewScope === 'toko'
+              ? 'Cari nama pembeli atau ulasan...'
+              : 'Cari produk, pembeli, atau ulasan...'
+          }
         />
 
         {/* Review Cards List */}
@@ -261,12 +507,16 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
               </div>
             ))}
           </div>
-        ) : reviews.length === 0 ? (
-          /* Empty state when the store has no reviews yet */
+        ) : activeSourceReviews.length === 0 ? (
+          /* Empty state when the selected scope has no reviews yet */
           <div className="bg-white border border-[#e2e6df] rounded-2xl p-8 shadow-level-1">
             <EmptyState
-              title="Belum Ada Ulasan"
-              description="Toko ini belum memiliki ulasan dari pembeli."
+              title={reviewScope === 'toko' ? 'Belum Ada Ulasan Toko' : 'Belum Ada Ulasan Produk'}
+              description={
+                reviewScope === 'toko'
+                  ? 'Toko ini belum memiliki ulasan toko dari pembeli.'
+                  : 'Dagangan toko ini belum memiliki ulasan produk dari pembeli.'
+              }
             />
           </div>
         ) : filteredReviews.length === 0 ? (
@@ -281,37 +531,26 @@ export function SellerReviews({ storeName, storeId: propStoreId }: SellerReviews
                   setSearchQuery('');
                   setRatingFilter(null);
                   setSortBy('terbaru');
+                  setCurrentPage(1);
                 },
               }}
             />
           </div>
         ) : (
           <div className="space-y-4">
-            {paginatedReviews.map((review) => {
-              const productInfo = review.product_id ? productsMap.get(review.product_id) : undefined;
-              const productName =
-                (review as unknown as { product_name?: string }).product_name ||
-                (review as unknown as { product?: { name?: string } }).product?.name ||
-                productInfo?.name;
-              const productImage =
-                (review as unknown as { product_image?: string }).product_image ||
-                (review as unknown as { product?: { image?: string } }).product?.image ||
-                productInfo?.image;
-
-              return (
-                <ReviewCard
-                  key={review.id}
-                  id={review.id}
-                  reviewerName={review.author?.name || 'Pembeli'}
-                  reviewerAvatar={review.author?.avatar_url}
-                  rating={review.rating}
-                  createdAt={formatDate(review.created_at)}
-                  comment={review.content}
-                  productName={productName}
-                  productImage={productImage}
-                />
-              );
-            })}
+            {paginatedReviews.map((review) => (
+              <ReviewCard
+                key={review.id}
+                id={review.id}
+                reviewerName={review.reviewerName}
+                reviewerAvatar={review.reviewerAvatar}
+                rating={review.rating}
+                createdAt={review.createdAtFormatted}
+                comment={review.comment}
+                productName={review.productName}
+                productImage={review.productImage}
+              />
+            ))}
           </div>
         )}
 
